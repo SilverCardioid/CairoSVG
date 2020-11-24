@@ -1,4 +1,4 @@
-from ..helpers import PATH_LETTERS, point, quadratic_points, size
+from ..helpers import PATH_LETTERS, point, point_angle, quadratic_points, radians, rotate, size
 
 class Path:
 	def __init__(self, surface=None, *, d=None):
@@ -125,7 +125,7 @@ class Path:
 			elif letter == 'L':
 				self.surface.context.line_to(*coords)
 			elif letter == 'A':
-				raise NotImplementedError()
+				self._drawArc(*lastPoint, *coords)
 			elif letter == 'C':
 				self.surface.context.curve_to(*coords)
 			elif letter == 'Q':
@@ -136,6 +136,45 @@ class Path:
 			else:
 				raise ValueError('Unknown letter: ' + letter)
 			lastPoint = coords[-2:] if letter != 'Z' else startPoint
+
+	def _drawArc(self, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
+		self.surface.context.set_tolerance(0.00001)
+		rotation = radians(float(rotation))
+		# Absolute x3 and y3, convert to relative
+		x3 -= x1
+		y3 -= y1
+		radii_ratio = ry / rx
+		# Cancel the rotation of the second point
+		xe, ye = rotate(x3, y3, -rotation)
+		ye /= radii_ratio
+		# Find the angle between the second point and the x axis
+		angle = point_angle(0, 0, xe, ye)
+		# Put the second point onto the x axis
+		xe = (xe ** 2 + ye ** 2) ** .5
+		ye = 0
+		# Update the x radius if it is too small
+		rx = max(rx, xe / 2)
+		# Find one circle centre
+		xc = xe / 2
+		yc = (rx ** 2 - xc ** 2) ** .5
+		# Choose between the two circles according to flags
+		if not (large ^ sweep):
+				yc = -yc
+		# Define the arc sweep
+		arc = (self.surface.context.arc if sweep else self.surface.context.arc_negative)
+		# Put the second point and the center back to their positions
+		xe, ye = rotate(xe, 0, angle)
+		xc, yc = rotate(xc, yc, angle)
+		# Find the drawing angles
+		angle1 = point_angle(xc, yc, 0, 0)
+		angle2 = point_angle(xc, yc, xe, ye)
+		# Draw the arc
+		self.surface.context.save()
+		self.surface.context.translate(x1, y1)
+		self.surface.context.rotate(rotation)
+		self.surface.context.scale(1, radii_ratio)
+		arc(xc, yc, rx, angle1, angle2)
+		self.surface.context.restore()
 
 	def d(self, d):
 		"""Load path data from a string"""

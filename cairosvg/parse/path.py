@@ -164,7 +164,8 @@ def path(surface, node):
             x1, y1 = current_point
             rx, ry, string = point(surface, string)
             rotation, string = string.split(' ', 1)
-            rotation = radians(float(rotation))
+            rotation = float(rotation)
+            rotation_rad = radians(rotation)
 
             # The large and sweep values are not always separated from the
             # following values. These flags can only be 0 or 1, so reading a
@@ -194,7 +195,7 @@ def path(surface, node):
             radii_ratio = ry / rx
 
             # Cancel the rotation of the second point
-            xe, ye = rotate(x3, y3, -rotation)
+            xe, ye = rotate(x3, y3, -rotation_rad)
             ye /= radii_ratio
 
             # Find the angle between the second point and the x axis
@@ -233,7 +234,7 @@ def path(surface, node):
             # Draw the arc
             surface.context.save()
             surface.context.translate(x1, y1)
-            surface.context.rotate(rotation)
+            surface.context.rotate(rotation_rad)
             surface.context.scale(1, radii_ratio)
             pathObj.a(rx, ry, rotation, large, sweep, x3, y3)
             surface.context.restore()
