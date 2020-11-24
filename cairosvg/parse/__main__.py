@@ -54,26 +54,27 @@ def main(argv=None, stdout=None, stdin=None):
     parser.add_argument('-o', '--output', default='-', help='output filename')
 
     options = parser.parse_args(argv)
+		convert(**options)
+
+
+def convert(input='-', output='-', format=None, *, width=None, height=None, output_width=None, output_height=None,
+            background=None, dpi=96, scale=1, negate_colors=False, invert_images=False, unsafe=False):
     kwargs = {
-        'parent_width': options.width, 'parent_height': options.height,
-        'dpi': options.dpi, 'scale': options.scale, 'unsafe': options.unsafe,
-        'background_color': options.background,
-        'negate_colors': options.negate_colors,
-        'invert_images': options.invert_images,
-        'output_width': options.output_width,
-        'output_height': options.output_height}
+        'parent_width': width, 'parent_height': height,
+        'dpi': dpi, 'scale': scale, 'unsafe': unsafe,
+        'background_color': background,
+        'negate_colors': negate_colors, 'invert_images': invert_images,
+        'output_width': output_width, 'output_height': output_height
+    }
     stdin = stdin or sys.stdin
     stdout = stdout or sys.stdout
     kwargs['write_to'] = (
         stdout.buffer if options.output == '-' else options.output)
-    if options.input == '-':
+    if input == '-':
         kwargs['file_obj'] = stdin.buffer
     else:
-        kwargs['url'] = options.input
-    output_format = (
-        options.format or
-        os.path.splitext(options.output)[1].lstrip('.') or
-        'pdf').upper()
+        kwargs['url'] = input
+    output_format = (format or os.path.splitext(output)[1].lstrip('.') or 'pdf').upper()
 
     SURFACES[output_format.upper()].convert(**kwargs)
 
