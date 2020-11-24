@@ -118,11 +118,13 @@ class Path:
 	z = Z
 
 	def draw(self, context):
+		startPoint = None
 		lastPoint = None
 		for command in self._data:
 			letter, coords = command
 			if letter == 'M':
 				context.move_to(*coords)
+				startPoint = coords[-2:]
 			elif letter == 'L':
 				context.line_to(*coords)
 			elif letter == 'A':
@@ -136,4 +138,4 @@ class Path:
 				context.close_path()
 			else:
 				raise ValueError('Unknown letter: ' + letter)
-		lastPoint = coords[-2:]
+		lastPoint = coords[-2:] if letter != 'Z' else startPoint

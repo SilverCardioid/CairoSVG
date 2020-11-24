@@ -119,10 +119,6 @@ def draw_markers(surface, node):
         position = 'mid' if angles else 'start'
 
 
-def path(surface, node):
-    """Draw a path ``node``."""
-    string = node.get('d', '')
-
 def parseD(d, pathObj=None):
     if not pathObj:
       pathObj = Path()
@@ -273,6 +269,7 @@ def parseD(d, pathObj=None):
         last_letter = letter
 
     return pathObj
+
 
 def path(surface, node):
     """Draw a path ``node``."""
