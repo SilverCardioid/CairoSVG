@@ -1,4 +1,5 @@
 from ..helpers import quadratic_points
+from ..parse.path import parseD
 
 class Path:
 	def __init__(self, d=None):
@@ -22,7 +23,7 @@ class Path:
 		return self._currentPoint[0] + x, self._currentPoint[1] + y
 
 	def d(self, d):
-		raise NotImplementedError()
+		parseD(d, self)
 
 	def M(self, x, y):
 		"""Moveto: start a new sub-path at (x, y)"""
@@ -79,8 +80,7 @@ class Path:
 
 	def Q(self, x1, y1, x, y):
 		"""Quadratic Bezier curveto"""
-		cubicCoords = quadratic_points(*self._currentPoint, x1, y1, x, y)
-		self._add('C', cubicCoords)
+		self._add('Q', [x1, y1, x, y])
 		return self
 
 	def q(self, x1, y1, x, y):
@@ -118,6 +118,7 @@ class Path:
 	z = Z
 
 	def draw(self, context):
+		lastPoint = None
 		for command in self._data:
 			letter, coords = command
 			if letter == 'M':
@@ -129,9 +130,10 @@ class Path:
 			elif letter == 'C':
 				context.curve_to(*coords)
 			elif letter == 'Q':
-				raise NotImplementedError()
+				cubicCoords = quadratic_points(*lastPoint, x1, y1, x, y)
+				context.curve_to(*cubicCoords)
 			elif letter == 'Z':
 				context.close_path()
 			else:
 				raise ValueError('Unknown letter: ' + letter)
-
+		lastPoint = coords[-2:]
