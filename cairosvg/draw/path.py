@@ -1,8 +1,8 @@
-from ..helpers import quadratic_points
-from ..parse.path import parseD
+from ..helpers import PATH_LETTERS, point, quadratic_points, size
 
 class Path:
-	def __init__(self, d=None):
+	def __init__(self, surface=None, *, d=None):
+		self.surface = surface
 		self._data = []
 		self._currentPoint = None
 		self._startPoint = None
@@ -21,9 +21,6 @@ class Path:
 
 	def _rel2abs(path, x, y):
 		return self._currentPoint[0] + x, self._currentPoint[1] + y
-
-	def d(self, d):
-		parseD(d, self)
 
 	def M(self, x, y):
 		"""Moveto: start a new sub-path at (x, y)"""
@@ -139,3 +136,152 @@ class Path:
 			else:
 				raise ValueError('Unknown letter: ' + letter)
 		lastPoint = coords[-2:] if letter != 'Z' else startPoint
+
+	def d(self, d):
+		"""Load path data from a string"""
+		for letter in PATH_LETTERS:
+				string = string.replace(letter, ' {} '.format(letter))
+		string = normalize(string)
+
+		while string:
+				string = string.strip()
+				if string.split(' ', 1)[0] in PATH_LETTERS:
+						letter, string = (string + ' ').split(' ', 1)
+				elif letter == 'M':
+						letter = 'L'
+				elif letter == 'm':
+						letter = 'l'
+
+				if letter in 'aA':
+						# Elliptic curve
+						rx, ry, string = point(self.surface, string)
+						rotation, string = string.split(' ', 1)
+
+						# The large and sweep values are not always separated from the
+						# following values. These flags can only be 0 or 1, so reading a
+						# single digit suffices.
+						large, string = string[0], string[1:].strip()
+						sweep, string = string[0], string[1:].strip()
+
+						# Retrieve end point and set remainder (before checking flags)
+						x3, y3, string = point(self.surface, string)
+
+						# Only allow 0 or 1 for flags
+						large, sweep = int(large), int(sweep)
+						if large not in (0, 1) or sweep not in (0, 1):
+								continue
+						large, sweep = bool(large), bool(sweep)
+
+						if letter == 'A':
+								# Absolute x3 and y3, convert to relative
+								x3 -= x1
+								y3 -= y1
+
+						# rx=0 or ry=0 means straight line
+						if not rx or not ry:
+								self.l(x3, y3)
+								continue
+						else:
+								self.a(rx, ry, rotation, large, sweep, x3, y3)
+
+				elif letter == 'c':
+						# Relative curve
+						x1, y1, string = point(self.surface, string)
+						x2, y2, string = point(self.surface, string)
+						x3, y3, string = point(self.surface, string)
+						self.c(x1, y1, x2, y2, x3, y3)
+
+				elif letter == 'C':
+						# Curve
+						x1, y1, string = point(self.surface, string)
+						x2, y2, string = point(self.surface, string)
+						x3, y3, string = point(self.surface, string)
+						self.C(x1, y1, x2, y2, x3, y3)
+
+				elif letter == 'h':
+						# Relative horizontal line
+						x, string = (string + ' ').split(' ', 1)
+						x = size(self.surface, x, 'x')
+						self.h(x)
+
+				elif letter == 'H':
+						# Horizontal line
+						x, string = (string + ' ').split(' ', 1)
+						x = size(self.surface, x, 'x')
+						self.H(x)
+
+				elif letter == 'l':
+						# Relative straight line
+						x, y, string = point(self.surface, string)
+						self.l(x, y)
+
+				elif letter == 'L':
+						# Straight line
+						x, y, string = point(self.surface, string)
+						self.L(x, y)
+
+				elif letter == 'm':
+						# Current point relative move
+						x, y, string = point(self.surface, string)
+						self.m(x, y)
+
+				elif letter == 'M':
+						# Current point move
+						x, y, string = point(self.surface, string)
+						self.M(x, y)
+
+				elif letter == 'q':
+						# Relative quadratic curve
+						x1, y1 = 0, 0
+						x2, y2, string = point(self.surface, string)
+						x3, y3, string = point(self.surface, string)
+						self.q(x2, y2, x3, y3)
+
+				elif letter == 'Q':
+						# Quadratic curve
+						x2, y2, string = point(self.surface, string)
+						x3, y3, string = point(self.surface, string)
+						self.Q(x2, y2, x3, y3)
+
+				elif letter == 's':
+						# Relative smooth curve
+						x2, y2, string = point(self.surface, string)
+						x3, y3, string = point(self.surface, string)
+						self.s(x2, y2, x3, y3)
+
+				elif letter == 'S':
+						# Smooth curve
+						x2, y2, string = point(self.surface, string)
+						x3, y3, string = point(self.surface, string)
+						self.S(x2, y2, x3, y3)
+
+				elif letter == 't':
+						# Relative quadratic curve end
+						x3, y3, string = point(self.surface, string)
+						self.t(x3, y3)
+
+				elif letter == 'T':
+						# Quadratic curve end
+						x3, y3, string = point(self.surface, string)
+						self.T(x3, y3)
+
+				elif letter == 'v':
+						# Relative vertical line
+						y, string = (string + ' ').split(' ', 1)
+						y = size(self.surface, y, 'y')
+						self.v(y)
+
+				elif letter == 'V':
+						# Vertical line
+						y, string = (string + ' ').split(' ', 1)
+						y = size(self.surface, y, 'y')
+						self.V(y)
+
+				elif letter in 'zZ':
+						# End of path
+						self.z()
+
+				string = string.strip()
+				last_letter = letter
+
+		return self

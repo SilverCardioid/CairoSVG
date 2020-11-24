@@ -54,11 +54,12 @@ def main(argv=None, stdout=None, stdin=None):
     parser.add_argument('-o', '--output', default='-', help='output filename')
 
     options = parser.parse_args(argv)
-		convert(**options)
+    convert(**options)
 
 
 def convert(input='-', output='-', format=None, *, width=None, height=None, output_width=None, output_height=None,
-            background=None, dpi=96, scale=1, negate_colors=False, invert_images=False, unsafe=False):
+            background=None, dpi=96, scale=1, negate_colors=False, invert_images=False, unsafe=False,
+            stdin=None, stdout=None):
     kwargs = {
         'parent_width': width, 'parent_height': height,
         'dpi': dpi, 'scale': scale, 'unsafe': unsafe,
