@@ -13,7 +13,7 @@ from defusedxml import ElementTree
 
 from . import css
 from .features import match_features
-from .helpers import flatten, pop_rotation, rotations
+from ..helpers import flatten, pop_rotation, rotations
 from .url import fetch, parse_url, read_url
 
 # 'display' is actually inherited but handled differently because some markers

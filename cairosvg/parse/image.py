@@ -8,7 +8,7 @@ from io import BytesIO
 
 from PIL import Image, ImageOps
 
-from .helpers import node_format, preserve_ratio, size
+from ..helpers import node_format, preserve_ratio, size
 from .parser import Tree
 from .surface import cairo
 from .url import parse_url
