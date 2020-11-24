@@ -1,0 +1,10 @@
+<svg viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" stroke="red" fill="grey">
+  <circle cx="50" cy="50" r="40" id="c"/>
+  <circle cx="150" cy="50" r="4" id="c"/>
+	<use xlink:href="#c" y="30" stroke="blue"/>
+
+  <svg viewBox="0 0 10 10" x="200" width="100">
+    <circle cx="5" cy="5" r="4" id="c"/>
+		<use xlink:href="#c" y="3" stroke="green"/>
+  </svg>
+</svg>

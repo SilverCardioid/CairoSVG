@@ -5,8 +5,9 @@ Paths manager.
 
 from math import pi, radians
 
+from ..draw.path import Path
 from .bounding_box import calculate_bounding_box
-from .helpers import (
+from ..helpers import (
     PATH_LETTERS, clip_marker_box, node_format, normalize, point, point_angle,
     preserve_ratio, quadratic_points, rotate, size)
 from .url import parse_url
@@ -121,6 +122,7 @@ def draw_markers(surface, node):
 def path(surface, node):
     """Draw a path ``node``."""
     string = node.get('d', '')
+		pathObj = Path()
 
     node.vertices = []
 
@@ -245,7 +247,7 @@ def path(surface, node):
             x3, y3, string = point(surface, string)
             node.vertices.append((
                 point_angle(x2, y2, x1, y1), point_angle(x2, y2, x3, y3)))
-            surface.context.rel_curve_to(x1, y1, x2, y2, x3, y3)
+            pathObj.c(x1, y1, x2, y2, x3, y3)
             current_point = current_point[0] + x3, current_point[1] + y3
 
             # Save absolute values for x and y, useful if next letter is s or S
@@ -263,7 +265,7 @@ def path(surface, node):
             x3, y3, string = point(surface, string)
             node.vertices.append((
                 point_angle(x2, y2, x1, y1), point_angle(x2, y2, x3, y3)))
-            surface.context.curve_to(x1, y1, x2, y2, x3, y3)
+            pathObj.C(x1, y1, x2, y2, x3, y3)
             current_point = x3, y3
 
         elif letter == 'h':
@@ -273,7 +275,7 @@ def path(surface, node):
             angle = 0 if size(surface, x, 'x') > 0 else pi
             node.vertices.append((pi - angle, angle))
             x = size(surface, x, 'x')
-            surface.context.rel_line_to(x, 0)
+            pathObj.h(x)
             current_point = current_point[0] + x, current_point[1]
 
         elif letter == 'H':
@@ -283,7 +285,7 @@ def path(surface, node):
             angle = 0 if size(surface, x, 'x') > old_x else pi
             node.vertices.append((pi - angle, angle))
             x = size(surface, x, 'x')
-            surface.context.line_to(x, old_y)
+            pathObj.H(x)
             current_point = x, current_point[1]
 
         elif letter == 'l':
@@ -291,7 +293,7 @@ def path(surface, node):
             x, y, string = point(surface, string)
             angle = point_angle(0, 0, x, y)
             node.vertices.append((pi - angle, angle))
-            surface.context.rel_line_to(x, y)
+            pathObj.l(x, y)
             current_point = current_point[0] + x, current_point[1] + y
 
         elif letter == 'L':
@@ -300,7 +302,7 @@ def path(surface, node):
             old_x, old_y = current_point
             angle = point_angle(old_x, old_y, x, y)
             node.vertices.append((pi - angle, angle))
-            surface.context.line_to(x, y)
+            pathObj.L(x, y)
             current_point = x, y
 
         elif letter == 'm':
@@ -308,7 +310,7 @@ def path(surface, node):
             x, y, string = point(surface, string)
             if last_letter and last_letter not in 'zZ':
                 node.vertices.append(None)
-            surface.context.rel_move_to(x, y)
+            pathObj.m(x, y)
             current_point = current_point[0] + x, current_point[1] + y
 
         elif letter == 'M':
@@ -316,7 +318,7 @@ def path(surface, node):
             x, y, string = point(surface, string)
             if last_letter and last_letter not in 'zZ':
                 node.vertices.append(None)
-            surface.context.move_to(x, y)
+            pathObj.M(x, y)
             current_point = x, y
 
         elif letter == 'q':
@@ -326,7 +328,7 @@ def path(surface, node):
             x3, y3, string = point(surface, string)
             xq1, yq1, xq2, yq2, xq3, yq3 = quadratic_points(
                 x1, y1, x2, y2, x3, y3)
-            surface.context.rel_curve_to(xq1, yq1, xq2, yq2, xq3, yq3)
+            pathObj.q(x2, y2, x3, y3)
             node.vertices.append((0, 0))
             current_point = current_point[0] + x3, current_point[1] + y3
 
@@ -337,7 +339,7 @@ def path(surface, node):
             x3, y3, string = point(surface, string)
             xq1, yq1, xq2, yq2, xq3, yq3 = quadratic_points(
                 x1, y1, x2, y2, x3, y3)
-            surface.context.curve_to(xq1, yq1, xq2, yq2, xq3, yq3)
+            pathObj.Q(x2, y2, x3, y3)
             node.vertices.append((0, 0))
             current_point = x3, y3
 
@@ -350,7 +352,7 @@ def path(surface, node):
             x3, y3, string = point(surface, string)
             node.vertices.append((
                 point_angle(x2, y2, x1, y1), point_angle(x2, y2, x3, y3)))
-            surface.context.rel_curve_to(x1, y1, x2, y2, x3, y3)
+            pathObj.s(x2, y2, x3, y3)
             current_point = current_point[0] + x3, current_point[1] + y3
 
             # Save absolute values for x and y, useful if next letter is s or S
@@ -370,7 +372,7 @@ def path(surface, node):
             x3, y3, string = point(surface, string)
             node.vertices.append((
                 point_angle(x2, y2, x1, y1), point_angle(x2, y2, x3, y3)))
-            surface.context.curve_to(x1, y1, x2, y2, x3, y3)
+            pathObj.S(x2, y2, x3, y3)
             current_point = x3, y3
 
         elif letter == 't':
@@ -389,7 +391,7 @@ def path(surface, node):
             xq1, yq1, xq2, yq2, xq3, yq3 = quadratic_points(
                 x1, y1, x2, y2, x3, y3)
             node.vertices.append((0, 0))
-            surface.context.rel_curve_to(xq1, yq1, xq2, yq2, xq3, yq3)
+            pathObj.t(x3, y3)
             current_point = current_point[0] + x3, current_point[1] + y3
 
         elif letter == 'T':
@@ -409,7 +411,7 @@ def path(surface, node):
             xq1, yq1, xq2, yq2, xq3, yq3 = quadratic_points(
                 x1, y1, x2, y2, x3, y3)
             node.vertices.append((0, 0))
-            surface.context.curve_to(xq1, yq1, xq2, yq2, xq3, yq3)
+            pathObj.T(x3, y3)
             current_point = x3, y3
 
         elif letter == 'v':
@@ -419,7 +421,7 @@ def path(surface, node):
             angle = pi / 2 if size(surface, y, 'y') > 0 else -pi / 2
             node.vertices.append((-angle, angle))
             y = size(surface, y, 'y')
-            surface.context.rel_line_to(0, y)
+            pathObj.v(y)
             current_point = current_point[0], current_point[1] + y
 
         elif letter == 'V':
@@ -429,13 +431,13 @@ def path(surface, node):
             angle = pi / 2 if size(surface, y, 'y') > 0 else -pi / 2
             node.vertices.append((-angle, angle))
             y = size(surface, y, 'y')
-            surface.context.line_to(old_x, y)
+            pathObj.V(y)
             current_point = current_point[0], y
 
         elif letter in 'zZ':
             # End of path
             node.vertices.append(None)
-            surface.context.close_path()
+            pathObj.z()
             current_point = first_path_point or (0, 0)
 
         if letter not in 'zZ':
