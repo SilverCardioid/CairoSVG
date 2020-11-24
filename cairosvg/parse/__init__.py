@@ -24,7 +24,6 @@ VERSION = __version__ = (ROOT / 'VERSION').read_text().strip()
 
 # VERSION is used in the "url" module imported by "surface"
 from . import surface  # noqa isort:skip
-from . import __main__
 
 
 SURFACES = {

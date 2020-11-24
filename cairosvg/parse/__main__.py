@@ -70,7 +70,7 @@ def convert(input='-', output='-', format=None, *, width=None, height=None, outp
     stdin = stdin or sys.stdin
     stdout = stdout or sys.stdout
     kwargs['write_to'] = (
-        stdout.buffer if options.output == '-' else options.output)
+        stdout.buffer if output == '-' else output)
     if input == '-':
         kwargs['file_obj'] = stdin.buffer
     else:

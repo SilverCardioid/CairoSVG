@@ -10,7 +10,7 @@ class Path:
 		if d is not None:
 			self.d(d)
 
-	def _add(path, type, coords=None):
+	def _add(self, type, coords=None):
 		self._data.append([type, coords])
 		if type == 'M':
 			self._startPoint = coords[-2:]
@@ -19,7 +19,7 @@ class Path:
 		self._currentPoint = coords[-2:] if type != 'Z' else self._startPoint
 		self._lastBezier = (type, *coords[-4:-2]) if type in 'QC' else None
 
-	def _rel2abs(path, x, y):
+	def _rel2abs(self, x, y):
 		return self._currentPoint[0] + x, self._currentPoint[1] + y
 
 	def M(self, x, y):
@@ -29,7 +29,7 @@ class Path:
 
 	def m(self, x, y):
 		"""Relative moveto: start a new sub-path at (x, y)"""
-		return self.M(*self._rel2abs(x, y))
+		return self.M(*self._rel2abs(x, y)) if self._startPoint is not None else self.M(x, y)
 
 	# Lineto
 	def L(self, x, y):
@@ -87,8 +87,8 @@ class Path:
 	def S(self, x2, y2, x, y):
 		"""Smooth curveto: smooth cubic Bezier curve"""
 		x1, y1 = self._currentPoint
-		if self._lastBezierPoint and self._lastBezierPoint[0]=='C':
-			xp, yp = self._lastBezierPoint[1:]
+		if self._lastBezier and self._lastBezier[0]=='C':
+			xp, yp = self._lastBezier[1:]
 			x1, y1 = x1 - (xp - x1), y1 - (yp - y1)
 		return self.C(x1, y1, x2, y2, x, y)
 
@@ -99,8 +99,8 @@ class Path:
 	def T(self, x, y):
 		"Smooth quadratic Bezier curveto"
 		x1, y1 = self._currentPoint
-		if self._lastBezierPoint and self._lastBezierPoint[0]=='Q':
-			xp, yp = self._lastBezierPoint[1:]
+		if self._lastBezier and self._lastBezier[0]=='Q':
+			xp, yp = self._lastBezier[1:]
 			x1, y1 = x1 - (xp - x1), y1 - (yp - y1)
 		return self.Q(x1, y1, x, y)
 
@@ -114,28 +114,28 @@ class Path:
 		return self
 	z = Z
 
-	def draw(self, context):
+	def draw(self):
 		startPoint = None
 		lastPoint = None
 		for command in self._data:
 			letter, coords = command
 			if letter == 'M':
-				context.move_to(*coords)
+				self.surface.context.move_to(*coords)
 				startPoint = coords[-2:]
 			elif letter == 'L':
-				context.line_to(*coords)
+				self.surface.context.line_to(*coords)
 			elif letter == 'A':
 				raise NotImplementedError()
 			elif letter == 'C':
-				context.curve_to(*coords)
+				self.surface.context.curve_to(*coords)
 			elif letter == 'Q':
-				cubicCoords = quadratic_points(*lastPoint, x1, y1, x, y)
-				context.curve_to(*cubicCoords)
+				cubicCoords = quadratic_points(*lastPoint, *coords)
+				self.surface.context.curve_to(*cubicCoords)
 			elif letter == 'Z':
-				context.close_path()
+				self.surface.context.close_path()
 			else:
 				raise ValueError('Unknown letter: ' + letter)
-		lastPoint = coords[-2:] if letter != 'Z' else startPoint
+			lastPoint = coords[-2:] if letter != 'Z' else startPoint
 
 	def d(self, d):
 		"""Load path data from a string"""

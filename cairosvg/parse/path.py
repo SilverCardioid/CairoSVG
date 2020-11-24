@@ -235,7 +235,7 @@ def path(surface, node):
             surface.context.translate(x1, y1)
             surface.context.rotate(rotation)
             surface.context.scale(1, radii_ratio)
-            arc(xc, yc, rx, angle1, angle2)
+            pathObj.a(rx, ry, rotation, large, sweep, x3, y3)
             surface.context.restore()
             current_point = current_point[0] + x3, current_point[1] + y3
 
@@ -445,3 +445,5 @@ def path(surface, node):
 
         string = string.strip()
         last_letter = letter
+
+    pathObj.draw()
