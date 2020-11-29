@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
+<defs>
+<marker id="m" viewBox="0 0 4 4" refX="2" refY="2" markerUnits="strokeWidth" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M1,2 2,1 4,2 2,3z"/>
+</marker>
+</defs>
+<rect width="600" height="600" fill="#fff"/>
+<path d="
+M 50,50H250V100H175L250,150 250,200 200,250 150,150 100,250  50,200V150L125,100
+M350,50H550V100H475L550,150 550,200 500,250 450,150 400,250 350,200V150L425,100Z
+m-300,300h200v50h-75l75,50 0,50 -50,50 -50,-100 -50,100 -50,-50v-50l75,-50
+m 225,-50h200v50h-75l75,50 0,50 -50,50 -50,-100 -50,100 -50,-50v-50l75,-50z" fill="none" stroke="#f00" stroke-width="5" marker-start="url(#m)" marker-mid="url(#m)" marker-end="url(#m)"/>
+<g fill="#000" font-size="30" font-weight="bold" text-anchor="middle">
+<text x="150" y="290">L H V</text>
+<text x="450" y="290">L H V Z</text>
+<text x="150" y="590">l h v</text>
+<text x="450" y="590">l h v z</text>
+</g>
+</svg>
