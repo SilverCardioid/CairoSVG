@@ -6,7 +6,14 @@ Column explanation:
 * **AgC/main**: this repo's [`main`](https://github.com/SilverCardioid/CairoSVG/) branch, my own work-in-progress fork of CairoSVG (currently functionally the same)
 * **AgC/master**: the [`master`](https://github.com/SilverCardioid/CairoSVG/tree/master) branch, used for proposing minor changes to Kozea/CairoSVG and otherwise kept in sync with it
 
-The rightmost images are visualisatiosn of the `node.vertices` array, which is internally used for the marker positions and angles. For each vertex, the calculated direction of the outgoing path segment is green, and that of the incoming segment (pointing away from it) is purple. Grey means the two overlap.
+The rightmost images are visualisations of the `node.vertices` array, which is internally used for the marker positions and angles. For each vertex, the calculated direction of the outgoing path segment is green, and that of the incoming segment (pointing away from it) is purple. Grey means the two overlap.
+
+## Still to fix in AgC/master
+* [ ] Determining marker angles from vertex angles
+* [ ] Elliptic curve angles
+* [ ] Degenerate curve angles
+* [ ] Closepath angles
+* [ ] Start/end vs. mid markers
 
 ## Lines (L, H, V)
 |     |     |     |
