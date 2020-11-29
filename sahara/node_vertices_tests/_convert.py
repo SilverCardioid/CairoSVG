@@ -25,19 +25,19 @@ repo_base = '../../'
 ## Inkscape
 if 'i' in scripts:
 	for image in images:
-		os.system('inkscape --export-png="' + os.path.splitext(image)[0] + '-ink.png" ' + image + '"')
+		os.system('inkscape --export-png="' + os.path.splitext(image)[0] + '-ink.png" "' + image + '"')
 
 ## CairoSVG master branch (synced with Kozea/CairoSVG)
 if 'k' in scripts:
+	cairosvg = import_url('cairosvg', repo_base + '../CairoSVG-kozea/cairosvg/__init__.py')
 	for image in images:
-		cairosvg = import_url('cairosvg', repo_base + '../CairoSVG-kozea/cairosvg/__init__.py')
 		out = os.path.splitext(image)[0] + '-kozea.png'
 		cairosvg.svg2png(url=image, write_to=out)
 
 ## CairoSVG main branch
 if 's' in scripts:
+	parse = import_url('cairosvg', repo_base + 'cairosvg/parse/__init__.py')
 	for image in images:
-		parse = import_url('cairosvg', repo_base + 'cairosvg/parse/__init__.py')
 		out = os.path.splitext(image)[0] + '-agc.png'
 		parse.svg2png(url=image, write_to=out)
 
