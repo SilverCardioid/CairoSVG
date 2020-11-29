@@ -6,8 +6,8 @@ Surface helpers.
 import re
 from math import atan2, cos, radians, sin, tan
 
-from .parse.surface import cairo
-from .parse.url import parse_url
+import cairocffi as cairo
+#from .parse.url import parse_url
 
 UNITS = {
     'mm': 1 / 25.4,

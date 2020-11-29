@@ -1,8 +1,9 @@
 from ..helpers import PATH_LETTERS, point, point_angle, quadratic_points, radians, rotate, size
 
 class Path:
-	def __init__(self, surface=None, *, d=None):
-		self.surface = surface
+	def __init__(self, parent=None, *, d=None):
+		self.parent = parent
+		self.surface = parent.surface if hasattr(parent, 'surface') else None
 		self._data = []
 		self._currentPoint = None
 		self._startPoint = None
@@ -115,6 +116,8 @@ class Path:
 	z = Z
 
 	def draw(self):
+		if self.surface is None:
+			raise Exception('surface needed for drawing')
 		startPoint = None
 		lastPoint = None
 		for command in self._data:

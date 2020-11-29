@@ -1,10 +1,8 @@
-from element import Element
-
-class SVG extends Element:
+class SVG:
 	def __init__(self, width='auto', height='auto', *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **globalAttributes):
 		self.tag = 'svg'
 		self.globals = {'ids':{}}
-		super().__init__(self, **globalAttributes)
+		#super().__init__(self, **globalAttributes)
 
 	# Permitted children:
 	# * Animation elements: <animate>, <animateColor>, <animateMotion>, <animateTransform>, <discard>, <mpath>, <set>
