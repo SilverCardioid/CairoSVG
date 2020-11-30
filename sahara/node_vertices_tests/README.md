@@ -8,8 +8,9 @@ Column explanation:
 
 The rightmost images are visualisations of the `node.vertices` array, which is internally used for the marker positions and angles. For each vertex, the calculated direction of the outgoing path segment is green, and that of the incoming segment (pointing away from it) is purple. Grey means the two overlap.
 
-## Still to fix in AgC/master
-* [ ] Determining marker angles from vertex angles
+## Changes in AgC/master
+* [x] General node.vertices angle fixes
+* [x] Determining marker angles from vertex angles
 * [ ] Elliptic curve angles
 * [ ] Degenerate curve angles
 * [ ] Closepath angles
