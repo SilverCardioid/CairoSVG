@@ -11,8 +11,8 @@ The rightmost images are visualisations of the `node.vertices` array, which is i
 ## Changes in AgC/master
 * [x] General node.vertices angle fixes
 * [x] Determining marker angles from vertex angles
-* [ ] Elliptic curve angles
-* [ ] Degenerate curve angles
+* [x] Elliptic curve angles
+* [x] Degenerate curve angles
 * [ ] Closepath angles
 * [ ] Start/end vs. mid markers
 
