@@ -17,7 +17,7 @@ angleOutColour = [0, 0.7, 0]
 def main(image):
 	## Parse SVG
 	svg = ET.parse(image).getroot()
-	path = svg.find('{http://www.w3.org/2000/svg}path')
+	paths = svg.findall('{http://www.w3.org/2000/svg}path')
 
 	## Create cairo surface & run cairosvg.path
 	width = int(svg.attrib.get('width', 600))
@@ -28,25 +28,27 @@ def main(image):
 		context.set_source_rgb(*bgColour)
 		context.paint()
 
-	node = NodeSurface(surface, context, path.attrib['d'])
-	lineColour = list(csvg_color(path.attrib.get('stroke', '#000')))
-	lineColour[3] /= 2 # reduce opacity
-	context.set_source_rgba(*lineColour)
-	strokeWidth = float(path.attrib.get('stroke-width', 1))
-	context.set_line_width(strokeWidth)
-	csvg_path(node, node)
-	context.stroke()
+	for path in paths:
+		node = NodeSurface(surface, context, path.attrib['d'])
+		lineColour = list(csvg_color(path.attrib.get('stroke', '#000')))
+		lineColour[3] /= 2 # reduce opacity
+		context.set_source_rgba(*lineColour)
+		strokeWidth = float(path.attrib.get('stroke-width', 1))
+		context.set_line_width(strokeWidth)
+		csvg_path(node, node)
+		context.stroke()
 
-	## Display node.vertices
-	vertices = node.vertices.copy()
-	prev_angles = None
-	while len(vertices) > 0:
-		point = vertices.pop(0)
-		angles = vertices.pop(0) if len(vertices) > 0 else None
-		angleIn = prev_angles[1] if prev_angles is not None else None
-		angleOut = angles[0] if angles is not None else None
-		showVertex(context, point, angleIn, angleOut, strokeWidth)
-		prev_angles = angles
+		## Display node.vertices
+		vertices = node.vertices.copy()
+		prev_angles = None
+		while len(vertices) > 0:
+			point = vertices.pop(0)
+			angles = vertices.pop(0) if len(vertices) > 0 else None
+			angleIn = prev_angles[1] if prev_angles is not None else None
+			angleOut = angles[0] if angles is not None else None
+			showVertex(context, point, angleIn, angleOut, strokeWidth)
+			prev_angles = angles
+
 	surface.write_to_png(os.path.splitext(image)[0] + '-vertices.png')
 
 

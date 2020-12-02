@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
+<defs>
+<marker id="s" markerUnits="userSpaceOnUse" markerWidth="40" markerHeight="40" refX="20" refY="20" orient="auto">
+<path d="M10,20 20,10 40,20 20,30z" fill="#608"/>
+<text fill="#fff" font-size="15" font-weight="bold" text-anchor="middle" x="22" y="25">S</text>
+</marker>
+<marker id="m" markerUnits="userSpaceOnUse" markerWidth="40" markerHeight="40" refX="20" refY="20" orient="auto">
+<path d="M10,20 20,10 40,20 20,30z" fill="#080"/>
+<text fill="#fff" font-size="15" font-weight="bold" text-anchor="middle" x="22" y="25">M</text>
+</marker>
+<marker id="e" markerUnits="userSpaceOnUse" markerWidth="40" markerHeight="40" refX="20" refY="20" orient="auto">
+<path d="M10,20 20,10 40,20 20,30z" fill="#860"/>
+<text fill="#fff" font-size="15" font-weight="bold" text-anchor="middle" x="22" y="25">E</text>
+</marker>
+</defs>
+<rect width="600" height="600" fill="#fff"/>
+<path d="M50, 50H150V150H50z  M250,  50H350V150zV150 M450,  50H550V150H450  " fill="none" stroke="#f00" stroke-width="5" marker-start="url(#s)" marker-mid="url(#m)" marker-end="url(#e)"/>
+<path d="M50,250H150V350H50   M250, 250H350V350zV350 M450, 250H550V350H450 z" fill="none" stroke="#f00" stroke-width="5" marker-start="url(#s)" marker-mid="url(#m)" marker-end="url(#e)"/>
+<path d="m50,450h100v100h-100 m200,-100h100v100zv100 m200,-100h100v100h-100z" fill="none" stroke="#f00" stroke-width="5" marker-start="url(#s)" marker-mid="url(#m)" marker-end="url(#e)"/>
+<g fill="#000" font-size="30" text-anchor="middle">
+<text x="300" y="190">M H V H z _ M H V z V _ M H V H</text>
+<text x="300" y="390">M H V H _ M H V z V _ M H V H z</text>
+<text x="300" y="590">m h v h _ m h v z v _ m h v h z</text>
+</g>
+</svg>
