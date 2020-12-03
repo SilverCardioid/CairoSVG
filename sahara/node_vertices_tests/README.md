@@ -46,4 +46,4 @@ The central segment is an arc with zero radius, which according to [the SVG spec
 |     |     |     |
 | :-: | :-: | :-: |
 | ![](start_end-ink.png)<br/>**Inkscape** | ![](kozea-2020-11-23/start_end-kozea.png)<br/>**Kozea** | ![](kozea-2020-11-23/start_end-vertices.png)<br/>**Kozea (vertices)** |
-| ![](start_end-agc.png)<br/>**AgC/main**| ![](start_end-kozea.png)<br/>**AgC/master**  |  |
+| ![](start_end-agc.png)<br/>**AgC/main**| ![](start_end-kozea.png)<br/>**AgC/master**  | ![](start_end-vertices.png)<br/>**AgC/master (vertices)** |

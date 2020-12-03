@@ -39,15 +39,19 @@ def main(image):
 		context.stroke()
 
 		## Display node.vertices
-		vertices = node.vertices.copy()
-		prev_angles = None
-		while len(vertices) > 0:
-			point = vertices.pop(0)
-			angles = vertices.pop(0) if len(vertices) > 0 else None
-			angleIn = prev_angles[1] if prev_angles is not None else None
-			angleOut = angles[0] if angles is not None else None
-			showVertex(context, point, angleIn, angleOut, strokeWidth)
-			prev_angles = angles
+		subpaths = node.vertices
+		if type(subpaths[0][0]) not in [list, tuple]:
+			subpaths = [subpaths]
+		for subpath in subpaths:
+			vertices = subpath.copy()
+			prev_angles = vertices[-1] if len(vertices) % 2 == 0 else None
+			while len(vertices) > 0:
+				point = vertices.pop(0)
+				angles = vertices.pop(0) if len(vertices) > 0 else None
+				angleIn = prev_angles[1] if prev_angles is not None else None
+				angleOut = angles[0] if angles is not None else None
+				showVertex(context, point, angleIn, angleOut, strokeWidth)
+				prev_angles = angles
 
 	surface.write_to_png(os.path.splitext(image)[0] + '-vertices.png')
 
