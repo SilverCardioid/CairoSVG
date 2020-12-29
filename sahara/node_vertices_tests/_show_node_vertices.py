@@ -2,11 +2,6 @@ import math
 import os
 import sys
 import xml.etree.ElementTree as ET
-
-sys.path.insert(0, '../../../CairoSVG-kozea')
-from cairosvg.path import path as csvg_path
-from cairosvg.helpers import size as csvg_size
-from cairosvg.colors import color as csvg_color
 import cairocffi as cairo
 
 bgColour = [1, 1, 1]
@@ -14,7 +9,12 @@ dotColour = [0, 0, 0]
 angleInColour = [0.6, 0, 1]
 angleOutColour = [0, 0.7, 0]
 
-def main(image):
+def main(image, outName=None, cairosvg=None):
+	if not cairosvg:
+		import cairosvg
+	if not outName:
+		outName = os.path.splitext(image)[0] + '-vertices.png'
+
 	## Parse SVG
 	svg = ET.parse(image).getroot()
 	paths = svg.findall('{http://www.w3.org/2000/svg}path')
@@ -29,13 +29,13 @@ def main(image):
 		context.paint()
 
 	for path in paths:
-		node = NodeSurface(surface, context, path.attrib['d'])
-		lineColour = list(csvg_color(path.attrib.get('stroke', '#000')))
+		node = NodeSurface(cairosvg, surface, context, path.attrib['d'])
+		lineColour = list(cairosvg.colors.color(path.attrib.get('stroke', '#000')))
 		lineColour[3] /= 2 # reduce opacity
 		context.set_source_rgba(*lineColour)
 		strokeWidth = float(path.attrib.get('stroke-width', 1))
 		context.set_line_width(strokeWidth)
-		csvg_path(node, node)
+		cairosvg.path.path(node, node)
 		context.stroke()
 
 		## Display node.vertices
@@ -53,16 +53,16 @@ def main(image):
 				showVertex(context, point, angleIn, angleOut, strokeWidth)
 				prev_angles = angles
 
-	surface.write_to_png(os.path.splitext(image)[0] + '-vertices.png')
+	surface.write_to_png(outName)
 
 
 class NodeSurface: # imitates cairosvg.Node and cairosvg.Surface
-	def __init__(self, surface, context, string):
+	def __init__(self, cairosvg, surface, context, string):
 		self.context = context
 		self.context_width = surface.get_width()
 		self.context_height = surface.get_height()
 		self.dpi = 96
-		self.font_size = csvg_size(self, '12pt')
+		self.font_size = cairosvg.helpers.size(self, '12pt')
 		self.d = string
 	def get(self,key,default=None):
 		return getattr(self,key,default)
