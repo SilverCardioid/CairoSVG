@@ -11,7 +11,7 @@ The rightmost images are visualisations of the `node.vertices` array, which is i
 ## Lines
 |     |     |     |
 | :-: | :-: | :-: |
-| ![](lines-ink.png)<br/>**Inkscape** | ![]lines-kozea.png)<br/>**Kozea** | ![](lines-kozea-vertices.png)<br/>**Kozea (vertices)** |
+| ![](lines-ink.png)<br/>**Inkscape** | ![](lines-kozea.png)<br/>**Kozea** | ![](lines-kozea-vertices.png)<br/>**Kozea (vertices)** |
 | ![](lines-agc-main.png)<br/>**AgC/main**| ![](lines-agc-master.png)<br/>**AgC/master**  | ![](lines-agc-master-vertices.png)<br/>**AgC/master (vertices)** |
 
 ## Beziers
@@ -55,7 +55,6 @@ The seemingly missing markers in the bottom Inkscape image are due to an inconsi
 ## Marker size & gradients
 |     |     |     |
 | :-: | :-: | :-: |
-| ![](gradient-ink-fix.png)<br/>**Inkscape** | ![](gradient-kozea.png)<br/>**Kozea** | ![](gradient-kozea-vertices.png)<br/>**Kozea (vertices)** |
-| ![](gradient-agc-main.png)<br/>**AgC/main**| ![](gradient-agc-master.png)<br/>**AgC/master**  | ![](gradient-agc-master-vertices.png)<br/>**AgC/master (vertices)** |
+| ![](gradient-ink.png)<br/>**Inkscape** | ![](gradient-kozea.png)<br/>**Kozea** | ![](gradient-agc-master.png)<br/>**AgC/master** |
 
 [I removed](https://github.com/SilverCardioid/CairoSVG/commit/0835fc88780de1272eeb9181a02986d4289146cc) a section of code that scales markers based on their bounding box after noticing an issue with the sizes of markers (the testcase in the previous section was mistakenly [drawn with equally sized markers](overlap-kozea.png)). This part was [added in 2016](https://github.com/Kozea/CairoSVG/pull/89) in a series of edits relating to gradients, though what exact problem it was intended to fix isn't clear to me. This testcase renders the gradient on the markers correctly.
