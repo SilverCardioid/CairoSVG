@@ -41,21 +41,19 @@ In the two arc test files, the central segments of each sub-path are arcs with z
 | ![](start_end-firefox.png)<br/>**Firefox**| ![](start_end-agc-master.png)<br/>**AgC/master**  | ![](start_end-agc-master-vertices.png)<br/>**AgC/master (vertices)** |
 
 ## Closing vertex angles & marker overlap
+A note on a discrepancy between Inkscape and CairoSVG in the previous tests: on the initial vertex of closed sub-paths, Inkscape doesn't average the angles of the adjoining segments as [the specification](https://www.w3.org/Graphics/SVG/1.1/painting.html#Markers) stipulates (which AgC/master follows, as do Firefox and the few other browsers I've tried), but instead places two markers in the direction of the first and last segments, as if the path had been "manually closed" with an `L`.
+
+Contrary to what I originally assumed, Firefox actually also draws two overlapping markers, although obviously only one will be visible if their shape and orientation are the same. This behaviour is in line with the specification ("for a 'path' element which ends with a closed sub-path, (...) if 'marker-end' does not equal none, then it is possible that two markers will be rendered on the given vertex."), and is made clear in the following comparison, in which the three marker types (start, mid and end) use differently sized circles.
 |     |     |
 | :-: | :-: |
 | ![](overlap-ink.png)<br/>**Inkscape** | ![](overlap-kozea.png)<br/>**Kozea** |
 | ![](overlap-firefox.png)<br/>**Firefox** | ![](overlap-agc-master.png)<br/>**AgC/master** |
 
-A note on a discrepancy between Inkscape and CairoSVG in the previous tests: on the initial vertex of closed sub-paths, Inkscape doesn't average the angles of the adjoining segments as [the specification](https://www.w3.org/Graphics/SVG/1.1/painting.html#Markers) stipulates (which AgC/master follows, as do Firefox and the few other browsers I've tried), but instead places two markers in the direction of the first and last segments, as if the path had been "manually closed" with an `L`.
-
-Contrary to what I originally assumed, Firefox actually also draws two overlapping markers, although obviously only one will be visible if their shape and orientation are the same. This behaviour is in line with the specification ("for a 'path' element which ends with a closed sub-path, (...) if 'marker-end' does not equal none, then it is possible that two markers will be rendered on the given vertex."), and is made clear in the second row of the comparison, in which the three marker types (start, mid and end) use differently sized circles.
-
-The seemingly missing markers in the bottom Inkscape image are due to an inconsistency in the drawing order. Whereas Firefox and AgC/master draw overlapping markers in order of appearance in the path (i.e., start below mid, mid below end); Inkscape places the purple start marker on top of the smaller green mid marker (and likewise for mid and end). The specification isn't clear on this as far as I can see, although the former behaviour seems more sensible.
+The seemingly missing markers in the top left and bottom right of the Inkscape image are due to an inconsistency in the drawing order. Whereas Firefox and AgC/master draw overlapping markers in order of appearance in the path (i.e., start below mid, mid below end), Inkscape places the purple start marker on top of the smaller green mid marker (and likewise for mid and end). The specification isn't clear on this as far as I can see, although the former behaviour seems more sensible.
 
 ## Marker size & gradients
+[I removed](https://github.com/SilverCardioid/CairoSVG/commit/0835fc88780de1272eeb9181a02986d4289146cc) a section of code that scales markers based on their bounding box after noticing the testcase in the previous section was mistakenly drawn with equally sized markers. This part was [added in 2016](https://github.com/Kozea/CairoSVG/pull/89) in a series of edits relating to gradients, though what exact problem it was intended to fix isn't clear to me. This testcase renders the gradient on the markers correctly.
 |     |     |
 | :-: | :-: |
 | ![](gradient-ink.png)<br/>**Inkscape** | ![](gradient-kozea.png)<br/>**Kozea** |
 | ![](gradient-firefox.png)<br/>**Firefox** | ![](gradient-agc-master.png)<br/>**AgC/master** |
-
-[I removed](https://github.com/SilverCardioid/CairoSVG/commit/0835fc88780de1272eeb9181a02986d4289146cc) a section of code that scales markers based on their bounding box after noticing an issue with the sizes of markers (the testcase in the previous section was mistakenly [drawn with equally sized markers](overlap-kozea.png)). This part was [added in 2016](https://github.com/Kozea/CairoSVG/pull/89) in a series of edits relating to gradients, though what exact problem it was intended to fix isn't clear to me. This testcase renders the gradient on the markers correctly.
