@@ -1,7 +1,9 @@
-from ..helpers import PATH_LETTERS, point, point_angle, quadratic_points, radians, rotate, size
+from .element import Element
+from .. import helpers
 
-class Path:
-	def __init__(self, parent=None, *, d=None):
+class Path(Element):
+	def __init__(self, d=None, **attribs):
+		Element.__init__(self, d=d, **attribs)
 		self.parent = parent
 		self.surface = parent.surface if hasattr(parent, 'surface') else None
 		self._data = []
@@ -132,7 +134,7 @@ class Path:
 			elif letter == 'C':
 				self.surface.context.curve_to(*coords)
 			elif letter == 'Q':
-				cubicCoords = quadratic_points(*lastPoint, *coords)
+				cubicCoords = helpers.quadratic_points(*lastPoint, *coords)
 				self.surface.context.curve_to(*cubicCoords)
 			elif letter == 'Z':
 				self.surface.context.close_path()
@@ -142,16 +144,16 @@ class Path:
 
 	def _drawArc(self, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
 		self.surface.context.set_tolerance(0.00001)
-		rotation = radians(float(rotation))
+		rotation = helpers.radians(float(rotation))
 		# Absolute x3 and y3, convert to relative
 		x3 -= x1
 		y3 -= y1
 		radii_ratio = ry / rx
 		# Cancel the rotation of the second point
-		xe, ye = rotate(x3, y3, -rotation)
+		xe, ye = helpers.rotate(x3, y3, -rotation)
 		ye /= radii_ratio
 		# Find the angle between the second point and the x axis
-		angle = point_angle(0, 0, xe, ye)
+		angle = helpers.point_angle(0, 0, xe, ye)
 		# Put the second point onto the x axis
 		xe = (xe ** 2 + ye ** 2) ** .5
 		ye = 0
@@ -166,11 +168,11 @@ class Path:
 		# Define the arc sweep
 		arc = (self.surface.context.arc if sweep else self.surface.context.arc_negative)
 		# Put the second point and the center back to their positions
-		xe, ye = rotate(xe, 0, angle)
-		xc, yc = rotate(xc, yc, angle)
+		xe, ye = helpers.rotate(xe, 0, angle)
+		xc, yc = helpers.rotate(xc, yc, angle)
 		# Find the drawing angles
-		angle1 = point_angle(xc, yc, 0, 0)
-		angle2 = point_angle(xc, yc, xe, ye)
+		angle1 = helpers.point_angle(xc, yc, 0, 0)
+		angle2 = helpers.point_angle(xc, yc, xe, ye)
 		# Draw the arc
 		self.surface.context.save()
 		self.surface.context.translate(x1, y1)
@@ -181,13 +183,13 @@ class Path:
 
 	def d(self, d):
 		"""Load path data from a string"""
-		for letter in PATH_LETTERS:
+		for letter in helpers.PATH_LETTERS:
 				string = string.replace(letter, ' {} '.format(letter))
 		string = normalize(string)
 
 		while string:
 				string = string.strip()
-				if string.split(' ', 1)[0] in PATH_LETTERS:
+				if string.split(' ', 1)[0] in helpers.PATH_LETTERS:
 						letter, string = (string + ' ').split(' ', 1)
 				elif letter == 'M':
 						letter = 'L'
@@ -196,7 +198,7 @@ class Path:
 
 				if letter in 'aA':
 						# Elliptic curve
-						rx, ry, string = point(self.surface, string)
+						rx, ry, string = helpers.point(self.surface, string)
 						rotation, string = string.split(' ', 1)
 
 						# The large and sweep values are not always separated from the
@@ -206,7 +208,7 @@ class Path:
 						sweep, string = string[0], string[1:].strip()
 
 						# Retrieve end point and set remainder (before checking flags)
-						x3, y3, string = point(self.surface, string)
+						x3, y3, string = helpers.point(self.surface, string)
 
 						# Only allow 0 or 1 for flags
 						large, sweep = int(large), int(sweep)
@@ -228,95 +230,95 @@ class Path:
 
 				elif letter == 'c':
 						# Relative curve
-						x1, y1, string = point(self.surface, string)
-						x2, y2, string = point(self.surface, string)
-						x3, y3, string = point(self.surface, string)
+						x1, y1, string = helpers.point(self.surface, string)
+						x2, y2, string = helpers.point(self.surface, string)
+						x3, y3, string = helpers.point(self.surface, string)
 						self.c(x1, y1, x2, y2, x3, y3)
 
 				elif letter == 'C':
 						# Curve
-						x1, y1, string = point(self.surface, string)
-						x2, y2, string = point(self.surface, string)
-						x3, y3, string = point(self.surface, string)
+						x1, y1, string = helpers.point(self.surface, string)
+						x2, y2, string = helpers.point(self.surface, string)
+						x3, y3, string = helpers.point(self.surface, string)
 						self.C(x1, y1, x2, y2, x3, y3)
 
 				elif letter == 'h':
 						# Relative horizontal line
 						x, string = (string + ' ').split(' ', 1)
-						x = size(self.surface, x, 'x')
+						x = helpers.size(self.surface, x, 'x')
 						self.h(x)
 
 				elif letter == 'H':
 						# Horizontal line
 						x, string = (string + ' ').split(' ', 1)
-						x = size(self.surface, x, 'x')
+						x = helpers.size(self.surface, x, 'x')
 						self.H(x)
 
 				elif letter == 'l':
 						# Relative straight line
-						x, y, string = point(self.surface, string)
+						x, y, string = helpers.point(self.surface, string)
 						self.l(x, y)
 
 				elif letter == 'L':
 						# Straight line
-						x, y, string = point(self.surface, string)
+						x, y, string = helpers.point(self.surface, string)
 						self.L(x, y)
 
 				elif letter == 'm':
 						# Current point relative move
-						x, y, string = point(self.surface, string)
+						x, y, string = helpers.point(self.surface, string)
 						self.m(x, y)
 
 				elif letter == 'M':
 						# Current point move
-						x, y, string = point(self.surface, string)
+						x, y, string = helpers.point(self.surface, string)
 						self.M(x, y)
 
 				elif letter == 'q':
 						# Relative quadratic curve
 						x1, y1 = 0, 0
-						x2, y2, string = point(self.surface, string)
-						x3, y3, string = point(self.surface, string)
+						x2, y2, string = helpers.point(self.surface, string)
+						x3, y3, string = helpers.point(self.surface, string)
 						self.q(x2, y2, x3, y3)
 
 				elif letter == 'Q':
 						# Quadratic curve
-						x2, y2, string = point(self.surface, string)
-						x3, y3, string = point(self.surface, string)
+						x2, y2, string = helpers.point(self.surface, string)
+						x3, y3, string = helpers.point(self.surface, string)
 						self.Q(x2, y2, x3, y3)
 
 				elif letter == 's':
 						# Relative smooth curve
-						x2, y2, string = point(self.surface, string)
-						x3, y3, string = point(self.surface, string)
+						x2, y2, string = helpers.point(self.surface, string)
+						x3, y3, string = helpers.point(self.surface, string)
 						self.s(x2, y2, x3, y3)
 
 				elif letter == 'S':
 						# Smooth curve
-						x2, y2, string = point(self.surface, string)
-						x3, y3, string = point(self.surface, string)
+						x2, y2, string = helpers.point(self.surface, string)
+						x3, y3, string = helpers.point(self.surface, string)
 						self.S(x2, y2, x3, y3)
 
 				elif letter == 't':
 						# Relative quadratic curve end
-						x3, y3, string = point(self.surface, string)
+						x3, y3, string = helpers.point(self.surface, string)
 						self.t(x3, y3)
 
 				elif letter == 'T':
 						# Quadratic curve end
-						x3, y3, string = point(self.surface, string)
+						x3, y3, string = helpers.point(self.surface, string)
 						self.T(x3, y3)
 
 				elif letter == 'v':
 						# Relative vertical line
 						y, string = (string + ' ').split(' ', 1)
-						y = size(self.surface, y, 'y')
+						y = helpers.size(self.surface, y, 'y')
 						self.v(y)
 
 				elif letter == 'V':
 						# Vertical line
 						y, string = (string + ' ').split(' ', 1)
-						y = size(self.surface, y, 'y')
+						y = helpers.size(self.surface, y, 'y')
 						self.V(y)
 
 				elif letter in 'zZ':
@@ -324,6 +326,5 @@ class Path:
 						self.z()
 
 				string = string.strip()
-				last_letter = letter
 
 		return self

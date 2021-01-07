@@ -1,18 +1,17 @@
-class SVG:
-	def __init__(self, width='auto', height='auto', *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **globalAttributes):
+from .element import Element
+
+class SVG(Element):
+	attribs = ['Core','Conditional','Style','External','Presentation','GraphicalEvents','DocumentEvents','x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType']
+	children = ['Description','Animation','Structure','Shape','Text','Image','View','Conditional','Hyperlink','Script','Style','Marker','Clip','Mask','Gradient','Pattern','Filter','Cursor','Font','ColorProfile']
+
+	def __init__(self, width='auto', height='auto', *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **attribs):
 		self.tag = 'svg'
-		self.globals = {'ids':{}}
-		#super().__init__(self, **globalAttributes)
+		Element.__init__(self, **attribs)
 
-	# Permitted children:
-	# * Animation elements: <animate>, <animateColor>, <animateMotion>, <animateTransform>, <discard>, <mpath>, <set>
-	# * Descriptive elements: <desc>, <metadata>, <title>
-	# * Shape elements: <circle>, <ellipse>, <line>, <mesh>, <path>, <polygon>, <polyline>, <rect>
-	# * Structural elements: <defs>, <g>, <svg>, <symbol>, <use>
-	# * Gradient elememnts: <linearGradient>, <meshgradient>, <radialGradient>, <stop>
-	# <a>, <altGlyphDef>, <clipPath>, <color-profile>, <cursor>, <filter>, <font>, <font-face>, <foreignObject>, <image>, <marker>, <mask>, <pattern>, <script>, <style>, <switch>, <text>, <view>
+	def path(self, d=None, **attribs):
+		from .path import Path
+		return Path(parent=self, d=d, **attribs)
 
-	def path(self): raise NotImplementedError()
 	def rect(self): raise NotImplementedError()
 	def circle(self): raise NotImplementedError()
 	def clipPath(self): raise NotImplementedError()
