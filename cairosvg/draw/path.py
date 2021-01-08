@@ -3,6 +3,7 @@ from .. import helpers
 
 class Path(Element):
 	def __init__(self, d=None, **attribs):
+		self.tag = 'path'
 		Element.__init__(self, d=d, **attribs)
 		self.parent = parent
 		self.surface = parent.surface if hasattr(parent, 'surface') else None
@@ -117,33 +118,37 @@ class Path(Element):
 		return self
 	z = Z
 
-	def draw(self):
-		if self.surface is None:
-			raise Exception('surface needed for drawing')
+	def draw(self, surface=None):
+		if surface is None:
+			if self.surface is not None:
+				surface = self.surface
+			else:
+				raise Exception('surface needed for drawing')
+
 		startPoint = None
 		lastPoint = None
 		for command in self._data:
 			letter, coords = command
 			if letter == 'M':
-				self.surface.context.move_to(*coords)
+				surface.context.move_to(*coords)
 				startPoint = coords[-2:]
 			elif letter == 'L':
-				self.surface.context.line_to(*coords)
+				surface.context.line_to(*coords)
 			elif letter == 'A':
-				self._drawArc(*lastPoint, *coords)
+				self._drawArc(surface, *lastPoint, *coords)
 			elif letter == 'C':
-				self.surface.context.curve_to(*coords)
+				surface.context.curve_to(*coords)
 			elif letter == 'Q':
 				cubicCoords = helpers.quadratic_points(*lastPoint, *coords)
-				self.surface.context.curve_to(*cubicCoords)
+				surface.context.curve_to(*cubicCoords)
 			elif letter == 'Z':
-				self.surface.context.close_path()
+				surface.context.close_path()
 			else:
 				raise ValueError('Unknown letter: ' + letter)
 			lastPoint = coords[-2:] if letter != 'Z' else startPoint
 
-	def _drawArc(self, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
-		self.surface.context.set_tolerance(0.00001)
+	def _drawArc(self, surface, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
+		surface.context.set_tolerance(0.00001)
 		rotation = helpers.radians(float(rotation))
 		# Absolute x3 and y3, convert to relative
 		x3 -= x1
@@ -166,7 +171,7 @@ class Path(Element):
 		if not (large ^ sweep):
 				yc = -yc
 		# Define the arc sweep
-		arc = (self.surface.context.arc if sweep else self.surface.context.arc_negative)
+		arc = (surface.context.arc if sweep else surface.context.arc_negative)
 		# Put the second point and the center back to their positions
 		xe, ye = helpers.rotate(xe, 0, angle)
 		xc, yc = helpers.rotate(xc, yc, angle)
@@ -174,12 +179,15 @@ class Path(Element):
 		angle1 = helpers.point_angle(xc, yc, 0, 0)
 		angle2 = helpers.point_angle(xc, yc, xe, ye)
 		# Draw the arc
-		self.surface.context.save()
-		self.surface.context.translate(x1, y1)
-		self.surface.context.rotate(rotation)
-		self.surface.context.scale(1, radii_ratio)
+		surface.context.save()
+		surface.context.translate(x1, y1)
+		surface.context.rotate(rotation)
+		surface.context.scale(1, radii_ratio)
 		arc(xc, yc, rx, angle1, angle2)
-		self.surface.context.restore()
+		surface.context.restore()
+
+	def vertices(self):
+		return [c[1][-2:] for c in self._data if c[0] != 'Z']
 
 	def d(self, d):
 		"""Load path data from a string"""
