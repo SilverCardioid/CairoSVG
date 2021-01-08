@@ -57,3 +57,9 @@ The seemingly missing markers in the top left and bottom right of the Inkscape i
 | :-: | :-: |
 | ![](gradient-ink.png)<br/>**Inkscape** | ![](gradient-kozea.png)<br/>**Kozea** |
 | ![](gradient-firefox.png)<br/>**Firefox** | ![](gradient-agc-master.png)<br/>**AgC/master** |
+
+## Other shape elements
+|     |     |
+| :-: | :-: |
+| ![](shapes-ink.png)<br/>**Inkscape** | ![](shapes-kozea.png)<br/>**Kozea** |
+| ![](shapes-firefox.png)<br/>**Firefox** | ![](shapes-agc-master.png)<br/>**AgC/master** |

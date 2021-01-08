@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
+<defs>
+<marker id="s" markerUnits="userSpaceOnUse" markerWidth="40" markerHeight="40" refX="20" refY="20" orient="auto">
+<path d="M10,20 20,10 40,20 20,30z" fill="#608"/>
+<text fill="#fff" font-size="15" font-weight="bold" text-anchor="middle" x="22" y="25">S</text>
+</marker>
+<marker id="m" markerUnits="userSpaceOnUse" markerWidth="40" markerHeight="40" refX="20" refY="20" orient="auto">
+<path d="M10,20 20,10 40,20 20,30z" fill="#080"/>
+<text fill="#fff" font-size="15" font-weight="bold" text-anchor="middle" x="22" y="25">M</text>
+</marker>
+<marker id="e" markerUnits="userSpaceOnUse" markerWidth="40" markerHeight="40" refX="20" refY="20" orient="auto">
+<path d="M10,20 20,10 40,20 20,30z" fill="#860"/>
+<text fill="#fff" font-size="15" font-weight="bold" text-anchor="middle" x="22" y="25">E</text>
+</marker>
+</defs>
+<rect width="600" height="600" fill="#fff"/>
+<line x1="250" y1="50" x2="350" y2="250" fill="none" stroke="#f00" stroke-width="5" marker-start="url(#s)" marker-mid="url(#m)" marker-end="url(#e)"/>
+<line x1="400" y1="100" x2="200" y2="200" fill="none" stroke="#f00" stroke-width="5" marker-start="url(#s)" marker-mid="url(#m)" marker-end="url(#e)"/>
+<polyline points="100,350 250,400 200,550 50,500" fill="none" stroke="#f00" stroke-width="5" marker-start="url(#s)" marker-mid="url(#m)" marker-end="url(#e)"/>
+<polygon points="400,350 550,400 500,550 350,500" fill="none" stroke="#f00" stroke-width="5" marker-start="url(#s)" marker-mid="url(#m)" marker-end="url(#e)"/>
+<g fill="#000" font-size="30" font-weight="bold" text-anchor="middle">
+<text x="300" y="290">line</text>
+<text x="150" y="590">polyline</text>
+<text x="450" y="590">polygon</text>
+</g>
+</svg>
