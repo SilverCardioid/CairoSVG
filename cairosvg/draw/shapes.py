@@ -1,8 +1,41 @@
 from .element import Element
-from .path import Path
+from ..colors import color
+from .. import helpers
+#.path conditionally imported below
 
 
-class Circle(Element):
+class ShapeElement(Element):
+	def _paint(self, surface):
+		opacity = float(self.getAttribute('opacity', 1))
+		assert 0 <= opacity <= 1
+		fillOpacity = float(self.getAttribute('fillOpacity', 1))
+		assert 0 <= fillOpacity <= 1
+		strokeOpacity = float(self.getAttribute('strokeOpacity', 1))
+		assert 0 <= strokeOpacity <= 1
+
+		fill = color(self.getAttribute('fill', '#000'), fillOpacity*opacity)
+		fillRule = self.getAttribute('fillRule', 'nonzero')
+		assert fillRule in helpers.FILL_RULES
+
+		stroke = color(self.getAttribute('stroke', 'none'), strokeOpacity*opacity)
+		strokeWidth = float(self.getAttribute('strokeWidth', 1))
+		strokeLinecap = self.getAttribute('strokeLinecap', 'butt')
+		assert strokeLinecap in helpers.LINE_CAPS
+		strokeLinejoin = self.getAttribute('strokeLinejoin', 'miter')
+		assert strokeLinejoin in helpers.LINE_JOINS
+		# TODO: add dash
+
+		surface.context.set_source_rgba(*fill)
+		surface.context.set_fill_rule(helpers.FILL_RULES[fillRule])
+		surface.context.fill_preserve()
+
+		surface.context.set_source_rgba(*stroke)
+		surface.context.set_line_width(strokeWidth)
+		surface.context.set_line_cap(helpers.LINE_CAPS[strokeLinecap])
+		surface.context.set_line_join(helpers.LINE_JOINS[strokeLinejoin])
+		surface.context.stroke()
+
+class Circle(ShapeElement):
 	def __init__(self, r=0, cx=0, cy=0, **attribs):
 		self.tag = 'circle'
 		Element.__init__(self, r=r, cx=cx, cy=cy, **attribs)
@@ -12,7 +45,7 @@ class Circle(Element):
 		surface.context.arc(self.attribs['cx'], self.attribs['cy'], self.attribs['r'], 0, 2 * pi)
 
 
-class Ellipse(Element):
+class Ellipse(ShapeElement):
 	def __init__(self, rx=0, ry=0, cx=0, cy=0, **attribs):
 		self.tag = 'ellipse'
 		Element.__init__(self, rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
@@ -24,9 +57,10 @@ class Ellipse(Element):
 		surface.context.scale(1, ratio)
 		surface.context.arc(self.attribs['cx'], self.attribs['cy'] / ratio, self.attribs['rx'], 0, 2 * pi)
 		surface.context.restore()
+		self._paint(surface)
 
 
-class Line(Element):
+class Line(ShapeElement):
 	def __init__(self, x1=0, y1=0, x2=0, y2=0, **attribs):
 		self.tag = 'line'
 		Element.__init__(self, x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
@@ -34,12 +68,14 @@ class Line(Element):
 	def draw(self, surface):
 		surface.context.move_to(self.attribs['x1'], self.attribs['y1'])
 		surface.context.line_to(self.attribs['x2'], self.attribs['y2'])
+		self._paint(surface)
 
 
-class Polygon(Element):
+class Polygon(ShapeElement):
 	def __init__(self, points=[], **attribs):
 		self.tag = 'polygon'
 		if type(points) is str:
+			from .path import Path
 			points = Path(d='M'+points+'z').vertices()
 		Element.__init__(self, points=points, **attribs)
 
@@ -50,12 +86,14 @@ class Polygon(Element):
 			for point in points[1:]:
 				surface.context.line_to(*point)
 			surface.context.close_path()
+		self._paint(surface)
 
 
-class Polyline(Element):
+class Polyline(ShapeElement):
 	def __init__(self, points=[], **attribs):
 		self.tag = 'polyline'
 		if type(points) is str:
+			from .path import Path
 			points = Path(d='M'+points).vertices()
 		Element.__init__(self, points=points, **attribs)
 
@@ -65,9 +103,10 @@ class Polyline(Element):
 			surface.context.move_to(*points[0])
 			for point in points[1:]:
 				surface.context.line_to(*point)
+		self._paint(surface)
 
 
-class Rect(Element):
+class Rect(ShapeElement):
 	def __init__(self, width=0, height=0, x=0, y=0, rx=None, ry=None, **attribs):
 		self.tag = 'rect'
 		if ry is None:
@@ -105,3 +144,5 @@ class Rect(Element):
 			surface.context.rel_line_to(0, -height + 2 * ry)
 			surface.context.rel_curve_to(0, -c2, rx - c1, -ry, rx, -ry)
 			surface.context.close_path()
+
+		self._paint(surface)

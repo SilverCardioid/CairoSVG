@@ -22,6 +22,21 @@ PAINT_URL = re.compile(r'(url\(.+\)) *(.*)')
 PATH_LETTERS = 'achlmqstvzACHLMQSTVZ'
 RECT = re.compile(r'rect\( ?(.+?) ?\)')
 
+FILL_RULES = {
+	'nonzero': cairo.FILL_RULE_WINDING,
+	'evenodd': cairo.FILL_RULE_EVEN_ODD
+}
+LINE_CAPS = {
+	'butt':   cairo.LINE_CAP_BUTT,
+	'round':  cairo.LINE_CAP_ROUND,
+	'square': cairo.LINE_CAP_SQUARE
+}
+LINE_JOINS = {
+	'miter': cairo.LINE_JOIN_MITER,
+	'round': cairo.LINE_JOIN_ROUND,
+	'bevel': cairo.LINE_JOIN_BEVEL
+}
+
 
 class PointError(Exception):
     """Exception raised when parsing a point fails."""

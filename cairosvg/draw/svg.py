@@ -1,12 +1,19 @@
+import cairocffi as cairo
 from .element import Element, StructureElement
 
 class SVG(StructureElement):
 	attribs = ['Core','Conditional','Style','External','Presentation','GraphicalEvents','DocumentEvents','x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType']
 	children = ['Description','Animation','Structure','Shape','Text','Image','View','Conditional','Hyperlink','Script','Style','Marker','Clip','Mask','Gradient','Pattern','Filter','Cursor','Font','ColorProfile']
 
-	def __init__(self, width='auto', height='auto', *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **attribs):
+	def __init__(self, width, height, *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **attribs):
 		self.tag = 'svg'
-		Element.__init__(self, width=width, x=x, y=y, viewBox=viewBox, preserveAspectRatio, preserveAspectRatio, **attribs)
+		Element.__init__(self, width=width, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
+		self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+		self.surface.context = cairo.Context(self.surface)
+
+	def export(self, filename):
+		self.draw(self.surface)
+		self.surface.write_to_png(filename)
 
 	def path(self, d=None, **attribs):
 		from .path import Path

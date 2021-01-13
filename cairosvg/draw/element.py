@@ -20,8 +20,18 @@ class Element:
 			else:
 				self.root.globals['ids'][self.id] = self
 
+	def getAttribute(self, attrib, default=None):
+		node = self
+		while attrib not in node.attribs:
+			node = node.parent
+			if node is None:
+				# root reached
+				return default
+
+		value = node.attribs[attrib]
+		return value if value is not None else default
 
 class StructureElement(Element):
-	def draw(self):
+	def draw(self, surface):
 		for child in self.children:
-			child.draw()
+			child.draw(surface)

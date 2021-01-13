@@ -1,12 +1,12 @@
 from .element import Element
+from .shapes import ShapeElement
 from .. import helpers
 
-class Path(Element):
+class Path(ShapeElement):
 	def __init__(self, d=None, **attribs):
 		self.tag = 'path'
 		Element.__init__(self, d=d, **attribs)
-		self.parent = parent
-		self.surface = parent.surface if hasattr(parent, 'surface') else None
+		self.surface = self.parent.surface if hasattr(self.parent, 'surface') else None
 		self._data = []
 		self._currentPoint = None
 		self._startPoint = None
@@ -147,6 +147,8 @@ class Path(Element):
 				raise ValueError('Unknown letter: ' + letter)
 			lastPoint = coords[-2:] if letter != 'Z' else startPoint
 
+		self._paint(surface)
+
 	def _drawArc(self, surface, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
 		surface.context.set_tolerance(0.00001)
 		rotation = helpers.radians(float(rotation))
@@ -191,9 +193,10 @@ class Path(Element):
 
 	def d(self, d):
 		"""Load path data from a string"""
+		string = d
 		for letter in helpers.PATH_LETTERS:
 				string = string.replace(letter, ' {} '.format(letter))
-		string = normalize(string)
+		string = helpers.normalize(string)
 
 		while string:
 				string = string.strip()
