@@ -7,7 +7,7 @@ class SVG(StructureElement):
 
 	def __init__(self, width, height, *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **attribs):
 		self.tag = 'svg'
-		Element.__init__(self, width=width, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
+		Element.__init__(self, width=width, height=height, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
 		self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
 		self.surface.context = cairo.Context(self.surface)
 

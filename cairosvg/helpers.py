@@ -7,7 +7,7 @@ import re
 from math import atan2, cos, radians, sin, tan
 
 import cairocffi as cairo
-#from .parse.url import parse_url
+from .parse.url import parse_url
 
 UNITS = {
     'mm': 1 / 25.4,
@@ -166,6 +166,20 @@ def preserve_ratio(surface, node, width=None, height=None):
             translate_y += height / scale_y - viewbox_height
 
     return scale_x, scale_y, translate_x, translate_y
+
+
+def bezier_angles(*points):
+    """Return the tangent angles of a Bezier curve of any degree."""
+    if len(points) < 2:
+        # zero-length segment
+        return (0, 0)
+    # Control points that coincide with vertices can be removed
+    elif points[0] == points[1]:
+        return bezier_angles(*points[1:])
+    elif points[-2] == points[-1]:
+        return bezier_angles(*points[:-1])
+    else:
+        return (point_angle(*points[0], *points[1]), point_angle(*points[-2], *points[-1]))
 
 
 def clip_marker_box(surface, node, scale_x, scale_y):

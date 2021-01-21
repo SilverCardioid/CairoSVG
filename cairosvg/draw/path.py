@@ -1,3 +1,5 @@
+import math
+
 from .element import Element
 from .shapes import ShapeElement
 from .. import helpers
@@ -14,14 +16,14 @@ class Path(ShapeElement):
 		if d is not None:
 			self.d(d)
 
-	def _add(self, type, coords=None):
-		self._data.append([type, coords])
-		if type == 'M':
+	def _add(self, letter, coords=None):
+		self._data.append([letter, coords])
+		if letter == 'M':
 			self._startPoint = coords[-2:]
 		elif self._startPoint is None:
 			raise ValueError('Path has not been started with \'M\' or \'m\'')
-		self._currentPoint = coords[-2:] if type != 'Z' else self._startPoint
-		self._lastBezier = (type, *coords[-4:-2]) if type in 'QC' else None
+		self._currentPoint = coords[-2:] if letter != 'Z' else self._startPoint
+		self._lastBezier = (letter, *coords[-4:-2]) if letter in 'QC' else None
 
 	def _rel2abs(self, x, y):
 		return self._currentPoint[0] + x, self._currentPoint[1] + y
@@ -118,6 +120,15 @@ class Path(ShapeElement):
 		return self
 	z = Z
 
+	def polyline(self, points, closed=False):
+		"""Add a series of straight lines from an array of [x,y] points"""
+		if len(points) > 0:
+			self.M(*points[0])
+			for p in points[1:]:
+				self.L(*p)
+			if closed:
+				self.z()
+
 	def draw(self, surface=None):
 		if surface is None:
 			if self.surface is not None:
@@ -152,6 +163,10 @@ class Path(ShapeElement):
 	def _drawArc(self, surface, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
 		surface.context.set_tolerance(0.00001)
 		rotation = helpers.radians(float(rotation))
+		# rx=0 or ry=0 means straight line
+		if not rx or not ry:
+			surface.context.line_to(x3, y3)
+			return
 		# Absolute x3 and y3, convert to relative
 		x3 -= x1
 		y3 -= y1
@@ -188,8 +203,125 @@ class Path(ShapeElement):
 		arc(xc, yc, rx, angle1, angle2)
 		surface.context.restore()
 
-	def vertices(self):
-		return [c[1][-2:] for c in self._data if c[0] != 'Z']
+	def vertices(self, include_z=True):
+		"""Get the vertices of the path as a list of [x,y] arrays"""
+		v = []
+		lastM = None
+		for letter, coords in self._data:
+			if letter != 'Z':
+				# M, L, A, C, Q: add coordinate
+				v.append(coords[-2:])
+				if letter == 'M':
+					lastM = coords[-2:]
+			elif include_z:
+				v.append(lastM)
+		return v
+
+	def vertexAngles(self):
+		"""Get the marker angles at every vertex"""
+		segmentAngles = []
+		index = 0
+		vertex = None
+		lastM = None
+		lastMIndex = None
+		lastLetter = None
+
+		for index, command in enumerate(self._data):
+			letter, coords = command
+
+			if letter == 'M':
+				if segmentAngles and lastLetter != 'Z': # Mark last path unclosed
+					segmentAngles[-1].append(None)
+				vertex = coords[-2:]
+				lastM = vertex
+				lastMIndex = index
+				segmentAngles.append([])
+
+			elif letter == 'L':
+				vertex = coords[-2:]
+				angle = helpers.point_angle(*lastVertex, *vertex)
+				segmentAngles[-1].append((angle, angle))
+
+			elif letter == 'A':
+				vertex = coords[-2:]
+				rx, ry, rotation, large, sweep, xe, ye = coords
+				xe -= lastVertex[0]
+				ye -= lastVertex[1]
+				rotation = math.radians(rotation)
+				# rx=0 or ry=0 means straight line
+				if not rx or not ry:
+					angle = helpers.point_angle(*lastVertex, *vertex)
+					segmentAngles[-1].append((angle, angle))
+					continue
+				# Cancel the rotation of the second point
+				radii_ratio = ry / rx
+				xe, ye = helpers.rotate(xe, ye, -rotation)
+				ye /= radii_ratio
+				# Put the second point onto the x axis
+				angle = helpers.point_angle(0, 0, xe, ye)
+				xe, ye = (xe ** 2 + ye ** 2) ** .5, 0
+				rx = max(rx, xe / 2)
+				# Find circle centre
+				xc = xe / 2
+				yc = (rx ** 2 - xc ** 2) ** .5
+				if not (large ^ sweep): yc = -yc
+				# Put the second point and the center back to their positions
+				xe, ye = helpers.rotate(xe, 0, angle)
+				xc, yc = helpers.rotate(xc, yc, angle)
+				# Find the drawing angles
+				angle1 = helpers.point_angle(xc, yc, 0, 0)
+				angle2 = helpers.point_angle(xc, yc, xe, ye)
+				tangent1 = angle1 + (math.pi/2 if sweep else -math.pi/2)
+				tangent2 = angle2 + (math.pi/2 if sweep else -math.pi/2)
+				if radii_ratio != 1:
+					tangent1 = math.atan2(radii_ratio*math.sin(tangent1), math.cos(tangent1))
+					tangent2 = math.atan2(radii_ratio*math.sin(tangent2), math.cos(tangent2))
+				segmentAngles[-1].append((tangent1 + rotation, tangent2 + rotation))
+
+			elif letter == 'C':
+				vertex = coords[-2:]
+				segmentAngles[-1].append(helpers.bezier_angles(lastVertex, coords[0:2], coords[2:4], vertex))
+
+			elif letter == 'Q':
+				vertex = coords[-2:]
+				segmentAngles[-1].append(helpers.bezier_angles(lastVertex, coords[0:2], vertex))
+
+			elif letter == 'Z':
+				vertex = lastM
+				angle = helpers.point_angle(*lastVertex, *vertex)
+				segmentAngles[-1].append((angle, angle))
+
+			lastVertex = vertex
+			lastLetter = letter
+
+		if lastLetter != 'Z': # Mark last path unclosed
+			segmentAngles[-1].append(None)
+
+		# Calculate vertex angles from adjoining segments
+		vertexAngles = []
+		for subpath in segmentAngles:
+			angleOut, angleIn = None, None
+
+			if subpath and subpath[-1] is not None:
+				# Closed subpath: assign final angle to average with initial angle &
+				# append copy of first angle at the end
+				angleIn = subpath[-1][1]
+				subpath += [subpath[0]]
+
+			for angles in subpath:
+				if angles:
+					angleOut = angles[0]
+					if angleIn is None:
+						# Start of unclosed subpath
+						vertexAngles.append(angleOut)
+					else:
+						# Two adjoining segments: bisect the angle difference
+						# by summing the corresponding unit vectors
+						vertexAngles.append(math.atan2(math.sin(angleOut) + math.sin(angleIn), math.cos(angleOut) + math.cos(angleIn)))
+					angleIn = angles[1]
+				else: # End of unclosed subpath
+					vertexAngles.append(angleIn)
+		return vertexAngles
 
 	def d(self, d):
 		"""Load path data from a string"""

@@ -1,8 +1,9 @@
+import math
+
 from .element import Element
 from ..colors import color
 from .. import helpers
-#.path conditionally imported below
-
+#.path imported below because it uses ShapeElement
 
 class ShapeElement(Element):
 	def _paint(self, surface):
@@ -35,6 +36,8 @@ class ShapeElement(Element):
 		surface.context.set_line_join(helpers.LINE_JOINS[strokeLinejoin])
 		surface.context.stroke()
 
+from .path import Path
+
 class Circle(ShapeElement):
 	def __init__(self, r=0, cx=0, cy=0, **attribs):
 		self.tag = 'circle'
@@ -42,7 +45,7 @@ class Circle(ShapeElement):
 
 	def draw(self, surface):
 		surface.context.new_sub_path()
-		surface.context.arc(self.attribs['cx'], self.attribs['cy'], self.attribs['r'], 0, 2 * pi)
+		surface.context.arc(self.attribs['cx'], self.attribs['cy'], self.attribs['r'], 0, 2 * math.pi)
 
 
 class Ellipse(ShapeElement):
@@ -55,7 +58,7 @@ class Ellipse(ShapeElement):
 		surface.context.new_sub_path()
 		surface.context.save()
 		surface.context.scale(1, ratio)
-		surface.context.arc(self.attribs['cx'], self.attribs['cy'] / ratio, self.attribs['rx'], 0, 2 * pi)
+		surface.context.arc(self.attribs['cx'], self.attribs['cy'] / ratio, self.attribs['rx'], 0, 2 * math.pi)
 		surface.context.restore()
 		self._paint(surface)
 
@@ -70,13 +73,24 @@ class Line(ShapeElement):
 		surface.context.line_to(self.attribs['x2'], self.attribs['y2'])
 		self._paint(surface)
 
+	def vertices(self):
+		return [[self.attribs['x1'], self.attribs['y1']],
+		        [self.attribs['x2'], self.attribs['y2']]]
+
+	def vertexAngles(self):
+		angle = helpers.point_angle(self.attribs['x1'], self.attribs['y1'], self.attribs['x2'], self.attribs['y2'])
+		return [angle, angle]
+
 
 class Polygon(ShapeElement):
 	def __init__(self, points=[], **attribs):
 		self.tag = 'polygon'
+		self._path = Path()
 		if type(points) is str:
-			from .path import Path
-			points = Path(d='M'+points+'z').vertices()
+			self._path.d('M' + points + 'z')
+			points = self._path.vertices()
+		else:
+			self._path.polyline(points, True)
 		Element.__init__(self, points=points, **attribs)
 
 	def draw(self, surface):
@@ -88,13 +102,22 @@ class Polygon(ShapeElement):
 			surface.context.close_path()
 		self._paint(surface)
 
+	def vertices(self):
+		return self._path.vertices()
+
+	def vertexAngles(self):
+		return self._path.vertexAngles()
+
 
 class Polyline(ShapeElement):
 	def __init__(self, points=[], **attribs):
 		self.tag = 'polyline'
+		self._path = Path()
 		if type(points) is str:
-			from .path import Path
-			points = Path(d='M'+points).vertices()
+			self._path.d('M' + points)
+			points = self._path.vertices()
+		else:
+			self._path.polyline(points, False)
 		Element.__init__(self, points=points, **attribs)
 
 	def draw(self, surface):
@@ -105,6 +128,12 @@ class Polyline(ShapeElement):
 				surface.context.line_to(*point)
 		self._paint(surface)
 
+	def vertices(self):
+		return self._path.vertices()
+
+	def vertexAngles(self):
+		return self._path.vertexAngles()
+
 
 class Rect(ShapeElement):
 	def __init__(self, width=0, height=0, x=0, y=0, rx=None, ry=None, **attribs):
@@ -113,10 +142,10 @@ class Rect(ShapeElement):
 			ry = rx or 0
 		if rx is None:
 			rx = ry or 0
-		Element.__init__(width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
+		Element.__init__(self, width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
 
 	def draw(self, surface):
-		width, height = elf.attribs['width'], self.attribs['height']
+		width, height = self.attribs['width'], self.attribs['height']
 		x, y = self.attribs['x'], self.attribs['y']
 		rx, ry = self.attribs['rx'], self.attribs['ry']
 		if rx == 0 or ry == 0:
