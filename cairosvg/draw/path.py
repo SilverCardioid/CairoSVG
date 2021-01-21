@@ -248,35 +248,35 @@ class Path(ShapeElement):
 				xe -= lastVertex[0]
 				ye -= lastVertex[1]
 				rotation = math.radians(rotation)
-				# rx=0 or ry=0 means straight line
 				if not rx or not ry:
+					# rx=0 or ry=0 means straight line
 					angle = helpers.point_angle(*lastVertex, *vertex)
 					segmentAngles[-1].append((angle, angle))
-					continue
-				# Cancel the rotation of the second point
-				radii_ratio = ry / rx
-				xe, ye = helpers.rotate(xe, ye, -rotation)
-				ye /= radii_ratio
-				# Put the second point onto the x axis
-				angle = helpers.point_angle(0, 0, xe, ye)
-				xe, ye = (xe ** 2 + ye ** 2) ** .5, 0
-				rx = max(rx, xe / 2)
-				# Find circle centre
-				xc = xe / 2
-				yc = (rx ** 2 - xc ** 2) ** .5
-				if not (large ^ sweep): yc = -yc
-				# Put the second point and the center back to their positions
-				xe, ye = helpers.rotate(xe, 0, angle)
-				xc, yc = helpers.rotate(xc, yc, angle)
-				# Find the drawing angles
-				angle1 = helpers.point_angle(xc, yc, 0, 0)
-				angle2 = helpers.point_angle(xc, yc, xe, ye)
-				tangent1 = angle1 + (math.pi/2 if sweep else -math.pi/2)
-				tangent2 = angle2 + (math.pi/2 if sweep else -math.pi/2)
-				if radii_ratio != 1:
-					tangent1 = math.atan2(radii_ratio*math.sin(tangent1), math.cos(tangent1))
-					tangent2 = math.atan2(radii_ratio*math.sin(tangent2), math.cos(tangent2))
-				segmentAngles[-1].append((tangent1 + rotation, tangent2 + rotation))
+				else:
+					# Cancel the rotation of the second point
+					radii_ratio = ry / rx
+					xe, ye = helpers.rotate(xe, ye, -rotation)
+					ye /= radii_ratio
+					# Put the second point onto the x axis
+					angle = helpers.point_angle(0, 0, xe, ye)
+					xe, ye = (xe ** 2 + ye ** 2) ** .5, 0
+					rx = max(rx, xe / 2)
+					# Find circle centre
+					xc = xe / 2
+					yc = (rx ** 2 - xc ** 2) ** .5
+					if not (large ^ sweep): yc = -yc
+					# Put the second point and the center back to their positions
+					xe, ye = helpers.rotate(xe, 0, angle)
+					xc, yc = helpers.rotate(xc, yc, angle)
+					# Find the drawing angles
+					angle1 = helpers.point_angle(xc, yc, 0, 0)
+					angle2 = helpers.point_angle(xc, yc, xe, ye)
+					tangent1 = angle1 + (math.pi/2 if sweep else -math.pi/2)
+					tangent2 = angle2 + (math.pi/2 if sweep else -math.pi/2)
+					if radii_ratio != 1:
+						tangent1 = math.atan2(radii_ratio*math.sin(tangent1), math.cos(tangent1))
+						tangent2 = math.atan2(radii_ratio*math.sin(tangent2), math.cos(tangent2))
+					segmentAngles[-1].append((tangent1 + rotation, tangent2 + rotation))
 
 			elif letter == 'C':
 				vertex = coords[-2:]

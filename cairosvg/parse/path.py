@@ -113,20 +113,10 @@ def path(surface, node):
     string = node.get('d', '')
     node.path = Path(fill='none')
 
-    node.vertices = []
-
     for letter in PATH_LETTERS:
         string = string.replace(letter, ' {} '.format(letter))
 
     string = normalize(string)
-
-    # Keep the current point because Cairo's get_current_point is not accurate
-    # enough. See https://github.com/Kozea/CairoSVG/issues/111.
-    if surface.context.has_current_point():
-        current_point = surface.context.get_current_point()
-    else:
-        surface.context.move_to(0, 0)
-        current_point = 0, 0
 
     while string:
         string = string.strip()
