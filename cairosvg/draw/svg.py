@@ -19,21 +19,40 @@ class SVG(StructureElement):
 		from .path import Path
 		return Path(parent=self, d=d, **attribs)
 
-	def rect(self): raise NotImplementedError()
-	def circle(self): raise NotImplementedError()
+	def circle(self, r=0, cx=0, cy=0, **attribs):
+		from .shapes import Circle
+		return Circle(parent=self, r=r, cx=cx, cy=cy, **attribs)
+
+	def ellipse(self, rx=0, ry=0, cx=0, cy=0, **attribs):
+		from .shapes import Ellipse
+		return Ellipse(parent=self, rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
+
+	def line(self, x1=0, y1=0, x2=0, y2=0, **attribs):
+		from .shapes import Line
+		return Line(parent=self, x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
+
+	def polygon(self, points=[], **attribs):
+		from .shapes import Polygon
+		return Polygon(parent=self, points=points, **attribs)
+
+	def polyline(self, points=[], **attribs):
+		from .shapes import Polyline
+		return Polyline(parent=self, points=points, **attribs)
+
+	def rect(self, width=0, height=0, x=0, y=0, rx=None, ry=None, **attribs):
+		from .shapes import Rect
+		return Rect(parent=self, width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
+
+
 	def clipPath(self): raise NotImplementedError()
 	def defs(self): raise NotImplementedError()
-	def ellipse(self): raise NotImplementedError()
 	def g(self): raise NotImplementedError()
 	def image(self): raise NotImplementedError()
-	def line(self): raise NotImplementedError()
 	def linearGradient(self): raise NotImplementedError()
 	def radialGradient(self): raise NotImplementedError()
 	def marker(self): raise NotImplementedError()
 	def mask(self): raise NotImplementedError()
 	def pattern(self): raise NotImplementedError()
-	def polygon(self): raise NotImplementedError()
-	def polyline(self): raise NotImplementedError()
 	def style(self): raise NotImplementedError()
 	def svg(self): raise NotImplementedError()
 	def text(self): raise NotImplementedError()

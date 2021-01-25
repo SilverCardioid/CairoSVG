@@ -7,7 +7,7 @@ from .. import helpers
 class Path(ShapeElement):
 	def __init__(self, d=None, **attribs):
 		self.tag = 'path'
-		Element.__init__(self, d=d, **attribs)
+		super().__init__(self, d=d, **attribs)
 		self.surface = self.parent.surface if hasattr(self.parent, 'surface') else None
 		self._data = []
 		self._currentPoint = None
@@ -136,29 +136,30 @@ class Path(ShapeElement):
 			else:
 				raise Exception('surface needed for drawing')
 
-		startPoint = None
-		lastPoint = None
-		for command in self._data:
-			letter, coords = command
-			if letter == 'M':
-				surface.context.move_to(*coords)
-				startPoint = coords[-2:]
-			elif letter == 'L':
-				surface.context.line_to(*coords)
-			elif letter == 'A':
-				self._drawArc(surface, *lastPoint, *coords)
-			elif letter == 'C':
-				surface.context.curve_to(*coords)
-			elif letter == 'Q':
-				cubicCoords = helpers.quadratic_points(*lastPoint, *coords)
-				surface.context.curve_to(*cubicCoords)
-			elif letter == 'Z':
-				surface.context.close_path()
-			else:
-				raise ValueError('Unknown letter: ' + letter)
-			lastPoint = coords[-2:] if letter != 'Z' else startPoint
+		with self.transform:
+			startPoint = None
+			lastPoint = None
+			for command in self._data:
+				letter, coords = command
+				if letter == 'M':
+					surface.context.move_to(*coords)
+					startPoint = coords[-2:]
+				elif letter == 'L':
+					surface.context.line_to(*coords)
+				elif letter == 'A':
+					self._drawArc(surface, *lastPoint, *coords)
+				elif letter == 'C':
+					surface.context.curve_to(*coords)
+				elif letter == 'Q':
+					cubicCoords = helpers.quadratic_points(*lastPoint, *coords)
+					surface.context.curve_to(*cubicCoords)
+				elif letter == 'Z':
+					surface.context.close_path()
+				else:
+					raise ValueError('Unknown letter: ' + letter)
+				lastPoint = coords[-2:] if letter != 'Z' else startPoint
 
-		self._paint(surface)
+			self._paint(surface)
 
 	def _drawArc(self, surface, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
 		surface.context.set_tolerance(0.00001)

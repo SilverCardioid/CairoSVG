@@ -1,11 +1,16 @@
 import math
 
 from .element import Element
+from . import transform
 from ..colors import color
 from .. import helpers
 #.path imported below because it uses ShapeElement
 
 class ShapeElement(Element):
+	def __init__(self, **attribs):
+		Element.__init__(self, **attribs)
+		self.transform = transform.Transform(self.getAttribute('transform', None), parent=self)
+
 	def _paint(self, surface):
 		opacity = float(self.getAttribute('opacity', 1))
 		assert 0 <= opacity <= 1
@@ -41,37 +46,40 @@ from .path import Path
 class Circle(ShapeElement):
 	def __init__(self, r=0, cx=0, cy=0, **attribs):
 		self.tag = 'circle'
-		Element.__init__(self, r=r, cx=cx, cy=cy, **attribs)
+		super().__init__(r=r, cx=cx, cy=cy, **attribs)
 
 	def draw(self, surface):
-		surface.context.new_sub_path()
-		surface.context.arc(self.attribs['cx'], self.attribs['cy'], self.attribs['r'], 0, 2 * math.pi)
+		with self.transform:
+			surface.context.new_sub_path()
+			surface.context.arc(self.attribs['cx'], self.attribs['cy'], self.attribs['r'], 0, 2 * math.pi)
 
 
 class Ellipse(ShapeElement):
 	def __init__(self, rx=0, ry=0, cx=0, cy=0, **attribs):
 		self.tag = 'ellipse'
-		Element.__init__(self, rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
+		super().__init__(rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
 
 	def draw(self, surface):
 		ratio = self.attribs['ry'] / self.attribs['rx']
-		surface.context.new_sub_path()
-		surface.context.save()
-		surface.context.scale(1, ratio)
-		surface.context.arc(self.attribs['cx'], self.attribs['cy'] / ratio, self.attribs['rx'], 0, 2 * math.pi)
-		surface.context.restore()
-		self._paint(surface)
+		with self.transform:
+			surface.context.new_sub_path()
+			surface.context.save()
+			surface.context.scale(1, ratio)
+			surface.context.arc(self.attribs['cx'], self.attribs['cy'] / ratio, self.attribs['rx'], 0, 2 * math.pi)
+			surface.context.restore()
+			self._paint(surface)
 
 
 class Line(ShapeElement):
 	def __init__(self, x1=0, y1=0, x2=0, y2=0, **attribs):
 		self.tag = 'line'
-		Element.__init__(self, x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
+		super().__init__(x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
 
 	def draw(self, surface):
-		surface.context.move_to(self.attribs['x1'], self.attribs['y1'])
-		surface.context.line_to(self.attribs['x2'], self.attribs['y2'])
-		self._paint(surface)
+		with self.transform:
+			surface.context.move_to(self.attribs['x1'], self.attribs['y1'])
+			surface.context.line_to(self.attribs['x2'], self.attribs['y2'])
+			self._paint(surface)
 
 	def vertices(self):
 		return [[self.attribs['x1'], self.attribs['y1']],
@@ -91,16 +99,17 @@ class Polygon(ShapeElement):
 			points = self._path.vertices()
 		else:
 			self._path.polyline(points, True)
-		Element.__init__(self, points=points, **attribs)
+		super().__init__(points=points, **attribs)
 
 	def draw(self, surface):
 		points = self.attribs['points']
 		if len(points) > 0:
-			surface.context.move_to(*points[0])
-			for point in points[1:]:
-				surface.context.line_to(*point)
-			surface.context.close_path()
-		self._paint(surface)
+			with self.transform:
+				surface.context.move_to(*points[0])
+				for point in points[1:]:
+					surface.context.line_to(*point)
+				surface.context.close_path()
+				self._paint(surface)
 
 	def vertices(self):
 		return self._path.vertices()
@@ -118,15 +127,16 @@ class Polyline(ShapeElement):
 			points = self._path.vertices()
 		else:
 			self._path.polyline(points, False)
-		Element.__init__(self, points=points, **attribs)
+		super().__init__(points=points, **attribs)
 
 	def draw(self, surface):
 		points = self.attribs['points']
 		if len(points) > 0:
-			surface.context.move_to(*points[0])
-			for point in points[1:]:
-				surface.context.line_to(*point)
-		self._paint(surface)
+			with self.transform:
+				surface.context.move_to(*points[0])
+				for point in points[1:]:
+					surface.context.line_to(*point)
+				self._paint(surface)
 
 	def vertices(self):
 		return self._path.vertices()
@@ -142,36 +152,38 @@ class Rect(ShapeElement):
 			ry = rx or 0
 		if rx is None:
 			rx = ry or 0
-		Element.__init__(self, width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
+		super().__init__(width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
 
 	def draw(self, surface):
 		width, height = self.attribs['width'], self.attribs['height']
 		x, y = self.attribs['x'], self.attribs['y']
 		rx, ry = self.attribs['rx'], self.attribs['ry']
-		if rx == 0 or ry == 0:
-			surface.context.rectangle(x, y, width, height)
-		else:
-			if rx > width / 2:
-				rx = width / 2
-			if ry > height / 2:
-				ry = height / 2
 
-			# Inspired by Cairo Cookbook
-			# http://cairographics.org/cookbook/roundedrectangles/
-			ARC_TO_BEZIER = 4 * (2 ** .5 - 1) / 3
-			c1 = ARC_TO_BEZIER * rx
-			c2 = ARC_TO_BEZIER * ry
-
-			surface.context.new_path()
-			surface.context.move_to(x + rx, y)
-			surface.context.rel_line_to(width - 2 * rx, 0)
-			surface.context.rel_curve_to(c1, 0, rx, c2, rx, ry)
-			surface.context.rel_line_to(0, height - 2 * ry)
-			surface.context.rel_curve_to(0, c2, c1 - rx, ry, -rx, ry)
-			surface.context.rel_line_to(-width + 2 * rx, 0)
-			surface.context.rel_curve_to(-c1, 0, -rx, -c2, -rx, -ry)
-			surface.context.rel_line_to(0, -height + 2 * ry)
-			surface.context.rel_curve_to(0, -c2, rx - c1, -ry, rx, -ry)
-			surface.context.close_path()
-
-		self._paint(surface)
+		with self.transform:
+			if rx == 0 or ry == 0:
+				surface.context.rectangle(x, y, width, height)
+			else:
+				if rx > width / 2:
+					rx = width / 2
+				if ry > height / 2:
+					ry = height / 2
+	
+				# Inspired by Cairo Cookbook
+				# http://cairographics.org/cookbook/roundedrectangles/
+				ARC_TO_BEZIER = 4 * (2 ** .5 - 1) / 3
+				c1 = ARC_TO_BEZIER * rx
+				c2 = ARC_TO_BEZIER * ry
+	
+				surface.context.new_path()
+				surface.context.move_to(x + rx, y)
+				surface.context.rel_line_to(width - 2 * rx, 0)
+				surface.context.rel_curve_to(c1, 0, rx, c2, rx, ry)
+				surface.context.rel_line_to(0, height - 2 * ry)
+				surface.context.rel_curve_to(0, c2, c1 - rx, ry, -rx, ry)
+				surface.context.rel_line_to(-width + 2 * rx, 0)
+				surface.context.rel_curve_to(-c1, 0, -rx, -c2, -rx, -ry)
+				surface.context.rel_line_to(0, -height + 2 * ry)
+				surface.context.rel_curve_to(0, -c2, rx - c1, -ry, rx, -ry)
+				surface.context.close_path()
+	
+			self._paint(surface)
