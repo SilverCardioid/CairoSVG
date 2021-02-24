@@ -1,5 +1,6 @@
 import cairocffi as cairo
-from .element import Element, StructureElement
+from .element import Element
+from .structure import StructureElement
 
 class SVG(StructureElement):
 	attribs = ['Core','Conditional','Style','External','Presentation','GraphicalEvents','DocumentEvents','x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType']
@@ -14,6 +15,14 @@ class SVG(StructureElement):
 	def export(self, filename):
 		self.draw(self.surface)
 		self.surface.write_to_png(filename)
+
+	def g(self, **attribs):
+		from .structure import Group
+		return Group(parent=self, **attribs)
+
+	def use(self, href=None, x=0, y=0, width=0, height=0, **attribs):
+		from .structure import Use
+		return Use(parent=self, href=href, x=x, y=y, width=width, height=height, **attribs)
 
 	def path(self, d=None, **attribs):
 		from .path import Path
@@ -46,7 +55,6 @@ class SVG(StructureElement):
 
 	def clipPath(self): raise NotImplementedError()
 	def defs(self): raise NotImplementedError()
-	def g(self): raise NotImplementedError()
 	def image(self): raise NotImplementedError()
 	def linearGradient(self): raise NotImplementedError()
 	def radialGradient(self): raise NotImplementedError()
@@ -57,4 +65,3 @@ class SVG(StructureElement):
 	def svg(self): raise NotImplementedError()
 	def text(self): raise NotImplementedError()
 	def title(self): raise NotImplementedError()
-	def use(self): raise NotImplementedError()

@@ -20,18 +20,22 @@ class Element:
 			else:
 				self.root.globals['ids'][self.id] = self
 
-	def getAttribute(self, attrib, default=None):
-		node = self
-		while attrib not in node.attribs:
-			node = node.parent
-			if node is None:
-				# root reached
-				return default
+	def getAttribute(self, attrib, default=None, cascade=True):
+		if cascade:
+			node = self
+			while attrib not in node.attribs:
+				node = node.parent
+				if node is None:
+					# root reached
+					return default
+			value = node.attribs[attrib]
+			return value if value is not None else default
+		else:
+			return self.attribs.get(attrib, default)
 
-		value = node.attribs[attrib]
-		return value if value is not None else default
-
-class StructureElement(Element):
-	def draw(self, surface):
-		for child in self.children:
-			child.draw(surface)
+	def addChild(self, tag, **attribs):
+		from .elements import elements
+		try:
+			return elements[tag](parent=self, **attribs)
+		except KeyError:
+			raise ValueError('unknown tag: {}'.format(tag))

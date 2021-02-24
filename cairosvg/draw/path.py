@@ -1,13 +1,12 @@
 import math
 
-from .element import Element
 from .shapes import ShapeElement
 from .. import helpers
 
 class Path(ShapeElement):
 	def __init__(self, d=None, **attribs):
 		self.tag = 'path'
-		super().__init__(self, d=d, **attribs)
+		super().__init__(d=d, **attribs)
 		self.surface = self.parent.surface if hasattr(self.parent, 'surface') else None
 		self._data = []
 		self._currentPoint = None

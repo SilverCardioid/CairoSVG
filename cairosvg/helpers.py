@@ -7,7 +7,7 @@ import re
 from math import atan2, cos, radians, sin, tan
 
 import cairocffi as cairo
-from .parse.url import parse_url
+#from .parse.url import parse_url
 
 UNITS = {
     'mm': 1 / 25.4,

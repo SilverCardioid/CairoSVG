@@ -9,7 +9,7 @@ from .. import helpers
 class ShapeElement(Element):
 	def __init__(self, **attribs):
 		Element.__init__(self, **attribs)
-		self.transform = transform.Transform(self.getAttribute('transform', None), parent=self)
+		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
 
 	def _paint(self, surface):
 		opacity = float(self.getAttribute('opacity', 1))
