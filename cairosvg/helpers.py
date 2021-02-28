@@ -42,6 +42,25 @@ class PointError(Exception):
     """Exception raised when parsing a point fails."""
 
 
+def createSurface(surfaceType, width, height, filename=None):
+	surfaceType = surfaceType.lower()
+	if surfaceType in ['image', 'png']:
+		surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+	elif surfaceType == 'pdf':
+		surface = cairo.PDFSurface(filename, width, height)
+	elif surfaceType in ['ps', 'postscript']:
+		surface = cairo.PSSurface(filename, width, height)
+	elif surfaceType == 'recording':
+		surface = cairo.RecordingSurface(filename, (0, 0, width, height))
+	elif surfaceType == 'svg':
+		surface = cairo.SVGSurface(filename, width, height)
+	else:
+		raise ValueError('Unsupported surface type: {}'.format(surfaceType))
+	surface.context = cairo.Context(surface)
+	return surface
+
+
+
 def distance(x1, y1, x2, y2):
     """Get the distance between two points."""
     return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5

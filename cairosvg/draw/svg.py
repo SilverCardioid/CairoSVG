@@ -1,6 +1,7 @@
 import cairocffi as cairo
 import os
 
+from .. import helpers
 from .element import Element
 from .structure import StructureElement
 
@@ -14,43 +15,26 @@ class SVG(StructureElement):
 		self['xmlns'] = 'http://www.w3.org/2000/svg'
 		if not self.surface: self.setSurface('Image')
 
-	def _createSurface(self, surfaceType, filename=None):
-		surfaceType = surfaceType.lower()
-		if surfaceType in ['image', 'png']:
-			surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self['width'], self['height'])
-		elif surfaceType == 'pdf':
-			surface = cairo.PDFSurface(filename, self['width'], self['height'])
-		elif surfaceType in ['ps', 'postscript']:
-			surface = cairo.PSSurface(filename, self['width'], self['height'])
-		elif surfaceType == 'recording':
-			surface = cairo.RecordingSurface(filename, (0, 0, self['width'], self['height']))
-		elif surfaceType == 'svg':
-			surface = cairo.SVGSurface(filename, self['width'], self['height'])
-		else:
-			raise ValueError('Unsupported surface type: {}'.format(surfaceType))
-		surface.context = cairo.Context(surface)
-		return surface
-
 	def setSurface(self, surfaceType, filename=None):
-		self.surface = self._createSurface(surfaceType, filename)
+		self.surface = helpers.createSurface(surfaceType, self['width'], self['height'], filename)
 		self.surfaceType = surfaceType
 
 	def export(self, filename, svgOptions={}):
 		ext = os.path.splitext(filename)[1]
 		if ext == '.pdf':
-			surface = self._createSurface('PDF', filename)
+			surface = helpers.createSurface('PDF', self['width'], self['height'], filename)
 			self.draw(surface)
 			surface.finish()
 		elif ext == '.png':
 			self.draw(self.surface)
 			self.surface.write_to_png(filename)
 		elif ext == '.ps':
-			surface = self._createSurface('PS', filename)
+			surface = helpers.createSurface('PS', self['width'], self['height'], filename)
 			self.draw(surface)
 			surface.finish()
 		elif ext == '.svg':
 			if svgOptions.get('useCairo', False):
-				surface = self._createSurface('SVG', filename)
+				surface = helpers.createSurface('SVG', self['width'], self['height'], filename)
 				self.draw(surface)
 				surface.finish()
 			else:
