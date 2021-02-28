@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="600" x="0" y="0" viewBox="None" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="600" x="0" y="0" rx="0" ry="0" fill="#ffe"/>
+  <g transform="translate(300,300)">
+    <circle r="180" cx="0" cy="0" fill="#05a"/>
+  </g>
+</svg>

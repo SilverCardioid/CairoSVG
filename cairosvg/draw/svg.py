@@ -12,28 +12,54 @@ class SVG(StructureElement):
 		self.tag = 'svg'
 		Element.__init__(self, width=width, height=height, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
 		self['xmlns'] = 'http://www.w3.org/2000/svg'
-		self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-		self.surface.context = cairo.Context(self.surface)
+		self.setSurface('Image')
 
-	def export(self, filename):
+	def _createSurface(self, surfaceType, filename=None):
+		surfaceType = surfaceType.lower()
+		if surfaceType in ['image', 'png']:
+			surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self['width'], self['height'])
+		elif surfaceType == 'pdf':
+			surface = cairo.PDFSurface(filename, self['width'], self['height'])
+		elif surfaceType in ['ps', 'postscript']:
+			surface = cairo.PSSurface(filename, self['width'], self['height'])
+		elif surfaceType == 'recording':
+			surface = cairo.RecordingSurface(filename, (0, 0, self['width'], self['height']))
+		elif surfaceType == 'svg':
+			surface = cairo.SVGSurface(filename, self['width'], self['height'])
+		else:
+			raise ValueError('Unsupported surface type: {}'.format(surfaceType))
+		surface.context = cairo.Context(surface)
+		return surface
+
+	def setSurface(self, surfaceType, filename=None):
+		self.surface = self._createSurface(surfaceType, filename)
+		self.surfaceType = surfaceType
+
+	def export(self, filename, svgOptions={}):
 		ext = os.path.splitext(filename)[1]
 		if ext == '.pdf':
-			self.surface = cairo.PDFSurface(filename, self['width'], self['height'])
-			self.surface.context = cairo.Context(self.surface)
+			self.setSurface('PDF', filename)
 			self.draw(self.surface)
+			self.surface.finish()
 		elif ext == '.png':
 			self.draw(self.surface)
 			self.surface.write_to_png(filename)
 		elif ext == '.ps':
-			self.surface = cairo.PSSurface(filename, self['width'], self['height'])
-			self.surface.context = cairo.Context(self.surface)
+			self.setSurface('PS', filename)
 			self.draw(self.surface)
+			self.surface.finish()
 		elif ext == '.svg':
-			with open(filename, 'w') as file:
-				file.write('<?xml version="1.0" encoding="UTF-8"?>')
-				self.code(file)
+			if svgOptions.get('useCairo', False):
+				self.setSurface('SVG', filename)
+				self.draw(self.surface)
+				self.surface.finish()
+			else:
+				with open(filename, 'w') as file:
+					svgOptions['xmlDeclaration'] = svgOptions.get('xmlDeclaration', True)
+					self.code(file, **svgOptions)
 		else:
 			raise ValueError('Unsupported file extension: {}'.format(ext))
+
 
 	def g(self, **attribs):
 		from .structure import Group

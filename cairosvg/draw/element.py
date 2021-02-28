@@ -1,4 +1,3 @@
-import re
 import sys
 from .. import helpers
 
@@ -18,7 +17,7 @@ class Element:
 
 		self.attribs = {}
 		for key in attribs:
-			attrib = helpers.parseAttrib(key)
+			attrib = helpers.parseAttribute(key)
 			self.attribs[attrib] = attribs[key]
 
 		if 'id'	in attribs:
@@ -57,21 +56,27 @@ class Element:
 		else:
 			return self.attribs.get(attrib, default)
 
-	def addChild(self, tag, **attribs):
+	def addChild(self, tag, *attribs, **kwattribs):
 		from .elements import elements
 		try:
-			return elements[tag](parent=self, **attribs)
+			return elements[tag](parent=self, *attribs, **kwattribs)
 		except KeyError:
 			raise ValueError('unknown tag: {}'.format(tag))
 
-	def code(self, file=sys.stdout):
-		file.write('<{}'.format(self.tag))
+	def code(self, file=sys.stdout, indent='', indentDepth=0, newline='\n', xmlDeclaration=False):
+		indent = indent or ''
+		newline = newline or ''
+
+		if xmlDeclaration:
+			file.write('<?xml version="1.0" encoding="UTF-8"?>{}'.format(newline))
+
+		file.write('{}<{}'.format(indentDepth*indent, self.tag))
 		for attr in self.attribs:
 			file.write(' {}="{}"'.format(attr, self.attribs[attr]))
 		if len(self.children) == 0:
-			file.write('/>/n')
+			file.write('/>{}'.format(newline))
 		else:
-			file.write('>/n')
+			file.write('>{}'.format(newline))
 			for child in self.children:
-				child.code(file)
-			file.write('</{}>/n'.format(self.tag))
+				child.code(file, indent, indentDepth+1, newline)
+			file.write('{}</{}>{}'.format(indentDepth*indent, self.tag, newline))

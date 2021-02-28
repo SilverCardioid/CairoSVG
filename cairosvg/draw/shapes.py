@@ -52,6 +52,7 @@ class Circle(ShapeElement):
 		with self.transform:
 			surface.context.new_sub_path()
 			surface.context.arc(self.attribs['cx'], self.attribs['cy'], self.attribs['r'], 0, 2 * math.pi)
+			self._paint(surface)
 
 
 class Ellipse(ShapeElement):
