@@ -12,7 +12,7 @@ class SVG(StructureElement):
 		self.tag = 'svg'
 		Element.__init__(self, width=width, height=height, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
 		self['xmlns'] = 'http://www.w3.org/2000/svg'
-		self.setSurface('Image')
+		if not self.surface: self.setSurface('Image')
 
 	def _createSurface(self, surfaceType, filename=None):
 		surfaceType = surfaceType.lower()
@@ -38,21 +38,21 @@ class SVG(StructureElement):
 	def export(self, filename, svgOptions={}):
 		ext = os.path.splitext(filename)[1]
 		if ext == '.pdf':
-			self.setSurface('PDF', filename)
-			self.draw(self.surface)
-			self.surface.finish()
+			surface = self._createSurface('PDF', filename)
+			self.draw(surface)
+			surface.finish()
 		elif ext == '.png':
 			self.draw(self.surface)
 			self.surface.write_to_png(filename)
 		elif ext == '.ps':
-			self.setSurface('PS', filename)
-			self.draw(self.surface)
-			self.surface.finish()
+			surface = self._createSurface('PS', filename)
+			self.draw(surface)
+			surface.finish()
 		elif ext == '.svg':
 			if svgOptions.get('useCairo', False):
-				self.setSurface('SVG', filename)
-				self.draw(self.surface)
-				self.surface.finish()
+				surface = self._createSurface('SVG', filename)
+				self.draw(surface)
+				surface.finish()
 			else:
 				with open(filename, 'w') as file:
 					svgOptions['xmlDeclaration'] = svgOptions.get('xmlDeclaration', True)

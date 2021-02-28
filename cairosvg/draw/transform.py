@@ -1,4 +1,5 @@
 import cairocffi as cairo
+from contextlib import contextmanager
 import math
 import re
 
@@ -21,8 +22,7 @@ class Transform:
 			self.pull()
 
 	def __call__(self, string, *params, transform_origin=None, surface=None):
-		if surface is None and hasattr(self.root, 'surface'):
-			surface = self.root.surface
+		surface = surface or self.parent._getSurface()
 		if transform_origin:
 			if type(transform_origin) is str:
 				origin = transform_origin.split(' ')
@@ -91,20 +91,28 @@ class Transform:
 		#		surface.context.transform(self._matrix)
 
 	def apply(self, surface=None):
-		if surface is None and hasattr(self.root, 'surface'):
-			surface = self.root.surface
+		surface = surface or self.parent._getSurface()
 		surface.context.transform(self._matrix)
 
+	@contextmanager
+	def applyContext(self, surface=None):
+		surface = surface or self.parent._getSurface()
+		if self._transformed:
+			self.push(surface)
+		try:
+			yield self
+		finally:
+			if self._transformed:
+				self.pull(surface)
+
 	def save(self, surface=None):
-		if surface is None and hasattr(self.root, 'surface'):
-			surface = self.root.surface
+		surface = surface or self.parent._getSurface()
 		surface.context.save()
 		self.apply(surface)
 	push = save
 
 	def restore(self, surface=None):
-		if surface is None and hasattr(self.root, 'surface'):
-			surface = self.root.surface
+		surface = surface or self.parent._getSurface()
 		surface.context.restore()
 	pull = restore
 

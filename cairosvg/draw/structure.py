@@ -2,7 +2,8 @@ from .element import Element
 from . import transform
 
 class StructureElement(Element):
-	def draw(self, surface):
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
 		for child in self.children:
 			child.draw(surface)
 
@@ -15,8 +16,9 @@ class Group(StructureElement):
 		Element.__init__(self, **attribs)
 		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
 
-	def draw(self, surface):
-		with self.transform:
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
+		with self.transform.applyContext(surface):
 			for child in self.children:
 				child.draw(surface)
 
@@ -30,7 +32,8 @@ class Use(Element):
 		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
 		self.transform.translate(x, y)
 
-	def draw(self, surface):
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
 		target = self.attribs['href']
 		if type(target) is str:
 			if target[0] == '#':
@@ -43,6 +46,6 @@ class Use(Element):
 		# Draw target element in the context of the <use>
 		targetParent = target.parent
 		target.parent = self
-		with self.transform:
+		with self.transform.applyContext(surface):
 			target.draw(surface)
 		target.parent = targetParent

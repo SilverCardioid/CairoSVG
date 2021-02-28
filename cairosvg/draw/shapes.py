@@ -48,8 +48,9 @@ class Circle(ShapeElement):
 		self.tag = 'circle'
 		super().__init__(r=r, cx=cx, cy=cy, **attribs)
 
-	def draw(self, surface):
-		with self.transform:
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
+		with self.transform.applyContext(surface):
 			surface.context.new_sub_path()
 			surface.context.arc(self.attribs['cx'], self.attribs['cy'], self.attribs['r'], 0, 2 * math.pi)
 			self._paint(surface)
@@ -60,9 +61,10 @@ class Ellipse(ShapeElement):
 		self.tag = 'ellipse'
 		super().__init__(rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
 
-	def draw(self, surface):
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
 		ratio = self.attribs['ry'] / self.attribs['rx']
-		with self.transform:
+		with self.transform.applyContext(surface):
 			surface.context.new_sub_path()
 			surface.context.save()
 			surface.context.scale(1, ratio)
@@ -76,8 +78,9 @@ class Line(ShapeElement):
 		self.tag = 'line'
 		super().__init__(x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
 
-	def draw(self, surface):
-		with self.transform:
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
+		with self.transform.applyContext(surface):
 			surface.context.move_to(self.attribs['x1'], self.attribs['y1'])
 			surface.context.line_to(self.attribs['x2'], self.attribs['y2'])
 			self._paint(surface)
@@ -102,10 +105,11 @@ class Polygon(ShapeElement):
 			self._path.polyline(points, True)
 		super().__init__(points=points, **attribs)
 
-	def draw(self, surface):
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
 		points = self.attribs['points']
 		if len(points) > 0:
-			with self.transform:
+			with self.transform.applyContext(surface):
 				surface.context.move_to(*points[0])
 				for point in points[1:]:
 					surface.context.line_to(*point)
@@ -130,7 +134,8 @@ class Polyline(ShapeElement):
 			self._path.polyline(points, False)
 		super().__init__(points=points, **attribs)
 
-	def draw(self, surface):
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
 		points = self.attribs['points']
 		if len(points) > 0:
 			with self.transform:
@@ -155,12 +160,13 @@ class Rect(ShapeElement):
 			rx = ry or 0
 		super().__init__(width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
 
-	def draw(self, surface):
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
 		width, height = self.attribs['width'], self.attribs['height']
 		x, y = self.attribs['x'], self.attribs['y']
 		rx, ry = self.attribs['rx'], self.attribs['ry']
 
-		with self.transform:
+		with self.transform.applyContext(surface):
 			if rx == 0 or ry == 0:
 				surface.context.rectangle(x, y, width, height)
 			else:

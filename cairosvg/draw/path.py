@@ -7,7 +7,6 @@ class Path(ShapeElement):
 	def __init__(self, d=None, **attribs):
 		self.tag = 'path'
 		super().__init__(d=d, **attribs)
-		self.surface = self.parent.surface if hasattr(self.parent, 'surface') else None
 		self._data = []
 		self._currentPoint = None
 		self._startPoint = None
@@ -129,13 +128,8 @@ class Path(ShapeElement):
 				self.z()
 
 	def draw(self, surface=None):
-		if surface is None:
-			if self.surface is not None:
-				surface = self.surface
-			else:
-				raise Exception('surface needed for drawing')
-
-		with self.transform:
+		surface = surface or self._getSurface()
+		with self.transform.applyContext(surface):
 			startPoint = None
 			lastPoint = None
 			for command in self._data:

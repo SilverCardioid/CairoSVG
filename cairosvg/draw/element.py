@@ -2,7 +2,7 @@ import sys
 from .. import helpers
 
 class Element:
-	def __init__(self, *, parent=None, **attribs):
+	def __init__(self, *, parent=None, surface=None, **attribs):
 		self.parent = None
 		self.children = []
 		self.root = self
@@ -14,6 +14,7 @@ class Element:
 		else:
 			# root
 			self.globals = {'ids':{}}
+			self.surface = surface
 
 		self.attribs = {}
 		for key in attribs:
@@ -26,6 +27,11 @@ class Element:
 				print('warning: duplicate ID ignored: ' + self.id)
 			else:
 				self.root.globals['ids'][self.id] = self
+
+	def _getSurface(self):
+		if not self.root.surface:
+			raise Exception('Surface needed for drawing')
+		return self.root.surface
 
 	def __getitem__(self, key):
 		return self.attribs[key]
