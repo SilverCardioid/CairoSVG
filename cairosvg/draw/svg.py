@@ -1,4 +1,6 @@
 import cairocffi as cairo
+import os
+
 from .element import Element
 from .structure import StructureElement
 
@@ -9,12 +11,29 @@ class SVG(StructureElement):
 	def __init__(self, width, height, *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **attribs):
 		self.tag = 'svg'
 		Element.__init__(self, width=width, height=height, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
+		self['xmlns'] = 'http://www.w3.org/2000/svg'
 		self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
 		self.surface.context = cairo.Context(self.surface)
 
 	def export(self, filename):
-		self.draw(self.surface)
-		self.surface.write_to_png(filename)
+		ext = os.path.splitext(filename)[1]
+		if ext == '.pdf':
+			self.surface = cairo.PDFSurface(filename, self['width'], self['height'])
+			self.surface.context = cairo.Context(self.surface)
+			self.draw(self.surface)
+		elif ext == '.png':
+			self.draw(self.surface)
+			self.surface.write_to_png(filename)
+		elif ext == '.ps':
+			self.surface = cairo.PSSurface(filename, self['width'], self['height'])
+			self.surface.context = cairo.Context(self.surface)
+			self.draw(self.surface)
+		elif ext == '.svg':
+			with open(filename, 'w') as file:
+				file.write('<?xml version="1.0" encoding="UTF-8"?>')
+				self.code(file)
+		else:
+			raise ValueError('Unsupported file extension: {}'.format(ext))
 
 	def g(self, **attribs):
 		from .structure import Group
