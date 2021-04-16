@@ -1,4 +1,4 @@
-attrib = [
+attrib = {
 	'Core':['id','xml:base','xml:lang','xml:space'],
 	'Container':['enable-background'],
 	'Conditional':['requiredFeatures','requiredExtensions','systemLanguage'],
@@ -26,15 +26,16 @@ attrib = [
 	'AnimationAttribute':['attributeName','attributeType'],
 	'AnimationTiming':['begin','dur','end','min','max','restart','repeatCount','repeatDur','fill'],
 	'AnimationValue':['calcMode','values','keyTimes','keySplines','from','to','by'],
-	'AnimationAddition':['additive','accumulate']
-]
+	'AnimationAddition':['additive','accumulate'],
+	'Presentation':[]
+}
 attrib['FilterPrimitiveWithin'] = attrib['FilterPrimitive'] + ['in']
 attrib['XLinkRequired'] = attrib['XLink']
 attrib['XLinkEmbed'] = attrib['XLink']
 attrib['XLinkReplace'] = attrib['XLink']
 attrib['Animation'] = attrib['XLink']
 
-content = [
+content = {
 	'Description':['desc','title','metadata'],
 	'Use':['use'],
 	'Structure':['svg','g','defs','symbol','use'],
@@ -45,7 +46,7 @@ content = [
 	'Text':['text','altGlyphDef'],
 	'TextContent':['tspan','tref','textPath','altGlyph'],
 	'Marker':['marker'],
-	'ColorProfileElements':['color-profile'],
+	'ColorProfile':['color-profile'],
 	'Gradient':['linearGradient','radialGradient'],
 	'Pattern':['pattern'],
 	'Clip':['clipPath'],
@@ -58,4 +59,4 @@ content = [
 	'Script':['script'],
 	'Animation':['animate','animateColor','animateTransform','animateMotion','set'],
 	'Font':['font']
-]
+}

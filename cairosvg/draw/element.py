@@ -1,8 +1,10 @@
 import sys
+from . import _creators
 from .. import helpers
 
 class Element:
 	def __init__(self, *, parent=None, surface=None, **attribs):
+		# Tree structure
 		self.parent = None
 		self.children = []
 		self.root = self
@@ -16,10 +18,21 @@ class Element:
 			self.globals = {'ids':{}}
 			self.surface = surface
 
+		# Allowed children
+		for tag in self.__class__.content:
+			try:
+				setattr(self, tag, _creators[tag].__get__(self, self.__class__))
+			except KeyError:
+				pass
+
+		# Attributes
 		self.attribs = {}
 		for key in attribs:
 			attrib = helpers.parseAttribute(key)
-			self.attribs[attrib] = attribs[key]
+			if attrib in self.__class__.attribs:
+				self.attribs[attrib] = attribs[key]
+			else:
+				raise AttributeError(f'{self.tag} element doesn\'t take {attrib} attribute')
 
 		if 'id'	in attribs:
 			self.id = attribs['id']

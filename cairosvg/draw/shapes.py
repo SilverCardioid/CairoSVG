@@ -1,12 +1,16 @@
 import math
 
 from .element import Element
+from .modules import attrib, content
 from . import transform
 from ..colors import color
 from .. import helpers
 #.path imported below because it uses ShapeElement
 
 class ShapeElement(Element):
+	attribs = attrib['Core'] + attrib['Conditional'] + attrib['Style'] + attrib['GraphicalEvents'] + attrib['Paint'] + attrib['Opacity'] + attrib['Graphics'] + attrib['Cursor'] + attrib['Filter'] + attrib['Mask'] + attrib['Clip']
+	content = content['Description'] + content['Animation']
+
 	def __init__(self, **attribs):
 		Element.__init__(self, **attribs)
 		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
@@ -44,6 +48,8 @@ class ShapeElement(Element):
 from .path import Path
 
 class Circle(ShapeElement):
+	attribs = ShapeElement.attribs + ['cx','cy','r','transform']
+
 	def __init__(self, r=0, cx=0, cy=0, **attribs):
 		self.tag = 'circle'
 		super().__init__(r=r, cx=cx, cy=cy, **attribs)
@@ -57,6 +63,8 @@ class Circle(ShapeElement):
 
 
 class Ellipse(ShapeElement):
+	attribs = ShapeElement.attribs + ['cx','cy','rx','ry','transform']
+
 	def __init__(self, rx=0, ry=0, cx=0, cy=0, **attribs):
 		self.tag = 'ellipse'
 		super().__init__(rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
@@ -74,6 +82,8 @@ class Ellipse(ShapeElement):
 
 
 class Line(ShapeElement):
+	attribs = ShapeElement.attribs + ['x1','y1','x2','y2','transform']
+
 	def __init__(self, x1=0, y1=0, x2=0, y2=0, **attribs):
 		self.tag = 'line'
 		super().__init__(x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
@@ -95,6 +105,8 @@ class Line(ShapeElement):
 
 
 class Polygon(ShapeElement):
+	attribs = ShapeElement.attribs + ['points','transform']
+
 	def __init__(self, points=[], **attribs):
 		self.tag = 'polygon'
 		self._path = Path()
@@ -124,6 +136,8 @@ class Polygon(ShapeElement):
 
 
 class Polyline(ShapeElement):
+	attribs = ShapeElement.attribs + ['points','transform']
+
 	def __init__(self, points=[], **attribs):
 		self.tag = 'polyline'
 		self._path = Path()
@@ -152,6 +166,8 @@ class Polyline(ShapeElement):
 
 
 class Rect(ShapeElement):
+	attribs = ShapeElement.attribs + ['x','y','width','height','rx','ry','transform']
+
 	def __init__(self, width=0, height=0, x=0, y=0, rx=None, ry=None, **attribs):
 		self.tag = 'rect'
 		if ry is None:

@@ -1,9 +1,12 @@
 import math
 
+from .modules import attrib
 from .shapes import ShapeElement
 from .. import helpers
 
 class Path(ShapeElement):
+	attribs = ShapeElement.attribs + attrib['Marker'] + ['d','pathLength','transform']
+
 	def __init__(self, d=None, **attribs):
 		self.tag = 'path'
 		super().__init__(d=d, **attribs)
