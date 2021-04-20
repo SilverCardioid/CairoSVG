@@ -1,7 +1,7 @@
 import math
 
+from .element import ShapeElement
 from .modules import attrib
-from .shapes import ShapeElement
 from .. import helpers
 
 class Path(ShapeElement):

@@ -116,9 +116,12 @@ def normalize(string):
 
 
 camelCaseAttribs = set(['allowReorder','attributeName','attributeType','autoReverse','baseFrequency','baseProfile','calcMode','clipPathUnits','contentScriptType','contentStyleType','diffuseConstant','edgeMode','externalResourcesRequired','filterRes','filterUnits','glyphRef','gradientTransform','gradientUnits','kernelMatrix','kernelUnitLength','keyPoints','keySplines','keyTimes','lengthAdjust','limitingConeAngle','markerHeight','markerUnits','markerWidth','maskContentUnits','maskUnits','numOctaves','pathLength','patternContentUnits','patternTransform','patternUnits','pointsAtX','pointsAtY','pointsAtZ','preserveAlpha','preserveAspectRatio','primitiveUnits','refX','refY','referrerPolicy','repeatCount','repeatDur','requiredExtensions','requiredFeatures','specularConstant','specularExponent','spreadMethod','startOffset','stdDeviation','stitchTiles','surfaceScale','systemLanguage','tableValues','targetX','targetY','textLength','viewBox','viewTarget','xChannelSelector','yChannelSelector','zoomAndPan'])
+nameSpaceAttribs = {'base':'xml', 'lang':'xml', 'space':'xml', 'type':'xlink', 'href':'xlink', 'role':'xlink', 'arcrole':'xlink', 'title':'xlink', 'show':'xlink', 'actuate':'xlink'}
 def parseAttribute(key):
 	"""Convert a snake_case or camelCase function argument to a hyphenated SVG attribute"""
 	key = key.replace('_','-')
+	if key in nameSpaceAttribs:
+		key = nameSpaceAttribs[key] + ':' + key
 	if key not in camelCaseAttribs:
 		key = re.sub('(?<!^)(?=[A-Z])', '-', key).lower()
 	return key

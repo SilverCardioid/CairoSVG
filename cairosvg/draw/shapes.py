@@ -1,51 +1,9 @@
 import math
 
-from .element import Element
-from .modules import attrib, content
-from . import transform
-from ..colors import color
-from .. import helpers
-#.path imported below because it uses ShapeElement
-
-class ShapeElement(Element):
-	attribs = attrib['Core'] + attrib['Conditional'] + attrib['Style'] + attrib['GraphicalEvents'] + attrib['Paint'] + attrib['Opacity'] + attrib['Graphics'] + attrib['Cursor'] + attrib['Filter'] + attrib['Mask'] + attrib['Clip']
-	content = content['Description'] + content['Animation']
-
-	def __init__(self, **attribs):
-		Element.__init__(self, **attribs)
-		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
-
-	def _paint(self, surface):
-		opacity = float(self.getAttribute('opacity', 1))
-		assert 0 <= opacity <= 1
-		fillOpacity = float(self.getAttribute('fillOpacity', 1))
-		assert 0 <= fillOpacity <= 1
-		strokeOpacity = float(self.getAttribute('strokeOpacity', 1))
-		assert 0 <= strokeOpacity <= 1
-
-		fill = color(self.getAttribute('fill', '#000'), fillOpacity*opacity)
-		fillRule = self.getAttribute('fillRule', 'nonzero')
-		assert fillRule in helpers.FILL_RULES
-
-		stroke = color(self.getAttribute('stroke', 'none'), strokeOpacity*opacity)
-		strokeWidth = float(self.getAttribute('strokeWidth', 1))
-		strokeLinecap = self.getAttribute('strokeLinecap', 'butt')
-		assert strokeLinecap in helpers.LINE_CAPS
-		strokeLinejoin = self.getAttribute('strokeLinejoin', 'miter')
-		assert strokeLinejoin in helpers.LINE_JOINS
-		# TODO: add dash
-
-		surface.context.set_source_rgba(*fill)
-		surface.context.set_fill_rule(helpers.FILL_RULES[fillRule])
-		surface.context.fill_preserve()
-
-		surface.context.set_source_rgba(*stroke)
-		surface.context.set_line_width(strokeWidth)
-		surface.context.set_line_cap(helpers.LINE_CAPS[strokeLinecap])
-		surface.context.set_line_join(helpers.LINE_JOINS[strokeLinejoin])
-		surface.context.stroke()
-
+from .element import ShapeElement
+from .modules import attrib
 from .path import Path
+from .. import helpers
 
 class Circle(ShapeElement):
 	attribs = ShapeElement.attribs + ['cx','cy','r','transform']
