@@ -1,7 +1,7 @@
 import sys
 from . import _creators, transform
 from .modules import attrib, content
-from .. import helpers
+from .. import colors, helpers
 
 class Element:
 	def __init__(self, *, parent=None, surface=None, **attribs):
@@ -33,7 +33,7 @@ class Element:
 			if attrib in self.__class__.attribs:
 				self.attribs[attrib] = attribs[key]
 			else:
-				raise AttributeError(f'{self.tag} element doesn\'t take {attrib} attribute')
+				raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
 
 		if 'id'	in attribs:
 			self.id = attribs['id']
@@ -47,6 +47,9 @@ class Element:
 			raise Exception('Surface needed for drawing')
 		return self.root.surface
 
+	def _setTransform(self):
+		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
+
 	def __getitem__(self, key):
 		return self.attribs[helpers.parseAttribute(key)]
 
@@ -57,6 +60,7 @@ class Element:
 		del self.attribs[helpers.parseAttribute(key)]
 
 	def delete(self, recursive=True):
+		"""Delete this element from the tree"""
 		if self.parent: self.parent.children.remove(self)
 		if recursive:
 			for child in self.children: child.delete()
@@ -64,6 +68,7 @@ class Element:
 			for child in self.children: child.parent = None
 
 	def getAttribute(self, attrib, default=None, cascade=True):
+		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
 		attrib = helpers.parseAttribute(attrib)
 		if cascade:
 			node = self
@@ -78,15 +83,20 @@ class Element:
 			return self.attribs.get(attrib, default)
 
 	def addChild(self, tag, *attribs, **kwattribs):
-		from .elements import elements
+		"""Add a child element to this element"""
+		from . import elements
 		try:
 			return elements[tag](parent=self, *attribs, **kwattribs)
 		except KeyError:
 			raise ValueError('unknown tag: {}'.format(tag))
 
-	def code(self, file=sys.stdout, indent='', indentDepth=0, newline='\n', xmlDeclaration=False):
+	def code(self, file=None, indent='', indentDepth=0, newline='\n', xmlDeclaration=False):
+		"""Write the SVG code for this element and its children to the screen or to an opened file"""
 		indent = indent or ''
 		newline = newline or ''
+
+		if not file:
+			file = sys.stdout
 
 		if xmlDeclaration:
 			file.write('<?xml version="1.0" encoding="UTF-8"?>{}'.format(newline))
@@ -120,7 +130,7 @@ class ShapeElement(Element):
 
 	def __init__(self, **attribs):
 		Element.__init__(self, **attribs)
-		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
+		self._setTransform()
 
 	def _paint(self, surface):
 		opacity = float(self.getAttribute('opacity', 1))
@@ -130,11 +140,11 @@ class ShapeElement(Element):
 		strokeOpacity = float(self.getAttribute('stroke-opacity', 1))
 		assert 0 <= strokeOpacity <= 1
 
-		fill = color(self.getAttribute('fill', '#000'), fillOpacity*opacity)
+		fill = colors.color(self.getAttribute('fill', '#000'), fillOpacity*opacity)
 		fillRule = self.getAttribute('fill-rule', 'nonzero')
 		assert fillRule in helpers.FILL_RULES
 
-		stroke = color(self.getAttribute('stroke', 'none'), strokeOpacity*opacity)
+		stroke = colors.color(self.getAttribute('stroke', 'none'), strokeOpacity*opacity)
 		strokeWidth = float(self.getAttribute('stroke-width', 1))
 		strokeLinecap = self.getAttribute('stroke-linecap', 'butt')
 		assert strokeLinecap in helpers.LINE_CAPS

@@ -35,3 +35,7 @@ _creators.update({
 	'use':      lambda self, href=None, x=0, y=0, width=0, height=0, **attribs: \
 	            	structure.Use(parent=self, href=href, x=x, y=y, width=width, height=height, **attribs)
 })
+for tag in _creators:
+	_creators[tag].__doc__ = f'Add a <{tag}> as a child of this element'
+del tag
+

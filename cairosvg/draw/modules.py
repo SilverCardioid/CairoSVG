@@ -26,14 +26,15 @@ attrib = {
 	'AnimationAttribute':['attributeName','attributeType'],
 	'AnimationTiming':['begin','dur','end','min','max','restart','repeatCount','repeatDur','fill'],
 	'AnimationValue':['calcMode','values','keyTimes','keySplines','from','to','by'],
-	'AnimationAddition':['additive','accumulate'],
-	'Presentation':[]
+	'AnimationAddition':['additive','accumulate']
+	#'Presentation':[] ??
 }
 attrib['FilterPrimitiveWithin'] = attrib['FilterPrimitive'] + ['in']
 attrib['XLinkRequired'] = attrib['XLink']
 attrib['XLinkEmbed'] = attrib['XLink']
 attrib['XLinkReplace'] = attrib['XLink']
 attrib['Animation'] = attrib['XLink']
+attrib['Presentation'] = attrib['Paint']
 
 content = {
 	'Description':['desc','title','metadata'],

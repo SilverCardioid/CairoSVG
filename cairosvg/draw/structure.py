@@ -9,7 +9,7 @@ class Group(StructureElement):
 	def __init__(self, **attribs):
 		self.tag = 'g'
 		Element.__init__(self, **attribs)
-		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
+		self._setTransform()
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
@@ -24,12 +24,11 @@ class Use(Element):
 	def __init__(self, href=None, x=0, y=0, width=0, height=0, **attribs):
 		self.tag = 'use'
 		Element.__init__(self, href=href, x=x, y=y, width=width, height=height, **attribs)
-		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
-		self.transform.translate(x, y)
+		self._setTransform()
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
-		target = self.attribs['href']
+		target = self.attribs['xlink:href']
 		if type(target) is str:
 			if target[0] == '#':
 				target = target[1:]
@@ -39,8 +38,11 @@ class Use(Element):
 				raise ValueError('<use> referencing unknown id: {}'.format(target))
 
 		# Draw target element in the context of the <use>
+		x, y = self.attribs['x'], self.attribs['y']
 		targetParent = target.parent
 		target.parent = self
+		self.transform.translate(x, y)
 		with self.transform.applyContext(surface):
 			target.draw(surface)
 		target.parent = targetParent
+		self.transform.translate(-x, -y)
