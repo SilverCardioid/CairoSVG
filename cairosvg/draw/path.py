@@ -1,11 +1,11 @@
 import math
 
-from .element import ShapeElement
+from .element import _ShapeElement
 from .modules import attrib
 from .. import helpers
 
-class Path(ShapeElement):
-	attribs = ShapeElement.attribs + attrib['Marker'] + ['d','pathLength','transform']
+class Path(_ShapeElement):
+	attribs = _ShapeElement.attribs + attrib['Marker'] + ['d','pathLength','transform']
 
 	def __init__(self, d=None, **attribs):
 		self.tag = 'path'

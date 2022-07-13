@@ -5,16 +5,15 @@ import os
 
 from .. import helpers
 from .modules import attrib, content
-from .element import Element
-from .structure import StructureElement
+from .element import _Element, _StructureElement
 
-class SVG(StructureElement):
-	attribs = StructureElement.attribs + attrib['DocumentEvents'] + ['x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType']
-	content = StructureElement.content
+class SVG(_StructureElement):
+	attribs = _StructureElement.attribs + attrib['DocumentEvents'] + ['x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType']
+	content = _StructureElement.content
 
 	def __init__(self, width, height, *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **attribs):
 		self.tag = 'svg'
-		Element.__init__(self, width=width, height=height, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
+		_Element.__init__(self, width=width, height=height, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
 		self['xmlns'] = 'http://www.w3.org/2000/svg'
 		if not self.surface: self.setSurface('Image')
 
@@ -27,7 +26,7 @@ class SVG(StructureElement):
 		self.surface.context.paint()
 		self.surface.context.set_operator(cairo.OPERATOR_OVER)
 
-	def export(self, filename, svgOptions={}):
+	def export(self, filename, *, useCairo=False, indent='', newline='\n', xmlDeclaration=True):
 		ext = os.path.splitext(filename)[1]
 		if ext == '.pdf':
 			surface = helpers.createSurface('PDF', self['width'], self['height'], filename)
@@ -42,18 +41,17 @@ class SVG(StructureElement):
 			self.draw(surface)
 			surface.finish()
 		elif ext == '.svg':
-			if svgOptions.get('useCairo', False):
+			if useCairo:
 				surface = helpers.createSurface('SVG', self['width'], self['height'], filename)
 				self.draw(surface)
 				surface.finish()
 			else:
 				with open(filename, 'w') as file:
-					svgOptions['xmlDeclaration'] = svgOptions.get('xmlDeclaration', True)
-					self.code(file, **svgOptions)
+					self.code(file, indent=indent, newline=newline, xmlDeclaration=xmlDeclaration)
 		else:
 			raise ValueError('Unsupported file extension: {}'.format(ext))
 
-	def pixels(self, alpha=False, bgr=False):
+	def pixels(self, *, alpha=False, bgr=False):
 		self.clearSurface()
 		self.draw()
 		# based on github.com/Zulko/gizeh

@@ -4,6 +4,7 @@ from . import structure, svg, shapes, path
 
 elements = {
 	'circle': shapes.Circle,
+	'defs': structure.Defs,
 	'ellipse': shapes.Ellipse,
 	'g': structure.Group,
 	'line': shapes.Line,
@@ -18,6 +19,8 @@ elements = {
 _creators.update({
 	'circle':   lambda self, r=0, cx=0, cy=0, **attribs: \
 	            	shapes.Circle(parent=self, r=r, cx=cx, cy=cy, **attribs),
+	'defs':     lambda self, **attribs: \
+	            	structure.Defs(parent=self, **attribs),
 	'ellipse':  lambda self, rx=0, ry=0, cx=0, cy=0, **attribs: \
 	            	shapes.Ellipse(parent=self, rx=rx, ry=ry, cx=cx, cy=cy, **attribs),
 	'g':        lambda self, **attribs: \

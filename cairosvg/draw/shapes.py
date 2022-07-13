@@ -1,12 +1,12 @@
 import math
 
-from .element import ShapeElement
+from .element import _ShapeElement
 from .modules import attrib
 from .path import Path
 from .. import helpers
 
-class Circle(ShapeElement):
-	attribs = ShapeElement.attribs + ['cx','cy','r','transform']
+class Circle(_ShapeElement):
+	attribs = _ShapeElement.attribs + ['cx','cy','r','transform']
 
 	def __init__(self, r=0, cx=0, cy=0, **attribs):
 		self.tag = 'circle'
@@ -16,12 +16,12 @@ class Circle(ShapeElement):
 		surface = surface or self._getSurface()
 		with self.transform.applyContext(surface):
 			surface.context.new_sub_path()
-			surface.context.arc(self.attribs['cx'], self.attribs['cy'], self.attribs['r'], 0, 2 * math.pi)
+			surface.context.arc(self['cx'], self['cy'], self['r'], 0, 2 * math.pi)
 			self._paint(surface)
 
 
-class Ellipse(ShapeElement):
-	attribs = ShapeElement.attribs + ['cx','cy','rx','ry','transform']
+class Ellipse(_ShapeElement):
+	attribs = _ShapeElement.attribs + ['cx','cy','rx','ry','transform']
 
 	def __init__(self, rx=0, ry=0, cx=0, cy=0, **attribs):
 		self.tag = 'ellipse'
@@ -29,18 +29,18 @@ class Ellipse(ShapeElement):
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
-		ratio = self.attribs['ry'] / self.attribs['rx']
+		ratio = self['ry'] / self['rx'] # TODO: what if rx == 0?
 		with self.transform.applyContext(surface):
 			surface.context.new_sub_path()
 			surface.context.save()
 			surface.context.scale(1, ratio)
-			surface.context.arc(self.attribs['cx'], self.attribs['cy'] / ratio, self.attribs['rx'], 0, 2 * math.pi)
+			surface.context.arc(self['cx'], self['cy'] / ratio, self['rx'], 0, 2 * math.pi)
 			surface.context.restore()
 			self._paint(surface)
 
 
-class Line(ShapeElement):
-	attribs = ShapeElement.attribs + ['x1','y1','x2','y2','transform']
+class Line(_ShapeElement):
+	attribs = _ShapeElement.attribs + ['x1','y1','x2','y2','transform']
 
 	def __init__(self, x1=0, y1=0, x2=0, y2=0, **attribs):
 		self.tag = 'line'
@@ -49,21 +49,20 @@ class Line(ShapeElement):
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
 		with self.transform.applyContext(surface):
-			surface.context.move_to(self.attribs['x1'], self.attribs['y1'])
-			surface.context.line_to(self.attribs['x2'], self.attribs['y2'])
+			surface.context.move_to(self['x1'], self['y1'])
+			surface.context.line_to(self['x2'], self['y2'])
 			self._paint(surface)
 
 	def vertices(self):
-		return [[self.attribs['x1'], self.attribs['y1']],
-		        [self.attribs['x2'], self.attribs['y2']]]
+		return [[self['x1'], self['y1']], [self['x2'], self['y2']]]
 
 	def vertexAngles(self):
-		angle = helpers.point_angle(self.attribs['x1'], self.attribs['y1'], self.attribs['x2'], self.attribs['y2'])
+		angle = helpers.point_angle(self['x1'], self['y1'], self['x2'], self['y2'])
 		return [angle, angle]
 
 
-class Polygon(ShapeElement):
-	attribs = ShapeElement.attribs + ['points','transform']
+class Polygon(_ShapeElement):
+	attribs = _ShapeElement.attribs + ['points','transform']
 
 	def __init__(self, points=[], **attribs):
 		self.tag = 'polygon'
@@ -77,7 +76,7 @@ class Polygon(ShapeElement):
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
-		points = self.attribs['points']
+		points = self['points']
 		if len(points) > 0:
 			with self.transform.applyContext(surface):
 				surface.context.move_to(*points[0])
@@ -93,8 +92,8 @@ class Polygon(ShapeElement):
 		return self._path.vertexAngles()
 
 
-class Polyline(ShapeElement):
-	attribs = ShapeElement.attribs + ['points','transform']
+class Polyline(_ShapeElement):
+	attribs = _ShapeElement.attribs + ['points','transform']
 
 	def __init__(self, points=[], **attribs):
 		self.tag = 'polyline'
@@ -108,7 +107,7 @@ class Polyline(ShapeElement):
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
-		points = self.attribs['points']
+		points = self['points']
 		if len(points) > 0:
 			with self.transform:
 				surface.context.move_to(*points[0])
@@ -123,8 +122,8 @@ class Polyline(ShapeElement):
 		return self._path.vertexAngles()
 
 
-class Rect(ShapeElement):
-	attribs = ShapeElement.attribs + ['x','y','width','height','rx','ry','transform']
+class Rect(_ShapeElement):
+	attribs = _ShapeElement.attribs + ['x','y','width','height','rx','ry','transform']
 
 	def __init__(self, width=0, height=0, x=0, y=0, rx=None, ry=None, **attribs):
 		self.tag = 'rect'
@@ -136,9 +135,9 @@ class Rect(ShapeElement):
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
-		width, height = self.attribs['width'], self.attribs['height']
-		x, y = self.attribs['x'], self.attribs['y']
-		rx, ry = self.attribs['rx'], self.attribs['ry']
+		width, height = self['width'], self['height']
+		x, y = self['x'], self['y']
+		rx, ry = self['rx'], self['ry']
 
 		with self.transform.applyContext(surface):
 			if rx == 0 or ry == 0:

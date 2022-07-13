@@ -3,7 +3,7 @@ from . import _creators, transform
 from .modules import attrib, content
 from .. import colors, helpers
 
-class Element:
+class _Element:
 	def __init__(self, *, parent=None, surface=None, **attribs):
 		# Tree structure
 		self.parent = None
@@ -16,7 +16,7 @@ class Element:
 			self.root = parent.root
 		else:
 			# root
-			self.globals = {'ids':{}}
+			self._globals = {'ids':{}}
 			self.surface = surface
 
 		# Allowed children
@@ -27,20 +27,20 @@ class Element:
 				pass
 
 		# Attributes
-		self.attribs = {}
+		self._attribs = {}
 		for key in attribs:
 			attrib = helpers.parseAttribute(key)
 			if attrib in self.__class__.attribs:
-				self.attribs[attrib] = attribs[key]
+				self._attribs[attrib] = attribs[key]
 			else:
 				raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
 
 		if 'id'	in attribs:
 			self.id = attribs['id']
-			if self.id in self.root.globals['ids']:
+			if self.id in self.root._globals['ids']:
 				print('warning: duplicate ID ignored: ' + self.id)
 			else:
-				self.root.globals['ids'][self.id] = self
+				self.root._globals['ids'][self.id] = self
 
 	def _getSurface(self):
 		if not self.root.surface:
@@ -48,16 +48,16 @@ class Element:
 		return self.root.surface
 
 	def _setTransform(self):
-		self.transform = transform.Transform(self.getAttribute('transform', None, False), parent=self)
+		self.transform = transform.Transform(self.getAttribute('transform', None, cascade=False), parent=self)
 
 	def __getitem__(self, key):
-		return self.attribs[helpers.parseAttribute(key)]
+		return self._attribs[helpers.parseAttribute(key)]
 
 	def __setitem__(self, key, value):
-		self.attribs[helpers.parseAttribute(key)] = value
+		self._attribs[helpers.parseAttribute(key)] = value
 
 	def __delitem__(self, key):
-		del self.attribs[helpers.parseAttribute(key)]
+		del self._attribs[helpers.parseAttribute(key)]
 
 	def delete(self, recursive=True):
 		"""Delete this element from the tree"""
@@ -67,20 +67,19 @@ class Element:
 		else:
 			for child in self.children: child.parent = None
 
-	def getAttribute(self, attrib, default=None, cascade=True):
+	def getAttribute(self, attrib, default=None, *, cascade=True):
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
 		attrib = helpers.parseAttribute(attrib)
 		if cascade:
 			node = self
-			while attrib not in node.attribs:
+			while attrib not in node._attribs:
 				node = node.parent
 				if node is None:
 					# root reached
 					return default
-			value = node.attribs[attrib]
-			return value if value is not None else default
+			return node._attribs[attrib] #value if value is not None else default
 		else:
-			return self.attribs.get(attrib, default)
+			return self._attribs.get(attrib, default)
 
 	def addChild(self, tag, *attribs, **kwattribs):
 		"""Add a child element to this element"""
@@ -90,7 +89,7 @@ class Element:
 		except KeyError:
 			raise ValueError('unknown tag: {}'.format(tag))
 
-	def code(self, file=None, indent='', indentDepth=0, newline='\n', xmlDeclaration=False):
+	def code(self, file=None, *, indent='', indentDepth=0, newline='\n', xmlDeclaration=False):
 		"""Write the SVG code for this element and its children to the screen or to an opened file"""
 		indent = indent or ''
 		newline = newline or ''
@@ -102,8 +101,8 @@ class Element:
 			file.write('<?xml version="1.0" encoding="UTF-8"?>{}'.format(newline))
 
 		file.write('{}<{}'.format(indentDepth*indent, self.tag))
-		for attr in self.attribs:
-			file.write(' {}="{}"'.format(attr, self.attribs[attr]))
+		for attr in self._attribs:
+			file.write(' {}="{}"'.format(attr, self._attribs[attr]))
 		if len(self.children) == 0:
 			file.write('/>{}'.format(newline))
 		else:
@@ -113,7 +112,7 @@ class Element:
 			file.write('{}</{}>{}'.format(indentDepth*indent, self.tag, newline))
 
 
-class StructureElement(Element):
+class _StructureElement(_Element):
 	attribs = attrib['Core'] + attrib['Conditional'] + attrib['Style'] + attrib['External'] + attrib['Presentation'] + attrib['GraphicalEvents']
 	content = content['Description'] + content['Animation'] + content['Structure'] + content['Shape'] + content['Text'] + content['Image'] + content['View'] + content['Conditional'] + content['Hyperlink'] + content['Script'] + content['Style'] + content['Marker'] + content['Clip'] + content['Mask'] + content['Gradient'] + content['Pattern'] + content['Filter'] + content['Cursor'] + content['Font'] + content['ColorProfile']
 
@@ -124,12 +123,12 @@ class StructureElement(Element):
 
 
 
-class ShapeElement(Element):
+class _ShapeElement(_Element):
 	attribs = attrib['Core'] + attrib['Conditional'] + attrib['Style'] + attrib['GraphicalEvents'] + attrib['Paint'] + attrib['Opacity'] + attrib['Graphics'] + attrib['Cursor'] + attrib['Filter'] + attrib['Mask'] + attrib['Clip']
 	content = content['Description'] + content['Animation']
 
 	def __init__(self, **attribs):
-		Element.__init__(self, **attribs)
+		_Element.__init__(self, **attribs)
 		self._setTransform()
 
 	def _paint(self, surface):
@@ -150,7 +149,13 @@ class ShapeElement(Element):
 		assert strokeLinecap in helpers.LINE_CAPS
 		strokeLinejoin = self.getAttribute('stroke-linejoin', 'miter')
 		assert strokeLinejoin in helpers.LINE_JOINS
-		# TODO: add dash
+
+		dashArray = helpers.normalize(self.getAttribute('stroke-dasharray', '')).split()
+		if dashArray:
+			dashes = [helpers.size(surface, dash) for dash in dashArray]
+			if sum(dashes):
+				offset = helpers.size(surface, self.getAttribute('stroke-dashoffset'))
+				surface.context.set_dash(dashes, offset)
 
 		surface.context.set_source_rgba(*fill)
 		surface.context.set_fill_rule(helpers.FILL_RULES[fillRule])
