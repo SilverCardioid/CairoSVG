@@ -3,7 +3,9 @@ import cv2
 import numpy as np
 import os
 
+from . import _creators
 from .. import helpers
+from ..parse import parser
 from .modules import attrib, content
 from .element import _Element, _StructureElement
 
@@ -13,6 +15,7 @@ class SVG(_StructureElement):
 
 	def __init__(self, width, height, *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **attribs):
 		self.tag = 'svg'
+		width = int(width); height = int(height) # todo: support units
 		_Element.__init__(self, width=width, height=height, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
 		self['xmlns'] = 'http://www.w3.org/2000/svg'
 		if not self.surface: self.setSurface('Image')
@@ -79,3 +82,21 @@ class SVG(_StructureElement):
 				close = True
 		if close:
 			cv2.destroyWindow(windowName)
+
+	@classmethod
+	def read(cls, filename, unsafe=False):
+		tree = parser.Tree(url=filename, unsafe=unsafe)
+		assert tree.tag == 'svg'
+		#print(f'<{tree.tag}> attribs: {dict(tree)}')
+		svg = cls(**tree)
+		elementQueue = [(tree, svg)]
+		while len(elementQueue) > 0:
+			curNode, curElem = elementQueue.pop()
+			for childNode in curNode.children:
+				if childNode.tag in _creators:
+					#print(f'<{childNode.tag}> attribs: {dict(childNode)}')
+					childElem = _creators[childNode.tag](curElem, **childNode)
+					elementQueue.append((childNode, childElem))
+				else:
+					print(f'<{childNode.tag}> node skipped')
+		return svg
