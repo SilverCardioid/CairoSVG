@@ -1,6 +1,6 @@
 import sys
 from . import _creators, transform
-from .modules import attrib, content
+from .modules import attrib as _attrib, content as _content
 from .. import colors, helpers
 
 class _Element:
@@ -29,11 +29,7 @@ class _Element:
 		# Attributes
 		self._attribs = {}
 		for key in attribs:
-			attrib = helpers.parseAttribute(key)
-			if attrib in self.__class__.attribs:
-				self._attribs[attrib] = attribs[key]
-			else:
-				raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
+			self[key] = attribs[key]
 
 		if 'id'	in attribs:
 			self.id = attribs['id']
@@ -54,6 +50,11 @@ class _Element:
 		return self._attribs[helpers.parseAttribute(key)]
 
 	def __setitem__(self, key, value):
+		attrib = helpers.parseAttribute(key)
+		if attrib in self.__class__.attribs:
+			self._attribs[attrib] = value
+		else:
+			raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
 		self._attribs[helpers.parseAttribute(key)] = value
 
 	def __delitem__(self, key):
@@ -108,13 +109,27 @@ class _Element:
 		else:
 			file.write('>{}'.format(newline))
 			for child in self.children:
-				child.code(file, indent, indentDepth+1, newline)
+				child.code(file, indent=indent, indentDepth=indentDepth+1, newline=newline)
 			file.write('{}</{}>{}'.format(indentDepth*indent, self.tag, newline))
+
+	def descendants(self):
+		yield self
+		for child in self.children:
+			yield from child.descendants()
+
+	def find(self, function, *, maxResults=None):
+		results = []
+		for elem in self.descendants():
+			if function(elem):
+				results.append(elem)
+				if maxResults and len(results) >= maxResults:
+					break
+		return results
 
 
 class _StructureElement(_Element):
-	attribs = attrib['Core'] + attrib['Conditional'] + attrib['Style'] + attrib['External'] + attrib['Presentation'] + attrib['GraphicalEvents']
-	content = content['Description'] + content['Animation'] + content['Structure'] + content['Shape'] + content['Text'] + content['Image'] + content['View'] + content['Conditional'] + content['Hyperlink'] + content['Script'] + content['Style'] + content['Marker'] + content['Clip'] + content['Mask'] + content['Gradient'] + content['Pattern'] + content['Filter'] + content['Cursor'] + content['Font'] + content['ColorProfile']
+	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + _attrib['GraphicalEvents']
+	content = _content['Description'] + _content['Animation'] + _content['Structure'] + _content['Shape'] + _content['Text'] + _content['Image'] + _content['View'] + _content['Conditional'] + _content['Hyperlink'] + _content['Script'] + _content['Style'] + _content['Marker'] + _content['Clip'] + _content['Mask'] + _content['Gradient'] + _content['Pattern'] + _content['Filter'] + _content['Cursor'] + _content['Font'] + _content['ColorProfile']
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
@@ -122,10 +137,9 @@ class _StructureElement(_Element):
 			child.draw(surface)
 
 
-
 class _ShapeElement(_Element):
-	attribs = attrib['Core'] + attrib['Conditional'] + attrib['Style'] + attrib['GraphicalEvents'] + attrib['Paint'] + attrib['Opacity'] + attrib['Graphics'] + attrib['Cursor'] + attrib['Filter'] + attrib['Mask'] + attrib['Clip']
-	content = content['Description'] + content['Animation']
+	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['GraphicalEvents'] + _attrib['Paint'] + _attrib['Opacity'] + _attrib['Graphics'] + _attrib['Cursor'] + _attrib['Filter'] + _attrib['Mask'] + _attrib['Clip']
+	content = _content['Description'] + _content['Animation']
 
 	def __init__(self, **attribs):
 		_Element.__init__(self, **attribs)

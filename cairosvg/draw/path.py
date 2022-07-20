@@ -10,12 +10,20 @@ class Path(_ShapeElement):
 	def __init__(self, d=None, **attribs):
 		self.tag = 'path'
 		super().__init__(d=d, **attribs)
-		self._data = []
-		self._currentPoint = None
-		self._startPoint = None
-		self._lastBezier = None
+		self._clear()
 		if d is not None:
 			self.d(d)
+
+	def __setitem__(self, key, value):
+		super().__setitem__(key, value)
+		if key == 'd':
+			self._clear()
+			self.d(self['d'])
+
+	def __delitem__(self, key):
+		super().__delitem__(key)
+		if key == 'd':
+			self._clear()
 
 	def _add(self, letter, coords=None):
 		self._data.append([letter, coords])
@@ -25,6 +33,12 @@ class Path(_ShapeElement):
 			raise ValueError('Path has not been started with \'M\' or \'m\'')
 		self._currentPoint = coords[-2:] if letter != 'Z' else self._startPoint
 		self._lastBezier = (letter, *coords[-4:-2]) if letter in 'QC' else None
+
+	def _clear(self):
+		self._data = []
+		self._currentPoint = None
+		self._startPoint = None
+		self._lastBezier = None
 
 	def _rel2abs(self, x, y):
 		return self._currentPoint[0] + x, self._currentPoint[1] + y

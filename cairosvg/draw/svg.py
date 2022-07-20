@@ -6,11 +6,11 @@ import os
 from . import _creators
 from .. import helpers
 from ..parse import parser
-from .modules import attrib, content
+from .modules import attrib as _attrib
 from .element import _Element, _StructureElement
 
 class SVG(_StructureElement):
-	attribs = _StructureElement.attribs + attrib['DocumentEvents'] + ['x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType']
+	attribs = _StructureElement.attribs + _attrib['DocumentEvents'] + ['x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType','xmlns','xmlns:xlink']
 	content = _StructureElement.content
 
 	def __init__(self, width, height, *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **attribs):

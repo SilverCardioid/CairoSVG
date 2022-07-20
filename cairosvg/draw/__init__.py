@@ -35,6 +35,8 @@ _creators.update({
 	            	shapes.Polyline(parent=self, points=points, **attribs),
 	'rect':     lambda self, width=0, height=0, x=0, y=0, rx=None, ry=None, **attribs: \
 	            	shapes.Rect(parent=self, width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs),
+	'svg':      lambda self, width, height, **attribs: \
+	            	svg.SVG(parent=self, width=width, height=height, **attribs),
 	'use':      lambda self, href=None, x=0, y=0, width=0, height=0, **attribs: \
 	            	structure.Use(parent=self, href=href, x=x, y=y, width=width, height=height, **attribs)
 })
