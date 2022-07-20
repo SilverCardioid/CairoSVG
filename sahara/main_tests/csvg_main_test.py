@@ -1,6 +1,4 @@
-import sys
-sys.path.insert(0, '..')
-import cairosvg
+from csvg_import import cairosvg
 
 svg = cairosvg.SVG(600, 600)
 svg.rect(600, 600, fill='#ffe')
