@@ -13,7 +13,7 @@ g1.addChild('use', href=path1,    transform='translate(150,150)', fill='#084')
 # red, red, green, green (top right 2x2)
 g2 = svg.g(id='g2', fill='#b11', transform='translate(300,0)')
 g2.use(href='#path1')
-use1 = g2.use(href='#path1', x=150, id='use1')
+use1 = g2.use(href='#path1', x=150) # automatic id
 g2.use(       href='path1',  y=150, fill='#084')
 g2.use(       href=use1,     y=150, fill='#084')
 

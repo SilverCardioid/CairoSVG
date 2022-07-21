@@ -4,6 +4,8 @@ from .modules import attrib as _attrib, content as _content
 from .. import colors, helpers
 
 class _Element:
+	_strAttrib = {}
+
 	def __init__(self, *, parent=None, surface=None, **attribs):
 		# Tree structure
 		self.parent = None
@@ -35,7 +37,7 @@ class _Element:
 			else:
 				raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
 
-		if 'id'	in attribs:
+		if 'id' in attribs:
 			self._setID(attribs['id'])
 
 		if 'transform' in self.__class__.attribs:
@@ -55,6 +57,16 @@ class _Element:
 			print('warning: duplicate ID ignored: ' + value)
 		else:
 			self.root._globals['ids'][value] = self
+
+	def _setAutoID(self):
+		# Find the first free ID of the form tag+number
+		i = 1
+		eid = self.tag + str(i)
+		while eid in self.root._globals['ids']:
+			i += 1
+			eid = self.tag + str(i)
+		self._attribs['id'] = eid
+		self._setID(eid)
 
 	def __getitem__(self, key):
 		return self._attribs[helpers.parseAttribute(key)]
@@ -89,6 +101,16 @@ class _Element:
 				pass
 		elif attrib == 'transform':
 			self.transform._clear()
+
+	@property
+	def id(self):
+		return self._attribs.get('id', None)
+	@id.setter
+	def id(self, value):
+		self['id'] = value
+	@id.deleter
+	def id(self):
+		del self['id']
 
 	def delete(self, recursive=True):
 		"""Delete this element from the tree"""
@@ -134,7 +156,9 @@ class _Element:
 		file.write('{}<{}'.format(indentDepth*indent, self.tag))
 		for attr in self._attribs:
 			val = self._attribs[attr]
-			if val is None:
+			if attr in self.__class__._strAttrib:
+				val = self.__class__._strAttrib[attr](val)
+			elif val is None:
 				val = 'none'
 			file.write(' {}="{}"'.format(attr, val))
 		if len(self.children) == 0:
