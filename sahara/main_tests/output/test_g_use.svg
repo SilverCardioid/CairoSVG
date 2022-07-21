@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="600" height="600" x="0" y="0" viewBox="None" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+<svg width="600" height="600" x="0" y="0" viewBox="none" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
 <rect width="600" height="600" x="0" y="0" rx="0" ry="0" fill="#ffe"/>
 <g id="g1" fill="#05a">
 <path d="M75,15 135,75 75,135 15,75z" id="path1"/>
 <use xlink:href="#path1" x="0" y="0" width="0" height="0" transform="translate(150,0)"/>
 <use xlink:href="path1" x="0" y="0" width="0" height="0" transform="translate(0,150)" fill="#084"/>
-<use xlink:href="<cairosvg.draw.path.Path object at 0x0000027D64B12160>" x="0" y="0" width="0" height="0" transform="translate(150,150)" fill="#084"/>
+<use xlink:href="<cairosvg.draw.path.Path object at 0x00000229CC880940>" x="0" y="0" width="0" height="0" transform="translate(150,150)" fill="#084"/>
 </g>
 <g id="g2" fill="#b11" transform="translate(300,0)">
 <use xlink:href="#path1" x="0" y="0" width="0" height="0"/>
 <use xlink:href="#path1" x="150" y="0" width="0" height="0" id="use1"/>
 <use xlink:href="path1" x="0" y="150" width="0" height="0" fill="#084"/>
-<use xlink:href="<cairosvg.draw.structure.Use object at 0x0000027D64B45910>" x="0" y="150" width="0" height="0" fill="#084"/>
+<use xlink:href="<cairosvg.draw.structure.Use object at 0x00000229CCE2BCA0>" x="0" y="150" width="0" height="0" fill="#084"/>
 </g>
 <use xlink:href="#g1" x="0" y="300" width="0" height="0" fill="#000"/>
-<use xlink:href="<cairosvg.draw.structure.Group object at 0x0000027D64B454F0>" x="0" y="300" width="0" height="0" fill="#000"/>
+<use xlink:href="<cairosvg.draw.structure.Group object at 0x00000229CCE082B0>" x="0" y="300" width="0" height="0" fill="#000"/>
 </svg>

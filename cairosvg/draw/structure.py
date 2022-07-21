@@ -1,6 +1,5 @@
 from .element import _Element, _StructureElement
 from .modules import attrib, content
-from . import transform
 
 class Group(_StructureElement):
 	attribs = _StructureElement.attribs + ['transform']
@@ -9,7 +8,6 @@ class Group(_StructureElement):
 	def __init__(self, **attribs):
 		self.tag = 'g'
 		_Element.__init__(self, **attribs)
-		self._setTransform()
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
@@ -36,7 +34,6 @@ class Use(_Element):
 	def __init__(self, href=None, x=0, y=0, width=0, height=0, **attribs):
 		self.tag = 'use'
 		_Element.__init__(self, href=href, x=x, y=y, width=width, height=height, **attribs)
-		self._setTransform()
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
@@ -53,8 +50,8 @@ class Use(_Element):
 		x, y = self['x'], self['y']
 		targetParent = target.parent
 		target.parent = self
-		self.transform.translate(x, y)
+		self.transform._translate(x, y)
 		with self.transform.applyContext(surface):
 			target.draw(surface)
 		target.parent = targetParent
-		self.transform.translate(-x, -y)
+		self.transform._translate(-x, -y)

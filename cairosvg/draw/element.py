@@ -29,14 +29,17 @@ class _Element:
 		# Attributes
 		self._attribs = {}
 		for key in attribs:
-			self[key] = attribs[key]
+			attrib = helpers.parseAttribute(key)
+			if attrib in self.__class__.attribs:
+				self._attribs[attrib] = attribs[key]
+			else:
+				raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
 
 		if 'id'	in attribs:
-			self.id = attribs['id']
-			if self.id in self.root._globals['ids']:
-				print('warning: duplicate ID ignored: ' + self.id)
-			else:
-				self.root._globals['ids'][self.id] = self
+			self._setID(attribs['id'])
+
+		if 'transform' in self.__class__.attribs:
+			self._setTransform()
 
 	def _getSurface(self):
 		if not self.root.surface:
@@ -44,7 +47,14 @@ class _Element:
 		return self.root.surface
 
 	def _setTransform(self):
-		self.transform = transform.Transform(self.getAttribute('transform', None, cascade=False), parent=self)
+		self.transform = transform.Transform(self._attribs.get('transform', None),
+		                                     parent=self)
+
+	def _setID(self, value):
+		if value in self.root._globals['ids']:
+			print('warning: duplicate ID ignored: ' + value)
+		else:
+			self.root._globals['ids'][value] = self
 
 	def __getitem__(self, key):
 		return self._attribs[helpers.parseAttribute(key)]
@@ -52,13 +62,33 @@ class _Element:
 	def __setitem__(self, key, value):
 		attrib = helpers.parseAttribute(key)
 		if attrib in self.__class__.attribs:
+			prevValue = self._attribs.get(attrib, None)
 			self._attribs[attrib] = value
+
+			if attrib == 'id':
+				try:
+					del self.root._globals['ids'][prevValue]
+				except KeyError:
+					pass
+				self._setID(value)
+			elif attrib == 'transform':
+				self.transform._clear()
+				self.transform._transform(value)
 		else:
 			raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
-		self._attribs[helpers.parseAttribute(key)] = value
 
 	def __delitem__(self, key):
-		del self._attribs[helpers.parseAttribute(key)]
+		attrib = helpers.parseAttribute(key)
+		value = self._attribs.get(attrib, None)
+		del self._attribs[attrib]
+
+		if attrib == 'id':
+			try:
+				del self.root._globals['ids'][value]
+			except KeyError:
+				pass
+		elif attrib == 'transform':
+			self.transform._clear()
 
 	def delete(self, recursive=True):
 		"""Delete this element from the tree"""
@@ -103,7 +133,10 @@ class _Element:
 
 		file.write('{}<{}'.format(indentDepth*indent, self.tag))
 		for attr in self._attribs:
-			file.write(' {}="{}"'.format(attr, self._attribs[attr]))
+			val = self._attribs[attr]
+			if val is None:
+				val = 'none'
+			file.write(' {}="{}"'.format(attr, val))
 		if len(self.children) == 0:
 			file.write('/>{}'.format(newline))
 		else:
@@ -140,10 +173,6 @@ class _StructureElement(_Element):
 class _ShapeElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['GraphicalEvents'] + _attrib['Paint'] + _attrib['Opacity'] + _attrib['Graphics'] + _attrib['Cursor'] + _attrib['Filter'] + _attrib['Mask'] + _attrib['Clip']
 	content = _content['Description'] + _content['Animation']
-
-	def __init__(self, **attribs):
-		_Element.__init__(self, **attribs)
-		self._setTransform()
 
 	def _paint(self, surface):
 		opacity = float(self.getAttribute('opacity', 1))
