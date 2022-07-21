@@ -68,6 +68,18 @@ class _Element:
 		self._attribs['id'] = eid
 		self._setID(eid)
 
+	def _tagCode(self, close=True):
+		string = '<' + self.tag
+		for attr in self._attribs:
+			val = self._attribs[attr]
+			if attr in self.__class__._strAttrib:
+				val = self.__class__._strAttrib[attr](val)
+			elif val is None:
+				val = 'none'
+			string += f' {attr}="{val}"'
+		string += '/>' if close else '>'
+		return string
+
 	def __getitem__(self, key):
 		return self._attribs[helpers.parseAttribute(key)]
 
@@ -101,6 +113,9 @@ class _Element:
 				pass
 		elif attrib == 'transform':
 			self.transform._clear()
+
+	def __repr__(self):
+		return self._tagCode()
 
 	@property
 	def id(self):
@@ -142,32 +157,27 @@ class _Element:
 		except KeyError:
 			raise ValueError('unknown tag: {}'.format(tag))
 
-	def code(self, file=None, *, indent='', indentDepth=0, newline='\n', xmlDeclaration=False):
+	def code(self, file=None, *, indent='', indentDepth=0,
+	                             newline='\n', xmlDeclaration=False):
 		"""Write the SVG code for this element and its children to the screen or to an opened file"""
 		indent = indent or ''
 		newline = newline or ''
+		indentation = indentDepth*indent
 
 		if not file:
 			file = sys.stdout
 
 		if xmlDeclaration:
-			file.write('<?xml version="1.0" encoding="UTF-8"?>{}'.format(newline))
+			decl = '<?xml version="1.0" encoding="UTF-8"?>'
+			file.write(f'{indentation}{decl}{newline}')
 
-		file.write('{}<{}'.format(indentDepth*indent, self.tag))
-		for attr in self._attribs:
-			val = self._attribs[attr]
-			if attr in self.__class__._strAttrib:
-				val = self.__class__._strAttrib[attr](val)
-			elif val is None:
-				val = 'none'
-			file.write(' {}="{}"'.format(attr, val))
-		if len(self.children) == 0:
-			file.write('/>{}'.format(newline))
-		else:
-			file.write('>{}'.format(newline))
+		tagCode = self._tagCode(close=len(self.children)==0)
+		file.write(f'{indentation}{tagCode}{newline}')
+		if len(self.children) > 0:
 			for child in self.children:
 				child.code(file, indent=indent, indentDepth=indentDepth+1, newline=newline)
-			file.write('{}</{}>{}'.format(indentDepth*indent, self.tag, newline))
+			tagClose = f'</{self.tag}>'
+			file.write(f'{indentation}{tagClose}{newline}')
 
 	def descendants(self):
 		yield self

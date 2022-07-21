@@ -71,17 +71,22 @@ class SVG(_StructureElement):
 		cv2.imshow(windowName, self.pixels(bgr=True))
 		close = False
 		waitTime = wait if wait > 0 else 100 # ms
-		while not close:
-			key = cv2.waitKey(waitTime)
-			if key >= 0 and (key & 0xFF) in [ord('q'), 27] \
-			or cv2.getWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN) < 0:
-				# Q or Esc key pressed or window manually closed (cv2.WND_PROP_VISIBLE doesn't work correctly)
-				close = True
-			elif wait > 0:
-				# Specified time elapsed
-				close = True
-		if close:
-			cv2.destroyWindow(windowName)
+		try:
+			while not close:
+				key = cv2.waitKey(waitTime)
+				if key >= 0 and (key & 0xFF) in [ord('q'), 27] \
+				or cv2.getWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN) < 0:
+					# Q or Esc key pressed or window manually closed (cv2.WND_PROP_VISIBLE doesn't work correctly)
+					close = True
+				elif wait > 0:
+					# Specified time elapsed
+					close = True
+			if close:
+				cv2.destroyWindow(windowName)
+		except cv2.error as e:
+			# ignore null pointer exception for already-closed window
+			if not (e.code == -27):
+				raise
 
 	@classmethod
 	def read(cls, filename, unsafe=False):
