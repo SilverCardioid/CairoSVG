@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="600" height="600" xmlns="http://www.w3.org/2000/svg">
-<rect width="600" height="600" x="0" y="0" fill="#ffe"/>
+<rect width="600" height="600" fill="#ffe"/>
 <g id="g1" fill="#05a">
 <path d="M75,15 135,75 75,135 15,75z" id="path1"/>
 <use xlink:href="#path1" transform="translate(150,0)"/>
@@ -8,11 +8,11 @@
 <use xlink:href="#path1" transform="translate(150,150)" fill="#084"/>
 </g>
 <g id="g2" fill="#b11" transform="translate(300,0)">
-<use xlink:href="#path1" x="0" y="0" width="0" height="0"/>
-<use xlink:href="#path1" x="150" y="0" width="0" height="0" id="use1"/>
-<use xlink:href="#path1" x="0" y="150" width="0" height="0" fill="#084"/>
-<use xlink:href="#use1" x="0" y="150" width="0" height="0" fill="#084"/>
+<use xlink:href="#path1"/>
+<use xlink:href="#path1" x="150" id="use1"/>
+<use xlink:href="#path1" y="150" fill="#084"/>
+<use xlink:href="#use1" y="150" fill="#084"/>
 </g>
-<use xlink:href="#g1" x="0" y="300" width="0" height="0" fill="#000"/>
-<use xlink:href="#g2" x="0" y="300" width="0" height="0" fill="#000"/>
+<use xlink:href="#g1" y="300" fill="#000"/>
+<use xlink:href="#g2" y="300" fill="#000"/>
 </svg>

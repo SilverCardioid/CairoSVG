@@ -38,7 +38,7 @@ class Use(_Element):
 		                           else ''
 	}
 
-	def __init__(self, href=None, x=helpers._intdef(0), y=helpers._intdef(0),
+	def __init__(self, href=helpers._strdef(''), *, x=helpers._intdef(0), y=helpers._intdef(0),
 	             width=helpers._intdef(0), height=helpers._intdef(0), **attribs):
 		self.tag = 'use'
 		_Element.__init__(self, href=href, x=x, y=y, width=width, height=height, **attribs)

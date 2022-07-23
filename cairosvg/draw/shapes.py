@@ -66,7 +66,7 @@ class Line(_ShapeElement):
 class Polygon(_ShapeElement):
 	attribs = _ShapeElement.attribs + ['points','transform']
 
-	def __init__(self, points=[], **attribs):
+	def __init__(self, points=helpers._strdef(''), **attribs):
 		self.tag = 'polygon'
 		super().__init__(points=points, **attribs)
 
@@ -174,7 +174,8 @@ class Rect(_ShapeElement):
 		'ry': lambda val: val
 	}
 
-	def __init__(self, width=0, height=0, x=helpers._intdef(0), y=helpers._intdef(0),
+	def __init__(self, width=helpers._intdef(0), height=helpers._intdef(0),
+	             x=helpers._intdef(0), y=helpers._intdef(0),
 	             rx=None, ry=None, **attribs):
 		self.tag = 'rect'
 		super().__init__(width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
