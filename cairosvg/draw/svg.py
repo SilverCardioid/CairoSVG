@@ -4,10 +4,10 @@ import numpy as np
 import os
 
 from . import _creators
-from .. import helpers
-from ..parse import parser
-from .modules import attrib as _attrib
 from .element import _Element, _StructureElement
+from .. import helpers
+from ..helpers.modules import attrib as _attrib
+from ..parse import parser
 
 class SVG(_StructureElement):
 	attribs = _StructureElement.attribs + _attrib['DocumentEvents'] + ['x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType','xmlns','xmlns:xlink']

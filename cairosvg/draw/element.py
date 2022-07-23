@@ -1,7 +1,7 @@
 import sys
 from . import _creators, transform
-from .modules import attrib as _attrib, content as _content
-from .. import colors, helpers
+from .. import helpers
+from ..helpers.modules import attrib as _attrib, content as _content
 
 class _Element:
 	_strAttrib = {}
@@ -222,11 +222,11 @@ class _ShapeElement(_Element):
 		strokeOpacity = float(self.getAttribute('stroke-opacity', 1))
 		assert 0 <= strokeOpacity <= 1
 
-		fill = colors.color(self.getAttribute('fill', '#000'), fillOpacity*opacity)
+		fill = helpers.colors.color(self.getAttribute('fill', '#000'), fillOpacity*opacity)
 		fillRule = self.getAttribute('fill-rule', 'nonzero')
 		assert fillRule in helpers.FILL_RULES
 
-		stroke = colors.color(self.getAttribute('stroke', 'none'), strokeOpacity*opacity)
+		stroke = helpers.colors.color(self.getAttribute('stroke', 'none'), strokeOpacity*opacity)
 		strokeWidth = float(self.getAttribute('stroke-width', 1))
 		strokeLinecap = self.getAttribute('stroke-linecap', 'butt')
 		assert strokeLinecap in helpers.LINE_CAPS

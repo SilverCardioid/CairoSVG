@@ -8,7 +8,6 @@ import io
 
 import cairocffi as cairo
 
-from ..colors import color, negate_color
 from .defs import (
     apply_filter_after_painting, apply_filter_before_painting, clip_path,
     filter_, gradient_or_pattern, linear_gradient, marker, mask, paint_mask,
@@ -16,6 +15,7 @@ from .defs import (
 from ..helpers import (
     UNITS, PointError, clip_rect, node_format, normalize, paint,
     preserve_ratio, size, transform)
+from ..helpers.colors import color, negate_color
 from .image import image, invert_image
 from .parser import Tree
 from .path import draw_markers, path

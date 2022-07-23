@@ -1,6 +1,6 @@
 from .element import _Element, _StructureElement
-from .modules import attrib, content
 from .. import helpers
+from ..helpers.modules import attrib as _attrib, content as _content
 
 class Group(_StructureElement):
 	attribs = _StructureElement.attribs + ['transform']
@@ -29,8 +29,8 @@ class Defs(_StructureElement):
 		return
 
 class Use(_Element):
-	attribs = attrib['Core'] + attrib['Conditional'] + attrib['Style'] + attrib['XLinkEmbed'] + attrib['Presentation'] + attrib['GraphicalEvents'] + ['transform','x','y','width','height']
-	content = content['Description'] + content['Animation']
+	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['XLinkEmbed'] + _attrib['Presentation'] + _attrib['GraphicalEvents'] + ['transform','x','y','width','height']
+	content = _content['Description'] + _content['Animation']
 	_strAttrib = {
 		'xlink:href': lambda val: ('#' + val if val and val[0] != '#'
 		                           else val) if isinstance(val, str) else \
