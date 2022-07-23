@@ -7,7 +7,7 @@ from .. import helpers
 class Path(_ShapeElement):
 	attribs = _ShapeElement.attribs + attrib['Marker'] + ['d','pathLength','transform']
 
-	def __init__(self, d=None, **attribs):
+	def __init__(self, d=helpers._strdef(''), **attribs):
 		self.tag = 'path'
 		super().__init__(d=d, **attribs)
 		self._clear()
@@ -35,7 +35,7 @@ class Path(_ShapeElement):
 		self._lastBezier = (letter, *coords[-4:-2]) if letter in 'QC' else None
 
 	def _addToAttr(self, string):
-		val = self._attribs('d', None) or ''
+		val = self._attribs.get('d', None) or ''
 		val += string
 		self['d'] = val
 

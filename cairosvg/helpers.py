@@ -37,6 +37,12 @@ LINE_JOINS = {
 	'bevel': cairo.LINE_JOIN_BEVEL
 }
 
+# Basic type subclasses to mark arguments that haven't been
+# explicitly set, and should be omitted from exported code
+class _Default: pass
+class _intdef(int, _Default): pass
+class _strdef(str, _Default): pass
+
 
 class PointError(Exception):
     """Exception raised when parsing a point fails."""

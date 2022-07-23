@@ -33,12 +33,13 @@ class Use(_Element):
 	content = content['Description'] + content['Animation']
 	_strAttrib = {
 		'xlink:href': lambda val: ('#' + val if val and val[0] != '#'
-		                           else val) if type(val) is str else \
+		                           else val) if isinstance(val, str) else \
 		                           '#' + val.id if isinstance(val, _Element) \
 		                           else ''
 	}
 
-	def __init__(self, href=None, x=0, y=0, width=0, height=0, **attribs):
+	def __init__(self, href=None, x=helpers._intdef(0), y=helpers._intdef(0),
+	             width=helpers._intdef(0), height=helpers._intdef(0), **attribs):
 		self.tag = 'use'
 		_Element.__init__(self, href=href, x=x, y=y, width=width, height=height, **attribs)
 
@@ -58,7 +59,7 @@ class Use(_Element):
 	@property
 	def target(self):
 		href = self._attribs.get('xlink:href', None)
-		if type(href) is str:
+		if isinstance(href, str):
 			if href[0] == '#':
 				href = href[1:]
 			try:

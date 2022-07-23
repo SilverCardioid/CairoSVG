@@ -13,10 +13,14 @@ class SVG(_StructureElement):
 	attribs = _StructureElement.attribs + _attrib['DocumentEvents'] + ['x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType','xmlns','xmlns:xlink']
 	content = _StructureElement.content
 
-	def __init__(self, width, height, *, x=0, y=0, viewBox=None, preserveAspectRatio='xMidYMid meet', **attribs):
+	def __init__(self, width, height, *, x=helpers._intdef(0), y=helpers._intdef(0),
+	             viewBox=helpers._strdef('none'), preserveAspectRatio=helpers._strdef('xMidYMid meet'),
+	             **attribs):
 		self.tag = 'svg'
 		width = int(width); height = int(height) # todo: support units
-		_Element.__init__(self, width=width, height=height, x=x, y=y, viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs)
+		_Element.__init__(self, width=width, height=height, x=x, y=y,
+		                  viewBox=viewBox, preserveAspectRatio=preserveAspectRatio,
+		                  **attribs)
 		self['xmlns'] = 'http://www.w3.org/2000/svg'
 		if not self.surface: self.setSurface('Image')
 

@@ -74,8 +74,14 @@ class _Element:
 			val = self._attribs[attr]
 			if attr in self.__class__._strAttrib:
 				val = self.__class__._strAttrib[attr](val)
+				if val is None:
+					# don't print
+					continue
 			elif val is None:
 				val = 'none'
+			elif isinstance(val, helpers._Default):
+				# don't print
+				continue
 			string += f' {attr}="{val}"'
 		string += '/>' if close else '>'
 		return string

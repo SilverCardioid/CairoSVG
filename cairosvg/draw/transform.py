@@ -27,7 +27,7 @@ class Transform:
 
 	def _addToAttr(self, string):
 		if self.parent:
-			val = self.parent._attribs('transform', None) or ''
+			val = self.parent._attribs.get('transform', None) or ''
 			if val:
 				val += ' '
 			val += string
@@ -48,7 +48,7 @@ class Transform:
 	def _transform(self, string, *params, transform_origin=None, surface=None):
 		surface = surface or self.parent._getSurface()
 		if transform_origin:
-			if type(transform_origin) is str:
+			if isinstance(transform_origin, str):
 				origin = transform_origin.split(' ')
 			if len(origin) == 1:
 				origin_x = origin[0]
@@ -82,10 +82,10 @@ class Transform:
 
 		for transformation_type, values in transformations:
 			# Convert string values to numbers
-			if type(values) is str:
+			if isinstance(values, str):
 				values = values.split(' ')
 			for i, value in enumerate(values):
-				if type(value) is str:
+				if isinstance(value, str):
 					values[i] = helpers.size(surface, value)
 
 			if transformation_type == 'matrix':      self._matrix(*values)
