@@ -6,7 +6,9 @@ Shapes drawers.
 from math import pi
 
 from ..draw import shapes
-from ..helpers import normalize, point, point_angle, size
+from ..helpers import point_angle
+from ..helpers.attribs import normalize
+from ..helpers.coordinates import point, size
 
 
 def circle(surface, node):

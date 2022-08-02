@@ -8,7 +8,9 @@ A bounding box is a (minx, miny, width, height) tuple.
 from math import acos, atan, cos, fmod, isinf, pi, radians, sin, sqrt, tan
 
 from .features import match_features
-from ..helpers import PATH_LETTERS, normalize, point, size
+from ..helpers import PATH_LETTERS
+from ..helpers.attribs import normalize
+from ..helpers.coordinates import point, size
 from .parser import Tree
 from .url import parse_url
 

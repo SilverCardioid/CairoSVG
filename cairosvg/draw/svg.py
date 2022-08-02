@@ -6,6 +6,7 @@ import os
 from . import _creators
 from .element import _Element, _StructureElement
 from .. import helpers
+from ..helpers import coordinates
 from ..helpers.modules import attrib as _attrib
 from ..parse import parser
 
@@ -21,8 +22,17 @@ class SVG(_StructureElement):
 		_Element.__init__(self, width=width, height=height, x=x, y=y,
 		                  viewBox=viewBox, preserveAspectRatio=preserveAspectRatio,
 		                  **attribs)
+		self.viewport = coordinates.Viewport(parent=self, width=width, height=height, x=x, y=y,
+		                                     viewBox=viewBox, preserveAspectRatio=preserveAspectRatio)
 		self['xmlns'] = 'http://www.w3.org/2000/svg'
 		if not self.surface: self.setSurface('Image')
+
+	def __setitem__(self, key, value):
+		super().__setitem__(key, value)
+		if key in ('width', 'height', 'x', 'y', 'viewBox', 'preserveAspectRatio'):
+			self.viewport._attribs[key] = value
+
+	# todo: delitem
 
 	def setSurface(self, surfaceType, filename=None):
 		self.surface = helpers.createSurface(surfaceType, self['width'], self['height'], filename)

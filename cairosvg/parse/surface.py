@@ -12,10 +12,10 @@ from .defs import (
     apply_filter_after_painting, apply_filter_before_painting, clip_path,
     filter_, gradient_or_pattern, linear_gradient, marker, mask, paint_mask,
     parse_all_defs, pattern, prepare_filter, radial_gradient, use)
-from ..helpers import (
-    UNITS, PointError, clip_rect, node_format, normalize, paint,
-    preserve_ratio, size, transform)
+from ..helpers import PointError, clip_rect, paint, transform
+from ..helpers.attribs import normalize
 from ..helpers.colors import color, negate_color
+from ..helpers.coordinates import UNITS, node_format, preserve_ratio, size
 from .image import image, invert_image
 from .parser import Tree
 from .path import draw_markers, path

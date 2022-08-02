@@ -7,35 +7,12 @@ import re
 from math import atan2, cos, radians, sin, tan
 
 import cairocffi as cairo
+from . import attribs, coordinates
 #from .parse.url import parse_url
-
-UNITS = {
-    'mm': 1 / 25.4,
-    'cm': 1 / 2.54,
-    'in': 1,
-    'pt': 1 / 72.,
-    'pc': 1 / 6.,
-    'px': None,
-}
 
 PAINT_URL = re.compile(r'(url\(.+\)) *(.*)')
 PATH_LETTERS = 'achlmqstvzACHLMQSTVZ'
 RECT = re.compile(r'rect\( ?(.+?) ?\)')
-
-FILL_RULES = {
-	'nonzero': cairo.FILL_RULE_WINDING,
-	'evenodd': cairo.FILL_RULE_EVEN_ODD
-}
-LINE_CAPS = {
-	'butt':   cairo.LINE_CAP_BUTT,
-	'round':  cairo.LINE_CAP_ROUND,
-	'square': cairo.LINE_CAP_SQUARE
-}
-LINE_JOINS = {
-	'miter': cairo.LINE_JOIN_MITER,
-	'round': cairo.LINE_JOIN_ROUND,
-	'bevel': cairo.LINE_JOIN_BEVEL
-}
 
 # Basic type subclasses to mark arguments that haven't been
 # explicitly set, and should be omitted from exported code
@@ -93,116 +70,9 @@ def paint(value):
     return (source, color)
 
 
-def node_format(surface, node, reference=True):
-    """Return ``(width, height, viewbox)`` of ``node``.
-
-    If ``reference`` is ``True``, we can rely on surface size to resolve
-    percentages.
-
-    """
-    reference_size = 'xy' if reference else (0, 0)
-    width = size(surface, node.get('width', '100%'), reference_size[0])
-    height = size(surface, node.get('height', '100%'), reference_size[1])
-    viewbox = node.get('viewBox')
-    if viewbox:
-        viewbox = re.sub('[ \n\r\t,]+', ' ', viewbox)
-        viewbox = tuple(float(position) for position in viewbox.split())
-        width = width or viewbox[2]
-        height = height or viewbox[3]
-    return width, height, viewbox
-
-
-def normalize(string):
-    """Normalize a string corresponding to an array of various values."""
-    string = string.replace('E', 'e')
-    string = re.sub('(?<!e)-', ' -', string)
-    string = re.sub('[ \n\r\t,]+', ' ', string)
-    string = re.sub(r'(\.[0-9-]+)(?=\.)', r'\1 ', string)
-    return string.strip()
-
-
-camelCaseAttribs = set(['allowReorder','attributeName','attributeType','autoReverse','baseFrequency','baseProfile','calcMode','clipPathUnits','contentScriptType','contentStyleType','diffuseConstant','edgeMode','externalResourcesRequired','filterRes','filterUnits','glyphRef','gradientTransform','gradientUnits','kernelMatrix','kernelUnitLength','keyPoints','keySplines','keyTimes','lengthAdjust','limitingConeAngle','markerHeight','markerUnits','markerWidth','maskContentUnits','maskUnits','numOctaves','pathLength','patternContentUnits','patternTransform','patternUnits','pointsAtX','pointsAtY','pointsAtZ','preserveAlpha','preserveAspectRatio','primitiveUnits','refX','refY','referrerPolicy','repeatCount','repeatDur','requiredExtensions','requiredFeatures','specularConstant','specularExponent','spreadMethod','startOffset','stdDeviation','stitchTiles','surfaceScale','systemLanguage','tableValues','targetX','targetY','textLength','viewBox','viewTarget','xChannelSelector','yChannelSelector','zoomAndPan'])
-nameSpaceAttribs = {'base':'xml', 'lang':'xml', 'space':'xml', 'type':'xlink', 'href':'xlink', 'role':'xlink', 'arcrole':'xlink', 'title':'xlink', 'show':'xlink', 'actuate':'xlink'}
-def parseAttribute(key):
-	"""Convert a snake_case or camelCase function argument to a hyphenated SVG attribute"""
-	key = key.replace('_','-')
-	if key in nameSpaceAttribs:
-		key = nameSpaceAttribs[key] + ':' + key
-	if key not in camelCaseAttribs:
-		key = re.sub('(?<!^)(?=[A-Z])', '-', key).lower()
-	return key
-
-
-def point(surface, string):
-    """Return ``(x, y, trailing_text)`` from ``string``."""
-    match = re.match('(.*?) (.*?)(?: |$)', string)
-    if match:
-        x, y = match.group(1, 2)
-        string = string[match.end():]
-        return (size(surface, x, 'x'), size(surface, y, 'y'), string)
-    else:
-        raise PointError
-
-
 def point_angle(cx, cy, px, py):
     """Return angle between x axis and point knowing given center."""
     return atan2(py - cy, px - cx)
-
-
-def preserve_ratio(surface, node, width=None, height=None):
-    """Manage the ratio preservation."""
-    if node.tag == 'marker':
-        width = width or size(surface, node.get('markerWidth', '3'), 'x')
-        height = height or size(surface, node.get('markerHeight', '3'), 'y')
-        _, _, viewbox = node_format(surface, node)
-        viewbox_width, viewbox_height = viewbox[2:]
-    elif node.tag in ('svg', 'image', 'g'):
-        node_width, node_height, _ = node_format(surface, node)
-        width = width or node_width
-        height = height or node_height
-        viewbox_width, viewbox_height = node.image_width, node.image_height
-    else:
-        raise TypeError(
-            ('Root node is {}. Should be one of '
-             'marker, svg, image, or g.').format(node.tag))
-
-    translate_x = 0
-    translate_y = 0
-    scale_x = width / viewbox_width if viewbox_width > 0 else 1
-    scale_y = height / viewbox_height if viewbox_height > 0 else 1
-
-    aspect_ratio = node.get('preserveAspectRatio', 'xMidYMid').split()
-    align = aspect_ratio[0]
-    if align == 'none':
-        x_position = 'min'
-        y_position = 'min'
-    else:
-        meet_or_slice = aspect_ratio[1] if len(aspect_ratio) > 1 else None
-        if meet_or_slice == 'slice':
-            scale_value = max(scale_x, scale_y)
-        else:
-            scale_value = min(scale_x, scale_y)
-        scale_x = scale_y = scale_value
-        x_position = align[1:4].lower()
-        y_position = align[5:].lower()
-
-    if node.tag == 'marker':
-        translate_x = -size(surface, node.get('refX', '0'), 'x')
-        translate_y = -size(surface, node.get('refY', '0'), 'y')
-    else:
-        translate_x = 0
-        if x_position == 'mid':
-            translate_x = (width / scale_x - viewbox_width) / 2
-        elif x_position == 'max':
-            translate_x = width / scale_x - viewbox_width
-
-        translate_y = 0
-        if y_position == 'mid':
-            translate_y += (height / scale_y - viewbox_height) / 2
-        elif y_position == 'max':
-            translate_y += height / scale_y - viewbox_height
-
-    return scale_x, scale_y, translate_x, translate_y
 
 
 def bezier_angles(*points):
@@ -221,9 +91,9 @@ def bezier_angles(*points):
 
 def clip_marker_box(surface, node, scale_x, scale_y):
     """Get the clip ``(x, y, width, height)`` of the marker box."""
-    width = size(surface, node.get('markerWidth', '3'), 'x')
-    height = size(surface, node.get('markerHeight', '3'), 'y')
-    _, _, viewbox = node_format(surface, node)
+    width = coordinates.size(surface, node.get('markerWidth', '3'), 'x')
+    height = coordinates.size(surface, node.get('markerHeight', '3'), 'y')
+    _, _, viewbox = coordinates.node_format(surface, node)
     viewbox_width, viewbox_height = viewbox[2:]
 
     align = node.get('preserveAspectRatio', 'xMidYMid').split(' ')[0]
@@ -269,7 +139,7 @@ def transform(surface, transform_string, gradient=None, transform_origin=None):
         return
 
     transformations = re.findall(
-        r'(\w+) ?\( ?(.*?) ?\)', normalize(transform_string))
+        r'(\w+) ?\( ?(.*?) ?\)', attribs.normalize(transform_string))
     matrix = cairo.Matrix()
 
     if transform_origin:
@@ -297,7 +167,7 @@ def transform(surface, transform_string, gradient=None, transform_origin=None):
         elif origin_x == 'right':
             origin_x = surface.width
         else:
-            origin_x = size(surface, origin_x, 'x')
+            origin_x = coordinates.size(surface, origin_x, 'x')
 
         if origin_y == 'center':
             origin_y = surface.height / 2
@@ -306,12 +176,12 @@ def transform(surface, transform_string, gradient=None, transform_origin=None):
         elif origin_y == 'bottom':
             origin_y = surface.height
         else:
-            origin_y = size(surface, origin_y, 'y')
+            origin_y = coordinates.size(surface, origin_y, 'y')
 
         matrix.translate(float(origin_x), float(origin_y))
 
     for transformation_type, transformation in transformations:
-        values = [size(surface, value) for value in transformation.split(' ')]
+        values = [coordinates.size(surface, value) for value in transformation.split(' ')]
         if transformation_type == 'matrix':
             matrix = cairo.Matrix(*values).multiply(matrix)
         elif transformation_type == 'rotate':
@@ -359,7 +229,7 @@ def transform(surface, transform_string, gradient=None, transform_origin=None):
 
 def clip_rect(string):
     """Parse the rect value of a clip."""
-    match = RECT.search(normalize(string or ''))
+    match = RECT.search(attribs.normalize(string or ''))
     return match.group(1).split(' ') if match else []
 
 
@@ -367,7 +237,7 @@ def rotations(node):
     """Retrieves the original rotations of a `text` or `tspan` node."""
     if 'rotate' in node:
         original_rotate = [
-            float(i) for i in normalize(node['rotate']).strip().split(' ')]
+            float(i) for i in attribs.normalize(node['rotate']).strip().split(' ')]
         return original_rotate
     return []
 
@@ -404,51 +274,3 @@ def flatten(node):
     return ''.join(flattened_text)
 
 
-def size(surface, string, reference='xy'):
-    """Replace a ``string`` with units by a float value.
-
-    If ``reference`` is a float, it is used as reference for percentages. If it
-    is ``'x'``, we use the viewport width as reference. If it is ``'y'``, we
-    use the viewport height as reference. If it is ``'xy'``, we use
-    ``(viewport_width ** 2 + viewport_height ** 2) ** .5 / 2 ** .5`` as
-    reference.
-
-    """
-    if not string:
-        return 0
-
-    try:
-        return float(string)
-    except ValueError:
-        # Not a float, try something else
-        pass
-
-    # No surface (for parsing only)
-    if surface is None:
-        return 0
-
-    string = normalize(string).split(' ', 1)[0]
-    if string.endswith('%'):
-        if reference == 'x':
-            reference = surface.context_width or 0
-        elif reference == 'y':
-            reference = surface.context_height or 0
-        elif reference == 'xy':
-            reference = (
-                (surface.context_width ** 2 +
-                 surface.context_height ** 2) ** .5 /
-                2 ** .5)
-        return float(string[:-1]) * reference / 100
-    elif string.endswith('em'):
-        return surface.font_size * float(string[:-2])
-    elif string.endswith('ex'):
-        # Assume that 1em == 2ex
-        return surface.font_size * float(string[:-2]) / 2
-
-    for unit, coefficient in UNITS.items():
-        if string.endswith(unit):
-            number = float(string[:-len(unit)])
-            return number * (surface.dpi * coefficient if coefficient else 1)
-
-    # Unknown size
-    return 0

@@ -64,12 +64,12 @@ class Transform:
 			if origin_x == 'center':   origin_x = surface.width/2
 			elif origin_x == 'left':   origin_x = 0
 			elif origin_x == 'right':  origin_x = surface.width
-			else:                      origin_x = helpers.size(surface, origin_x, 'x')
+			else:                      origin_x = helpers.coordinates.size(surface, origin_x, 'x')
 
 			if origin_y == 'center':   origin_y = surface.height/2
 			elif origin_y == 'top':    origin_y = 0
 			elif origin_y == 'bottom': origin_y = surface.height
-			else:                      origin_y = helpers.size(surface, origin_y, 'y')
+			else:                      origin_y = helpers.coordinates.size(surface, origin_y, 'y')
 
 			self._mat.translate(float(origin_x), float(origin_y))
 
@@ -78,7 +78,7 @@ class Transform:
 			transformations = [(string, params)]
 		else:
 			# transform('type(values)')
-			transformations = re.findall(r'(\w+) ?\( ?(.*?) ?\)', helpers.normalize(string))
+			transformations = re.findall(r'(\w+) ?\( ?(.*?) ?\)', helpers.attribs.normalize(string))
 
 		for transformation_type, values in transformations:
 			# Convert string values to numbers
@@ -86,7 +86,7 @@ class Transform:
 				values = values.split(' ')
 			for i, value in enumerate(values):
 				if isinstance(value, str):
-					values[i] = helpers.size(surface, value)
+					values[i] = helpers.coordinates.size(surface, value)
 
 			if transformation_type == 'matrix':      self._matrix(*values)
 			elif transformation_type == 'rotate':    self._rotate(*values)

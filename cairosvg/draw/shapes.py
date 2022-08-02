@@ -87,25 +87,25 @@ class Polygon(_ShapeElement):
 		points = self._attribs.get('points', '')
 		if isinstance(points, str):
 			# convert string to points
-			string = helpers.normalize(points)
+			string = helpers.attribs.normalize(points)
 			points = []
 			while string:
-				x, y, string = helpers.point(surface, string)
+				x, y, string = helpers.coordinates.point(surface, string)
 				points.append((x, y))
 
 		# convert array of strings to points
 		points = points.copy()
 		for i, point in enumerate(points):
 			if isinstance(point, str):
-				x, y, string = helpers.point(surface, helpers.normalize(point))
+				x, y, string = helpers.coordinates.point(surface, helpers.attribs.normalize(point))
 				points[i] = (x, y)
 				if string:
 					# point has too many values
 					raise helpers.PointError
 			if isinstance(point[0], str):
-				point[0] = helpers.size(surface, point[0], 'x')
+				point[0] = helpers.coordinates.size(surface, point[0], 'x')
 			if isinstance(point[1], str):
-				point[1] = helpers.size(surface, point[1], 'y')
+				point[1] = helpers.coordinates.size(surface, point[1], 'y')
 			assert len(point) == 2
 
 		return points
@@ -138,25 +138,25 @@ class Polyline(_ShapeElement):
 		points = self._attribs.get('points', '')
 		if isinstance(points, str):
 			# convert string to points
-			string = helpers.normalize(points)
+			string = helpers.attribs.normalize(points)
 			points = []
 			while string:
-				x, y, string = helpers.point(surface, string)
+				x, y, string = helpers.coordinates.point(surface, string)
 				points.append((x, y))
 
 		# convert array of strings to points
 		points = points.copy()
 		for i, point in enumerate(points):
 			if isinstance(point, str):
-				x, y, string = helpers.point(surface, helpers.normalize(point))
+				x, y, string = helpers.coordinates.point(surface, helpers.attribs.normalize(point))
 				points[i] = (x, y)
 				if string:
 					# point has too many values
 					raise helpers.PointError
 			if isinstance(point[0], str):
-				point[0] = helpers.size(surface, point[0], 'x')
+				point[0] = helpers.coordinates.size(surface, point[0], 'x')
 			if isinstance(point[1], str):
-				point[1] = helpers.size(surface, point[1], 'y')
+				point[1] = helpers.coordinates.size(surface, point[1], 'y')
 			assert len(point) == 2
 
 		return points

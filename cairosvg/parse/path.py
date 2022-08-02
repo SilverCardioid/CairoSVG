@@ -8,8 +8,11 @@ from math import pi, radians
 from ..draw.path import Path
 from .bounding_box import calculate_bounding_box
 from ..helpers import (
-    PATH_LETTERS, clip_marker_box, node_format, normalize, point, point_angle,
-    preserve_ratio, quadratic_points, rotate, size)
+    PATH_LETTERS, clip_marker_box, point_angle,
+    quadratic_points, rotate)
+from ..helpers.attribs import normalize
+from ..helpers.coordinates import (
+    node_format, point, preserve_ratio, size)
 from .url import parse_url
 
 

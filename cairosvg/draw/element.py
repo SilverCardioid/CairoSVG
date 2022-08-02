@@ -31,7 +31,7 @@ class _Element:
 		# Attributes
 		self._attribs = {}
 		for key in attribs:
-			attrib = helpers.parseAttribute(key)
+			attrib = helpers.attribs.parseAttribute(key)
 			if attrib in self.__class__.attribs:
 				self._attribs[attrib] = attribs[key]
 			else:
@@ -47,6 +47,12 @@ class _Element:
 		if not self.root.surface:
 			raise Exception('Surface needed for drawing')
 		return self.root.surface
+
+	def _getViewport(self):
+		elem = self.parent
+		while elem and not hasattr(elem, 'viewport'):
+			elem = elem.parent
+		return elem and elem.viewport
 
 	def _setTransform(self):
 		self.transform = transform.Transform(self._attribs.get('transform', None),
@@ -87,10 +93,10 @@ class _Element:
 		return string
 
 	def __getitem__(self, key):
-		return self._attribs[helpers.parseAttribute(key)]
+		return self._attribs[helpers.attribs.parseAttribute(key)]
 
 	def __setitem__(self, key, value):
-		attrib = helpers.parseAttribute(key)
+		attrib = helpers.attribs.parseAttribute(key)
 		if attrib in self.__class__.attribs:
 			prevValue = self._attribs.get(attrib, None)
 			self._attribs[attrib] = value
@@ -108,7 +114,7 @@ class _Element:
 			raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
 
 	def __delitem__(self, key):
-		attrib = helpers.parseAttribute(key)
+		attrib = helpers.attribs.parseAttribute(key)
 		value = self._attribs.get(attrib, None)
 		del self._attribs[attrib]
 
@@ -143,7 +149,7 @@ class _Element:
 
 	def getAttribute(self, attrib, default=None, *, cascade=True):
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
-		attrib = helpers.parseAttribute(attrib)
+		attrib = helpers.attribs.parseAttribute(attrib)
 		if cascade:
 			node = self
 			while attrib not in node._attribs:
@@ -224,29 +230,29 @@ class _ShapeElement(_Element):
 
 		fill = helpers.colors.color(self.getAttribute('fill', '#000'), fillOpacity*opacity)
 		fillRule = self.getAttribute('fill-rule', 'nonzero')
-		assert fillRule in helpers.FILL_RULES
+		assert fillRule in helpers.attribs.FILL_RULES
 
 		stroke = helpers.colors.color(self.getAttribute('stroke', 'none'), strokeOpacity*opacity)
 		strokeWidth = float(self.getAttribute('stroke-width', 1))
 		strokeLinecap = self.getAttribute('stroke-linecap', 'butt')
-		assert strokeLinecap in helpers.LINE_CAPS
+		assert strokeLinecap in helpers.attribs.LINE_CAPS
 		strokeLinejoin = self.getAttribute('stroke-linejoin', 'miter')
-		assert strokeLinejoin in helpers.LINE_JOINS
+		assert strokeLinejoin in helpers.attribs.LINE_JOINS
 
-		dashArray = helpers.normalize(self.getAttribute('stroke-dasharray', '')).split()
+		dashArray = helpers.attribs.normalize(self.getAttribute('stroke-dasharray', '')).split()
 		if dashArray:
-			dashes = [helpers.size(surface, dash) for dash in dashArray]
+			dashes = [helpers.coordinates.size(surface, dash) for dash in dashArray]
 			if sum(dashes):
-				offset = helpers.size(surface, self.getAttribute('stroke-dashoffset'))
+				offset = helpers.coordinates.size(surface, self.getAttribute('stroke-dashoffset'))
 				surface.context.set_dash(dashes, offset)
 
 		surface.context.set_source_rgba(*fill)
-		surface.context.set_fill_rule(helpers.FILL_RULES[fillRule])
+		surface.context.set_fill_rule(helpers.attribs.FILL_RULES[fillRule])
 		surface.context.fill_preserve()
 
 		surface.context.set_source_rgba(*stroke)
 		surface.context.set_line_width(strokeWidth)
-		surface.context.set_line_cap(helpers.LINE_CAPS[strokeLinecap])
-		surface.context.set_line_join(helpers.LINE_JOINS[strokeLinejoin])
+		surface.context.set_line_cap(helpers.attribs.LINE_CAPS[strokeLinecap])
+		surface.context.set_line_join(helpers.attribs.LINE_JOINS[strokeLinejoin])
 		surface.context.stroke()
 

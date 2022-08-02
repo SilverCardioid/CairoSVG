@@ -7,7 +7,8 @@ This module handles clips, gradients, masks, patterns and external nodes.
 
 from .bounding_box import calculate_bounding_box, is_non_empty_bounding_box
 from .features import match_features
-from ..helpers import paint, size, transform
+from ..helpers import paint, transform
+from ..helpers.coordinates import size
 from .parser import Tree
 from .shapes import rect
 from .surface import cairo
