@@ -1,0 +1,5 @@
+cairocffi
+cssselect2
+numpy
+opencv_python
+Pillow
