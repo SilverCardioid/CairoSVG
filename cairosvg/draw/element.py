@@ -1,5 +1,5 @@
 import sys
-from . import _creators, transform
+from . import _creators
 from .. import helpers
 from ..helpers.modules import attrib as _attrib, content as _content
 
@@ -55,8 +55,8 @@ class _Element:
 		return elem and elem.viewport
 
 	def _setTransform(self):
-		self.transform = transform.Transform(self._attribs.get('transform', None),
-		                                     parent=self)
+		self.transform = helpers.transform.Transform(self._attribs.get('transform', None),
+		                                             parent=self)
 
 	def _setID(self, value):
 		if value in self.root._globals['ids']:

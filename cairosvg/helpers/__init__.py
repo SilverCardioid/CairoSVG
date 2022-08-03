@@ -129,7 +129,7 @@ def rotate(x, y, angle):
     return x * cos(angle) - y * sin(angle), y * cos(angle) + x * sin(angle)
 
 
-def transform(surface, transform_string, gradient=None, transform_origin=None):
+def transform2(surface, transform_string, gradient=None, transform_origin=None):
     """Transform ``surface`` or ``gradient`` if supplied using ``string``.
 
     See http://www.w3.org/TR/SVG/coords.html#TransformAttribute
