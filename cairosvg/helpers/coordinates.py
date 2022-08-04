@@ -1,6 +1,6 @@
 import re
 
-from . import attribs
+from . import attribs # transform dynamically imported to avoid mutual imports
 
 UNITS = {
     'mm': 1 / 25.4,
@@ -12,39 +12,83 @@ UNITS = {
 }
 
 class Viewport:
-	def __init__(self, width='auto', height='auto', *, x=0, y=0, viewBox='none',
+	def __init__(self, width='auto', height='auto', *, viewBox='none',
 	             preserveAspectRatio='xMidYMid meet', parent=None):
 		self.parent = parent
 		self._attribs = {
 			'width':               width,
 			'height':              height,
-			'x':                   x,
-			'y':                   y,
 			'viewBox':             viewBox,
 			'preserveAspectRatio': preserveAspectRatio
 		}
 
-		@property
-		def width(self):
-			return size2(self._attribs['width'], self.parent.getViewport(), 'x')
+	@property
+	def width(self):
+		return size2(self._attribs['width'], self.parent._getViewport(), 'x')
 
-		@property
-		def height(self):
-			return size2(self._attribs['height'], self.parent.getViewport(), 'y')
+	@property
+	def height(self):
+		return size2(self._attribs['height'], self.parent._getViewport(), 'y')
 
-		@property
-		def viewBox(self):
-			vb = self._attribs['viewBox']
-			if vb in (None, 'none'):
-				return None
-			elif isinstance(vb, str):
-				vb = re.sub('[ \n\r\t,]+', ' ', vb)
-				vb = tuple(float(position) for position in vb.split()) # todo: allow scientific notation
-				assert len(vb) == 4
-				return vb
-			# unknown type
+	@property
+	def viewBox(self):
+		vb = self._attribs['viewBox']
+		if vb in (None, 'none'):
 			return None
+		elif isinstance(vb, str):
+			vb = re.sub('[ \n\r\t,]+', ' ', vb)
+			vb = tuple(float(position) for position in vb.split()) # todo: allow scientific notation
+			assert len(vb) == 4
+			return vb
+		# unknown type
+		return None
 
+	def getTransform(self):
+		"""Return a Transform object based on the viewport's viewBox and preserveAspectRatio values."""
+		from . import transform
+		tr = transform.Transform()
+		vb = self.viewBox
+		if vb:
+			# Manage the ratio preservation
+			width, height = self.width, self.height
+			vbWidth, vbHeight = vb[2:]
+
+			translateX = 0
+			translateY = 0
+			scaleX = width / vbWidth if vbWidth > 0 else 1
+			scaleY = height / vbHeight if vbHeight > 0 else 1
+
+			aspectRatio = self._attribs.get('preserveAspectRatio', 'xMidYMid').split()
+			align = aspectRatio[0]
+			if align == 'none':
+				# Non-uniform scale
+				xPosition = 'min'
+				yPosition = 'min'
+			else:
+				# Uniform scale
+				meetOrSlice = aspectRatio[1] if len(aspectRatio) > 1 else None
+				if meetOrSlice == 'slice':
+					scaleValue = max(scaleX, scaleY)
+				else:
+					scaleValue = min(scaleX, scaleY)
+				scaleX = scaleY = scaleValue
+				xPosition = align[1:4].lower()
+				yPosition = align[5:].lower()
+			tr._scale(scaleX, scaleY)
+
+			translateX = 0
+			if xPosition == 'mid':
+				translateX = (width / scaleX - vbWidth) / 2
+			elif x_position == 'max':
+				translateX = width / scaleX - vbWidth
+			translateY = 0
+			if yPosition == 'mid':
+				translateY += (height / scaleY - vbHeight) / 2
+			elif yPosition == 'max':
+				translateY += height / scaleY - vbHeight
+			tr._translate(translateX, translateY)
+
+		return tr
 
 def size2(string, viewport=None, reference='xy', *, fontSize=None, dpi=96):
 	"""Replace a ``string`` with units by a float value.

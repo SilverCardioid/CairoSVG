@@ -22,14 +22,15 @@ class SVG(_StructureElement):
 		_Element.__init__(self, width=width, height=height, x=x, y=y,
 		                  viewBox=viewBox, preserveAspectRatio=preserveAspectRatio,
 		                  **attribs)
-		self.viewport = coordinates.Viewport(parent=self, width=width, height=height, x=x, y=y,
+		self.viewport = coordinates.Viewport(parent=self, width=width, height=height,
 		                                     viewBox=viewBox, preserveAspectRatio=preserveAspectRatio)
 		self['xmlns'] = 'http://www.w3.org/2000/svg'
-		if not self.surface: self.setSurface('Image')
+		if self.root is self and not self.surface:
+			self.setSurface('Image')
 
 	def __setitem__(self, key, value):
 		super().__setitem__(key, value)
-		if key in ('width', 'height', 'x', 'y', 'viewBox', 'preserveAspectRatio'):
+		if key in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
 			self.viewport._attribs[key] = value
 
 	# todo: delitem
@@ -42,6 +43,19 @@ class SVG(_StructureElement):
 		self.surface.context.set_operator(cairo.OPERATOR_CLEAR)
 		self.surface.context.paint()
 		self.surface.context.set_operator(cairo.OPERATOR_OVER)
+
+	def draw(self, surface=None):
+		surface = surface or self._getSurface()
+		viewportTransform = self.viewport.getTransform()
+
+		if self.root is not self:
+			# Nested SVG: prepend a translate for the element's x and y attributes
+			x, y = self.getAttribute('x', 0, cascade=False), self.getAttribute('y', 0, cascade=False)
+			viewportTransform._mat = viewportTransform._mat * cairo.Matrix(0,0,0,0,x,y)
+
+		with viewportTransform.applyContext(surface):
+			for child in self.children:
+				child.draw(surface)
 
 	def export(self, filename, *, useCairo=False, indent='', newline='\n', xmlDeclaration=True):
 		ext = os.path.splitext(filename)[1]
