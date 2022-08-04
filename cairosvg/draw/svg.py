@@ -48,14 +48,16 @@ class SVG(_StructureElement):
 		surface = surface or self._getSurface()
 		viewportTransform = self.viewport.getTransform()
 
+		x, y = 0, 0
 		if self.root is not self:
-			# Nested SVG: prepend a translate for the element's x and y attributes
+			# Nested SVG: use the element's x and y attributes
 			x, y = self.getAttribute('x', 0, cascade=False), self.getAttribute('y', 0, cascade=False)
-			viewportTransform._mat = viewportTransform._mat * cairo.Matrix(0,0,0,0,x,y)
 
+		surface.context.translate(x, y)
 		with viewportTransform.applyContext(surface):
 			for child in self.children:
 				child.draw(surface)
+		surface.context.translate(-x, -y)
 
 	def export(self, filename, *, useCairo=False, indent='', newline='\n', xmlDeclaration=True):
 		ext = os.path.splitext(filename)[1]

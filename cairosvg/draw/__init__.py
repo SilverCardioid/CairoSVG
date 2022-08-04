@@ -44,7 +44,8 @@ _creators.update({
 	'svg':      lambda self, width, height, *, x=helpers._intdef(0), y=helpers._intdef(0),
 	                   viewBox=helpers._strdef('none'), preserveAspectRatio=helpers._strdef('xMidYMid meet'),
 	                   **attribs: \
-	            	svg.SVG(parent=self, width=width, height=height, **attribs),
+	            	svg.SVG(parent=self, width=width, height=height, x=x, y=y,
+	            	     viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs),
 	'use':      lambda self, href=helpers._strdef(''), *, x=helpers._intdef(0), y=helpers._intdef(0),
 	                   width=helpers._intdef(0), height=helpers._intdef(0), **attribs: \
 	            	structure.Use(parent=self, href=href, x=x, y=y, width=width, height=height, **attribs)

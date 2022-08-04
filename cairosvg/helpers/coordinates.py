@@ -79,7 +79,7 @@ class Viewport:
 			translateX = 0
 			if xPosition == 'mid':
 				translateX = (width / scaleX - vbWidth) / 2
-			elif x_position == 'max':
+			elif xPosition == 'max':
 				translateX = width / scaleX - vbWidth
 			translateY = 0
 			if yPosition == 'mid':
