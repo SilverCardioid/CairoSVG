@@ -2,6 +2,13 @@ import re
 
 import cairocffi as cairo
 
+NAMESPACES = {
+	'xmlns': 'http://www.w3.org/2000/svg',
+	'svg'  : 'http://www.w3.org/2000/svg',
+	'xlink': 'http://www.w3.org/1999/xlink',
+	'xml'  : None
+}
+
 FILL_RULES = {
 	'nonzero': cairo.FILL_RULE_WINDING,
 	'evenodd': cairo.FILL_RULE_EVEN_ODD
@@ -35,3 +42,13 @@ def parseAttribute(key):
 	if key not in camelCaseAttribs:
 		key = re.sub('(?<!^)(?=[A-Z])', '-', key).lower()
 	return key
+
+def getNamespaces(elem):
+	ns = set()
+	for e in elem.descendants():
+		if ':' in e.tag:
+			ns.add(e.tag.split(':', 2)[0])
+		for attrib in e._attribs.keys():
+			if ':' in attrib:
+				ns.add(attrib.split(':', 2)[0])
+	return sorted(list(ns))

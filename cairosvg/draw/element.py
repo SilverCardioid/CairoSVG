@@ -74,8 +74,20 @@ class _Element:
 		self._attribs['id'] = eid
 		self._setID(eid)
 
-	def _tagCode(self, close=True):
+	def _tagCode(self, *, close=True, namespaceDeclaration=True):
 		string = '<' + self.tag
+		if namespaceDeclaration and self.isRoot():
+			nss = ['xmlns'] + helpers.attribs.getNamespaces(self)
+			for ns in nss:
+				key = ns
+				if key != 'xmlns':
+					key = 'xmlns:' + key
+				if ns not in helpers.attribs.NAMESPACES:
+					print(f'warning: unknown namespace: {ns}')
+					continue
+				val = helpers.attribs.NAMESPACES[ns]
+				if val:
+					string += f' {key}="{val}"'
 		for attr in self._attribs:
 			val = self._attribs[attr]
 			if attr in self.__class__._strAttrib:
@@ -139,13 +151,20 @@ class _Element:
 	def id(self):
 		del self['id']
 
+	def isRoot(self):
+		return self.root is self
+
 	def delete(self, recursive=True):
 		"""Delete this element from the tree"""
 		if self.parent: self.parent.children.remove(self)
 		if recursive:
-			for child in self.children: child.delete()
+			for child in self.children:
+				child.delete()
 		else:
-			for child in self.children: child.parent = None
+			for child in self.children:
+				child.parent = None
+				child.root = child
+				# todo: update globals (or disallow non-recursive deletion)
 
 	def getAttribute(self, attrib, default=None, *, cascade=True):
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
@@ -169,8 +188,8 @@ class _Element:
 		except KeyError:
 			raise ValueError('unknown tag: {}'.format(tag))
 
-	def code(self, file=None, *, indent='', indentDepth=0,
-	                             newline='\n', xmlDeclaration=False):
+	def code(self, file=None, *, indent='', indentDepth=0, newline='\n',
+	                             xmlDeclaration=False, namespaceDeclaration=True):
 		"""Write the SVG code for this element and its children to the screen or to an opened file"""
 		indent = indent or ''
 		newline = newline or ''
@@ -183,7 +202,7 @@ class _Element:
 			decl = '<?xml version="1.0" encoding="UTF-8"?>'
 			file.write(f'{indentation}{decl}{newline}')
 
-		tagCode = self._tagCode(close=len(self.children)==0)
+		tagCode = self._tagCode(close=len(self.children)==0, namespaceDeclaration=namespaceDeclaration)
 		file.write(f'{indentation}{tagCode}{newline}')
 		if len(self.children) > 0:
 			for child in self.children:

@@ -24,7 +24,6 @@ class SVG(_StructureElement):
 		                  **attribs)
 		self.viewport = coordinates.Viewport(parent=self, width=width, height=height,
 		                                     viewBox=viewBox, preserveAspectRatio=preserveAspectRatio)
-		self['xmlns'] = 'http://www.w3.org/2000/svg'
 		if self.root is self and not self.surface:
 			self.setSurface('Image')
 
