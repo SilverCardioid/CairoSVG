@@ -1,5 +1,6 @@
 from .element import _Element, _StructureElement
 from .. import helpers
+from ..helpers.coordinates import size2 as _size
 from ..helpers.modules import attrib as _attrib, content as _content
 
 class Group(_StructureElement):
@@ -74,6 +75,7 @@ class Use(_Element):
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
+		vp = self._getViewport()
 		target = self.target
 
 		if target is None:
@@ -83,7 +85,7 @@ class Use(_Element):
 			return
 
 		# Draw target element in the context of the <use>
-		x, y = self['x'], self['y']
+		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
 		targetParent = target.parent
 		target.parent = self
 		self.transform._translate(x, y)

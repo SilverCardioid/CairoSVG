@@ -240,6 +240,7 @@ class _ShapeElement(_Element):
 	content = _content['Description'] + _content['Animation']
 
 	def _paint(self, surface):
+		vp = self._getViewport()
 		opacity = float(self.getAttribute('opacity', 1))
 		assert 0 <= opacity <= 1
 		fillOpacity = float(self.getAttribute('fill-opacity', 1))
@@ -252,7 +253,7 @@ class _ShapeElement(_Element):
 		assert fillRule in helpers.attribs.FILL_RULES
 
 		stroke = helpers.colors.color(self.getAttribute('stroke', 'none'), strokeOpacity*opacity)
-		strokeWidth = float(self.getAttribute('stroke-width', 1))
+		strokeWidth = helpers.coordinates.size2(self.getAttribute('stroke-width', 1), vp, 'xy')
 		strokeLinecap = self.getAttribute('stroke-linecap', 'butt')
 		assert strokeLinecap in helpers.attribs.LINE_CAPS
 		strokeLinejoin = self.getAttribute('stroke-linejoin', 'miter')
@@ -260,9 +261,9 @@ class _ShapeElement(_Element):
 
 		dashArray = helpers.attribs.normalize(self.getAttribute('stroke-dasharray', '')).split()
 		if dashArray:
-			dashes = [helpers.coordinates.size(surface, dash) for dash in dashArray]
+			dashes = [helpers.coordinates.size2(dash, vp, 'xy') for dash in dashArray]
 			if sum(dashes):
-				offset = helpers.coordinates.size(surface, self.getAttribute('stroke-dashoffset'))
+				offset = helpers.coordinates.size2(self.getAttribute('stroke-dashoffset'), vp, 'xy')
 				surface.context.set_dash(dashes, offset)
 
 		surface.context.set_source_rgba(*fill)

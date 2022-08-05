@@ -3,6 +3,7 @@ import math
 from .element import _ShapeElement
 from .path import Path
 from .. import helpers
+from ..helpers.coordinates import size2 as _size, point2 as _point
 
 class Circle(_ShapeElement):
 	attribs = _ShapeElement.attribs + ['cx','cy','r','transform']
@@ -14,10 +15,15 @@ class Circle(_ShapeElement):
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
-		with self.transform.applyContext(surface):
-			surface.context.new_sub_path()
-			surface.context.arc(self['cx'], self['cy'], self['r'], 0, 2 * math.pi)
-			self._paint(surface)
+		vp = self._getViewport()
+		r  = _size(self['r'] , vp, 'xy')
+		cx = _size(self['cx'], vp, 'x')
+		cy = _size(self['cy'], vp, 'y')
+		if r > 0:
+			with self.transform.applyContext(surface):
+				surface.context.new_sub_path()
+				surface.context.arc(cx, cy, r, 0, 2*math.pi)
+				self._paint(surface)
 
 
 class Ellipse(_ShapeElement):
@@ -30,14 +36,18 @@ class Ellipse(_ShapeElement):
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
-		ratio = self['ry'] / self['rx'] # TODO: what if rx == 0?
-		with self.transform.applyContext(surface):
-			surface.context.new_sub_path()
-			surface.context.save()
-			surface.context.scale(1, ratio)
-			surface.context.arc(self['cx'], self['cy'] / ratio, self['rx'], 0, 2 * math.pi)
-			surface.context.restore()
-			self._paint(surface)
+		vp = self._getViewport()
+		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
+		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
+		if cx > 0 or cy > 0:
+			ratio = ry/rx
+			with self.transform.applyContext(surface):
+				surface.context.new_sub_path()
+				surface.context.save()
+				surface.context.scale(1, ratio)
+				surface.context.arc(cx, cy/ratio, rx, 0, 2*math.pi)
+				surface.context.restore()
+				self._paint(surface)
 
 
 class Line(_ShapeElement):
@@ -50,16 +60,20 @@ class Line(_ShapeElement):
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
+		x1, y1, x2, y2 = self.vertices()
 		with self.transform.applyContext(surface):
-			surface.context.move_to(self['x1'], self['y1'])
-			surface.context.line_to(self['x2'], self['y2'])
+			surface.context.move_to(x1, y1)
+			surface.context.line_to(x2, y2)
 			self._paint(surface)
 
 	def vertices(self):
-		return [[self['x1'], self['y1']], [self['x2'], self['y2']]]
+		vp = self._getViewport()
+		x1, y1 = _size(self['x1'], vp, 'x'), _size(self['y2'], vp, 'y')
+		x2, y2 = _size(self['x2'], vp, 'x'), _size(self['y2'], vp, 'y')
+		return [x1, y1, x2, y2]
 
 	def vertexAngles(self):
-		angle = helpers.point_angle(self['x1'], self['y1'], self['x2'], self['y2'])
+		angle = helpers.point_angle(*self.vertices())
 		return [angle, angle]
 
 
@@ -83,29 +97,29 @@ class Polygon(_ShapeElement):
 				self._paint(surface)
 
 	def vertices(self):
-		surface = self._getSurface()
+		vp = self._getViewport()
 		points = self._attribs.get('points', '')
 		if isinstance(points, str):
 			# convert string to points
 			string = helpers.attribs.normalize(points)
 			points = []
 			while string:
-				x, y, string = helpers.coordinates.point(surface, string)
+				x, y, string = _point(string, vp)
 				points.append((x, y))
 
 		# convert array of strings to points
 		points = points.copy()
 		for i, point in enumerate(points):
 			if isinstance(point, str):
-				x, y, string = helpers.coordinates.point(surface, helpers.attribs.normalize(point))
+				x, y, string = _point(helpers.attribs.normalize(point), vp)
 				points[i] = (x, y)
 				if string:
 					# point has too many values
 					raise helpers.PointError
 			if isinstance(point[0], str):
-				point[0] = helpers.coordinates.size(surface, point[0], 'x')
+				point[0] = _size(point[0], vp, 'x')
 			if isinstance(point[1], str):
-				point[1] = helpers.coordinates.size(surface, point[1], 'y')
+				point[1] = _size(point[1], vp, 'y')
 			assert len(point) == 2
 
 		return points
@@ -133,33 +147,7 @@ class Polyline(_ShapeElement):
 					surface.context.line_to(*point)
 				self._paint(surface)
 
-	def vertices(self):
-		surface = self._getSurface()
-		points = self._attribs.get('points', '')
-		if isinstance(points, str):
-			# convert string to points
-			string = helpers.attribs.normalize(points)
-			points = []
-			while string:
-				x, y, string = helpers.coordinates.point(surface, string)
-				points.append((x, y))
-
-		# convert array of strings to points
-		points = points.copy()
-		for i, point in enumerate(points):
-			if isinstance(point, str):
-				x, y, string = helpers.coordinates.point(surface, helpers.attribs.normalize(point))
-				points[i] = (x, y)
-				if string:
-					# point has too many values
-					raise helpers.PointError
-			if isinstance(point[0], str):
-				point[0] = helpers.coordinates.size(surface, point[0], 'x')
-			if isinstance(point[1], str):
-				point[1] = helpers.coordinates.size(surface, point[1], 'y')
-			assert len(point) == 2
-
-		return points
+	vertices = Polygon.vertices
 
 	def vertexAngles(self):
 		path = Path().polyline(self.vertices(), closed=False)
@@ -182,9 +170,16 @@ class Rect(_ShapeElement):
 
 	def draw(self, surface=None):
 		surface = surface or self._getSurface()
-		width, height = self['width'], self['height']
-		x, y = self['x'], self['y']
+		vp = self._getViewport()
+		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
+		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
+
+		# rx and ry default to each other's value if None
 		rx, ry = self['rx'], self['ry']
+		if rx is not None:
+			rx = _size(rx, vp, 'x')
+		if ry is not None:
+			ry = _size(ry, vp, 'y')
 		if ry is None:
 			ry = rx or 0
 		if rx is None:

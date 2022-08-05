@@ -24,11 +24,11 @@ class Viewport:
 
 	@property
 	def width(self):
-		return size2(self._attribs['width'], self.parent._getViewport(), 'x')
+		return size2(self._attribs['width'], self.parent._getViewport(), 'x', autoValue='100%')
 
 	@property
 	def height(self):
-		return size2(self._attribs['height'], self.parent._getViewport(), 'y')
+		return size2(self._attribs['height'], self.parent._getViewport(), 'y', autoValue='100%')
 
 	@property
 	def viewBox(self):
@@ -36,8 +36,9 @@ class Viewport:
 		if vb in (None, 'none'):
 			return None
 		elif isinstance(vb, str):
-			vb = re.sub('[ \n\r\t,]+', ' ', vb)
-			vb = tuple(float(position) for position in vb.split()) # todo: allow scientific notation
+			# vb = re.sub('[ \n\r\t,]+', ' ', vb)
+			vb = attribs.normalize(vb)
+			vb = tuple(size2(position, units=False) for position in vb.split())
 			assert len(vb) == 4
 			return vb
 		# unknown type
@@ -90,7 +91,7 @@ class Viewport:
 
 		return tr
 
-def size2(string, viewport=None, reference='xy', *, fontSize=None, dpi=96):
+def size2(string, viewport=None, reference='xy', *, units=True, autoValue=0, fontSize=None, dpi=96):
 	"""Replace a ``string`` with units by a float value.
 
 	If ``reference`` is a float, it is used as reference for percentages. If it
@@ -106,11 +107,17 @@ def size2(string, viewport=None, reference='xy', *, fontSize=None, dpi=96):
 	try:
 		return float(string)
 	except ValueError:
-		# Not a float, try something else
-		pass
+		# Not a float, try parsing units or reraise error
+		if units:
+			pass
+		else:
+			raise ValueError(f'invalid number: {string}')
 
 	if fontSize is None: # default 12pt
 		fontSize = 12 * UNITS['pt'] * dpi
+
+	if string.split() == 'auto':
+		string = str(autoValue)
 
 	string = attribs.normalize(string).split(' ', 1)[0]
 	if string.endswith('%'):
@@ -148,6 +155,18 @@ def size2(string, viewport=None, reference='xy', *, fontSize=None, dpi=96):
 
 	# Unknown size
 	return 0
+
+def point2(string, viewport=None, *, units=True):
+	"""Return ``(x, y, trailing_text)`` from ``string``."""
+	match = re.match('(.*?) (.*?)(?: |$)', string)
+	if match:
+		x, y = match.group(1, 2)
+		string = string[match.end():]
+		return (size2(x, viewport, 'x', units=units),
+		        size2(y, viewport, 'y', units=units),
+		        string)
+	else:
+		raise PointError
 
 
 ## Original functions

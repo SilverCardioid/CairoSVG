@@ -2,6 +2,7 @@ import math
 
 from .element import _ShapeElement
 from .. import helpers
+from ..helpers.coordinates import size2 as _size, point2 as _point
 from ..helpers.modules import attrib as _attrib
 
 class Path(_ShapeElement):
@@ -421,7 +422,6 @@ class Path(_ShapeElement):
 
 	def _d(self, d):
 		string = d
-		surface = self._getSurface() # is a surface necessary for unit conversion?
 		for letter in helpers.PATH_LETTERS:
 			string = string.replace(letter, ' {} '.format(letter))
 		string = helpers.attribs.normalize(string)
@@ -437,7 +437,7 @@ class Path(_ShapeElement):
 
 			if letter in 'aA':
 				# Elliptic curve
-				rx, ry, string = helpers.coordinates.point(surface, string)
+				rx, ry, string = _point(string, units=False)
 				rotation, string = string.split(' ', 1)
 
 				# The large and sweep values are not always separated from the
@@ -447,7 +447,7 @@ class Path(_ShapeElement):
 				sweep, string = string[0], string[1:].strip()
 
 				# Retrieve end point and set remainder (before checking flags)
-				x3, y3, string = helpers.coordinates.point(surface, string)
+				x3, y3, string = _point(string, units=False)
 
 				# Only allow 0 or 1 for flags
 				large, sweep = int(large), int(sweep)
@@ -466,95 +466,95 @@ class Path(_ShapeElement):
 
 			elif letter == 'c':
 				# Relative curve
-				x1, y1, string = helpers.coordinates.point(surface, string)
-				x2, y2, string = helpers.coordinates.point(surface, string)
-				x3, y3, string = helpers.coordinates.point(surface, string)
+				x1, y1, string = _point(string, units=False)
+				x2, y2, string = _point(string, units=False)
+				x3, y3, string = _point(string, units=False)
 				self._c(x1, y1, x2, y2, x3, y3)
 
 			elif letter == 'C':
 				# Curve
-				x1, y1, string = helpers.coordinates.point(surface, string)
-				x2, y2, string = helpers.coordinates.point(surface, string)
-				x3, y3, string = helpers.coordinates.point(surface, string)
+				x1, y1, string = _point(string, units=False)
+				x2, y2, string = _point(string, units=False)
+				x3, y3, string = _point(string, units=False)
 				self._C(x1, y1, x2, y2, x3, y3)
 
 			elif letter == 'h':
 				# Relative horizontal line
 				x, string = (string + ' ').split(' ', 1)
-				x = helpers.coordinates.size(surface, x, 'x')
+				x = _size(x, units=False)
 				self._h(x)
 
 			elif letter == 'H':
 				# Horizontal line
 				x, string = (string + ' ').split(' ', 1)
-				x = helpers.coordinates.size(surface, x, 'x')
+				x = _size(x, units=False)
 				self._H(x)
 
 			elif letter == 'l':
 				# Relative straight line
-				x, y, string = helpers.coordinates.point(surface, string)
+				x, y, string = _point(string, units=False)
 				self._l(x, y)
 
 			elif letter == 'L':
 				# Straight line
-				x, y, string = helpers.coordinates.point(surface, string)
+				x, y, string = _point(string, units=False)
 				self._L(x, y)
 
 			elif letter == 'm':
 				# Current point relative move
-				x, y, string = helpers.coordinates.point(surface, string)
+				x, y, string = _point(string, units=False)
 				self._m(x, y)
 
 			elif letter == 'M':
 				# Current point move
-				x, y, string = helpers.coordinates.point(surface, string)
+				x, y, string = _point(string, units=False)
 				self._M(x, y)
 
 			elif letter == 'q':
 				# Relative quadratic curve
 				x1, y1 = 0, 0
-				x2, y2, string = helpers.coordinates.point(surface, string)
-				x3, y3, string = helpers.coordinates.point(surface, string)
+				x2, y2, string = _point(string, units=False)
+				x3, y3, string = _point(string, units=False)
 				self._q(x2, y2, x3, y3)
 
 			elif letter == 'Q':
 				# Quadratic curve
-				x2, y2, string = helpers.coordinates.point(surface, string)
-				x3, y3, string = helpers.coordinates.point(surface, string)
+				x2, y2, string = _point(string, units=False)
+				x3, y3, string = _point(string, units=False)
 				self._Q(x2, y2, x3, y3)
 
 			elif letter == 's':
 				# Relative smooth curve
-				x2, y2, string = helpers.coordinates.point(surface, string)
-				x3, y3, string = helpers.coordinates.point(surface, string)
+				x2, y2, string = _point(string, units=False)
+				x3, y3, string = _point(string, units=False)
 				self._s(x2, y2, x3, y3)
 
 			elif letter == 'S':
 				# Smooth curve
-				x2, y2, string = helpers.coordinates.point(surface, string)
-				x3, y3, string = helpers.coordinates.point(surface, string)
+				x2, y2, string = _point(string, units=False)
+				x3, y3, string = _point(string, units=False)
 				self._S(x2, y2, x3, y3)
 
 			elif letter == 't':
 				# Relative quadratic curve end
-				x3, y3, string = helpers.coordinates.point(surface, string)
+				x3, y3, string = _point(string, units=False)
 				self._t(x3, y3)
 
 			elif letter == 'T':
 				# Quadratic curve end
-				x3, y3, string = helpers.coordinates.point(surface, string)
+				x3, y3, string = _point(string, units=False)
 				self._T(x3, y3)
 
 			elif letter == 'v':
 				# Relative vertical line
 				y, string = (string + ' ').split(' ', 1)
-				y = helpers.coordinates.size(surface, y, 'y')
+				y = _size(y, units=False)
 				self._v(y)
 
 			elif letter == 'V':
 				# Vertical line
 				y, string = (string + ' ').split(' ', 1)
-				y = helpers.coordinates.size(surface, y, 'y')
+				y = _size(y, units=False)
 				self._V(y)
 
 			elif letter in 'zZ':

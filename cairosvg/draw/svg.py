@@ -7,6 +7,7 @@ from . import _creators
 from .element import _Element, _StructureElement
 from .. import helpers
 from ..helpers import coordinates
+from ..helpers.coordinates import size2 as _size
 from ..helpers.modules import attrib as _attrib
 from ..parse import parser
 
@@ -18,24 +19,27 @@ class SVG(_StructureElement):
 	             viewBox=helpers._strdef('none'), preserveAspectRatio=helpers._strdef('xMidYMid meet'),
 	             **attribs):
 		self.tag = 'svg'
-		width = int(width); height = int(height) # todo: support units
 		_Element.__init__(self, width=width, height=height, x=x, y=y,
 		                  viewBox=viewBox, preserveAspectRatio=preserveAspectRatio,
 		                  **attribs)
 		self.viewport = coordinates.Viewport(parent=self, width=width, height=height,
 		                                     viewBox=viewBox, preserveAspectRatio=preserveAspectRatio)
-		if self.root is self and not self.surface:
+		if self.isRoot() and not self.surface:
 			self.setSurface('Image')
 
 	def __setitem__(self, key, value):
 		super().__setitem__(key, value)
 		if key in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
 			self.viewport._attribs[key] = value
+			if key in ('width', 'height') and self.isRoot():
+				# Reset surface to change its size
+				self.setSurface('Image')
 
 	# todo: delitem
 
 	def setSurface(self, surfaceType, filename=None):
-		self.surface = helpers.createSurface(surfaceType, self['width'], self['height'], filename)
+		width, height = round(self.viewport.width), round(self.viewport.height)
+		self.surface = helpers.createSurface(surfaceType, width, height, filename)
 		self.surfaceType = surfaceType
 
 	def clearSurface(self):
@@ -48,9 +52,11 @@ class SVG(_StructureElement):
 		viewportTransform = self.viewport.getTransform()
 
 		x, y = 0, 0
-		if self.root is not self:
+		if not self.isRoot():
 			# Nested SVG: use the element's x and y attributes
-			x, y = self.getAttribute('x', 0, cascade=False), self.getAttribute('y', 0, cascade=False)
+			vp = self._getViewport()
+			x = _size(self.getAttribute('x', 0, cascade=False), vp, 'x')
+			y = _size(self.getAttribute('y', 0, cascade=False), vp, 'y')
 
 		surface.context.translate(x, y)
 		with viewportTransform.applyContext(surface):
@@ -60,8 +66,9 @@ class SVG(_StructureElement):
 
 	def export(self, filename, *, useCairo=False, indent='', newline='\n', xmlDeclaration=True):
 		ext = os.path.splitext(filename)[1]
+		width, height = round(self.viewport.width), round(self.viewport.height)
 		if ext == '.pdf':
-			surface = helpers.createSurface('PDF', self['width'], self['height'], filename)
+			surface = helpers.createSurface('PDF', width, height, filename)
 			self.draw(surface)
 			surface.finish()
 		elif ext == '.png':
@@ -69,12 +76,12 @@ class SVG(_StructureElement):
 			self.draw()
 			self.surface.write_to_png(filename)
 		elif ext == '.ps':
-			surface = helpers.createSurface('PS', self['width'], self['height'], filename)
+			surface = helpers.createSurface('PS', width, height, filename)
 			self.draw(surface)
 			surface.finish()
 		elif ext == '.svg':
 			if useCairo:
-				surface = helpers.createSurface('SVG', self['width'], self['height'], filename)
+				surface = helpers.createSurface('SVG', width, height, filename)
 				self.draw(surface)
 				surface.finish()
 			else:
@@ -88,7 +95,7 @@ class SVG(_StructureElement):
 		self.draw()
 		# based on github.com/Zulko/gizeh
 		im = 0 + np.frombuffer(self.surface.get_data(), np.uint8)
-		im.shape = (self['height'], self['width'], 4)
+		im.shape = (self.surface.get_height(), self.surface.get_width(), 4)
 		if not bgr:
 			im = im[:,:,[2,1,0,3]]
 		if alpha:
