@@ -6,19 +6,20 @@ from ..helpers.modules import attrib as _attrib, content as _content
 class _Element:
 	_strAttrib = {}
 
-	def __init__(self, *, parent=None, surface=None, **attribs):
+	def __init__(self, *, parent=None, childIndex=None, surface=None, **attribs):
 		# Tree structure
-		self.parent = None
+		self.parent = parent
 		self.children = []
-		self.root = self
 		if parent is not None:
 			# child
-			self.parent = parent
-			self.parent.children.append(self)
-			self.root = parent.root
+			if childIndex is not None:
+				self.parent.children.insert(childIndex, self)
+			else:
+				self.parent.children.append(self)
+			self._root = parent._root
 		else:
 			# root
-			self._globals = {'ids':{}}
+			self._root = helpers.root.Root(self)
 			self.surface = surface
 
 		# Allowed children
@@ -43,6 +44,9 @@ class _Element:
 		if 'transform' in self.__class__.attribs:
 			self._setTransform()
 
+	def _getOutgoingRefs(self):
+		return []
+
 	def _getSurface(self):
 		if not self.root.surface:
 			raise Exception('Surface needed for drawing')
@@ -59,16 +63,16 @@ class _Element:
 		                                             parent=self)
 
 	def _setID(self, value):
-		if value in self.root._globals['ids']:
+		if value in self._root._ids:
 			print('warning: duplicate ID ignored: ' + value)
 		else:
-			self.root._globals['ids'][value] = self
+			self._root._ids[value] = self
 
 	def _setAutoID(self):
 		# Find the first free ID of the form tag+number
 		i = 1
 		eid = self.tag + str(i)
-		while eid in self.root._globals['ids']:
+		while eid in self._root._ids:
 			i += 1
 			eid = self.tag + str(i)
 		self._attribs['id'] = eid
@@ -115,7 +119,7 @@ class _Element:
 
 			if attrib == 'id':
 				try:
-					del self.root._globals['ids'][prevValue]
+					del self._root._ids[prevValue]
 				except KeyError:
 					pass
 				self._setID(value)
@@ -132,7 +136,7 @@ class _Element:
 
 		if attrib == 'id':
 			try:
-				del self.root._globals['ids'][value]
+				del self._root._ids[value]
 			except KeyError:
 				pass
 		elif attrib == 'transform':
@@ -151,20 +155,37 @@ class _Element:
 	def id(self):
 		del self['id']
 
+	@property
+	def root(self):
+		return self._root.element
+
 	def isRoot(self):
 		return self.root is self
 
 	def delete(self, recursive=True):
 		"""Delete this element from the tree"""
-		if self.parent: self.parent.children.remove(self)
+		if self.parent:
+			self.parent.children.remove(self)
+			if self.id:
+				del self._root._ids[self.id]
+
 		if recursive:
 			for child in self.children:
 				child.delete()
 		else:
 			for child in self.children:
-				child.parent = None
-				child.root = child
-				# todo: update globals (or disallow non-recursive deletion)
+				child.detach()
+			self._root._updateIDs()
+
+	def detach(self):
+		"""Disconnect this element and its descendants from the tree"""
+		parent = self.parent
+		if parent:
+			self.parent = None
+			self._root = helpers.root.Root(self)
+			self._root._updateIDs()
+			for eid in self._root._ids:
+				del parent._root._ids[eid]
 
 	def getAttribute(self, attrib, default=None, *, cascade=True):
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
@@ -180,13 +201,39 @@ class _Element:
 		else:
 			return self._attribs.get(attrib, default)
 
-	def addChild(self, tag, *attribs, **kwattribs):
+	def getReferences(self):
+		refs = []
+		for e in self._root._element.descendants():
+			outRefs = e._getOutgoingRefs()
+			for refTarget, refAttrib in outRefs:
+				if refTarget is self:
+					refs.append((e, refAttrib))
+		return refs
+
+	def addChild(self, tag, *attribs, childIndex=None, **kwattribs):
 		"""Add a child element to this element"""
-		from . import elements
-		try:
-			return elements[tag](parent=self, *attribs, **kwattribs)
-		except KeyError:
-			raise ValueError('unknown tag: {}'.format(tag))
+		if isinstance(tag, _Element):
+			if tag.parent:
+				tag.detach()
+			if childIndex is not None:
+				self.children.insert(childIndex, tag)
+			else:
+				self.children.append(tag)
+			tag.parent = self
+
+			idConflicts = tag._root._ids.keys() & self._root._ids.keys()
+			if idConflicts:
+				print('warning: duplicate ids ignored: ' + ', '.join(idConflicts))
+				for eid in idConflicts:
+					del tag._root._ids[eid]
+			self._root._ids.update(tag._root._ids)
+			tag._root = self._root
+
+		else:
+			from . import elements
+			if tag not in elements:
+				raise ValueError('unknown tag: {}'.format(tag))
+			return elements[tag](parent=self, childIndex=childIndex, *attribs, **kwattribs)
 
 	def code(self, file=None, *, indent='', indentDepth=0, newline='\n',
 	                             xmlDeclaration=False, namespaceDeclaration=True):

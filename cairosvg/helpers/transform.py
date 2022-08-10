@@ -8,7 +8,6 @@ from .. import helpers
 class Transform:
 	def __init__(self, string=None, *, parent=None):
 		self.parent = parent
-		self.root = parent.root if parent is not None else self
 		self._clear()
 		if string is not None:
 			self._transform(string)

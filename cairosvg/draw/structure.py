@@ -57,6 +57,13 @@ class Use(_Element):
 			if target and not target.id:
 				target._setAutoID()
 
+	def _getOutgoingRefs(self):
+		refs = super()._getOutgoingRefs()
+		target = self.target
+		if target:
+			refs.append((target, 'xlink:href'))
+		return refs
+
 	@property
 	def target(self):
 		href = self._attribs.get('xlink:href', None)
@@ -64,7 +71,7 @@ class Use(_Element):
 			if href[0] == '#':
 				href = href[1:]
 			try:
-				return self.root._globals['ids'][href]
+				return self._root._ids[href]
 			except KeyError:
 				# not found
 				return None
