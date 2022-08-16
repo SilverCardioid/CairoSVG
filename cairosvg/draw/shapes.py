@@ -39,7 +39,7 @@ class Ellipse(_ShapeElement):
 		vp = self._getViewport()
 		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
 		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
-		if cx > 0 or cy > 0:
+		if rx > 0 and ry > 0:
 			ratio = ry/rx
 			with self.transform.applyContext(surface):
 				surface.context.new_sub_path()

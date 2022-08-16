@@ -68,13 +68,24 @@ class _Element:
 		else:
 			self._root._ids[value] = self
 
-	def _setAutoID(self):
-		# Find the first free ID of the form tag+number
+	def _getAutoID(self, prefix=None, idList=None):
+		# Find the first free ID of the form prefix+number
+		prefix = prefix or self.tag
+		if prefix[-1].isnumeric():
+			# Add a separator if the prefix ends with a number
+			prefix += '_'
+		if idList is None:
+			idList = self._root._ids.keys()
+
 		i = 1
-		eid = self.tag + str(i)
-		while eid in self._root._ids:
+		eid = prefix + str(i)
+		while eid in idList:
 			i += 1
-			eid = self.tag + str(i)
+			eid = prefix + str(i)
+		return eid
+
+	def _setAutoID(self, prefix=None, idList=None):
+		eid = self._getAutoID(prefix, idList)
 		self._attribs['id'] = eid
 		self._setID(eid)
 
@@ -143,7 +154,7 @@ class _Element:
 			self.transform._clear()
 
 	def __repr__(self):
-		return self._tagCode()
+		return self._tagCode(namespaceDeclaration=False)
 
 	@property
 	def id(self):
@@ -162,6 +173,23 @@ class _Element:
 	def isRoot(self):
 		return self.root is self
 
+	def changeID(self, newID=None, updateRefs=True):
+		curID = self.id
+		if curID and updateRefs:
+			refs = self.getReferences()
+
+		if newID:
+			self.id = newID
+		else:
+			self._setAutoID(curID)
+
+		if curID and updateRefs:
+			for refElem, refAttrib in refs:
+				if refAttrib in refElem._strAttrib:
+					refElem[refAttrib] = refElem._strAttrib[refAttrib](self)
+				else:
+					refElem[refAttrib] = self
+
 	def delete(self, recursive=True):
 		"""Delete this element from the tree"""
 		if self.parent:
@@ -170,11 +198,11 @@ class _Element:
 				del self._root._ids[self.id]
 
 		if recursive:
-			for child in self.children:
-				child.delete()
+			while len(self.children) > 0:
+				self.children[-1].delete()
 		else:
-			for child in self.children:
-				child.detach()
+			while len(self.children) > 0:
+				self.children[-1].detach()
 			self._root._updateIDs()
 
 	def detach(self):
@@ -182,10 +210,13 @@ class _Element:
 		parent = self.parent
 		if parent:
 			self.parent = None
+			parent.children.remove(self)
 			self._root = helpers.root.Root(self)
 			self._root._updateIDs()
 			for eid in self._root._ids:
 				del parent._root._ids[eid]
+			for e in self.descendants():
+				e._root = self._root
 
 	def getAttribute(self, attrib, default=None, *, cascade=True):
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
@@ -203,7 +234,7 @@ class _Element:
 
 	def getReferences(self):
 		refs = []
-		for e in self._root._element.descendants():
+		for e in self._root.element.descendants():
 			outRefs = e._getOutgoingRefs()
 			for refTarget, refAttrib in outRefs:
 				if refTarget is self:
@@ -223,11 +254,15 @@ class _Element:
 
 			idConflicts = tag._root._ids.keys() & self._root._ids.keys()
 			if idConflicts:
-				print('warning: duplicate ids ignored: ' + ', '.join(idConflicts))
+				print('warning: duplicate ids changed: ' + ', '.join(idConflicts))
+				idList = tag._root._ids.keys() | self._root._ids.keys()
 				for eid in idConflicts:
-					del tag._root._ids[eid]
+					elem = tag._root._ids[eid]
+					newID = elem._getAutoID(eid, idList)
+					elem.changeID(newID)
 			self._root._ids.update(tag._root._ids)
-			tag._root = self._root
+			for e in tag.descendants():
+				e._root = self._root
 
 		else:
 			from . import elements

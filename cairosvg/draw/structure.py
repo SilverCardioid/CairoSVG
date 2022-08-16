@@ -52,7 +52,7 @@ class Use(_Element):
 
 	def __setitem__(self, key, value):
 		super().__setitem__(key, value)
-		if helpers.parseAttribute(key) == 'xlink:href':
+		if helpers.attribs.parseAttribute(key) == 'xlink:href':
 			target = self.target
 			if target and not target.id:
 				target._setAutoID()
