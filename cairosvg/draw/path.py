@@ -223,8 +223,7 @@ class Path(_ShapeElement):
 			if closed:
 				self.z()
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		with self.transform.applyContext(surface):
 			startPoint = None
 			lastPoint = None

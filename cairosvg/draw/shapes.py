@@ -13,8 +13,7 @@ class Circle(_ShapeElement):
 		self.tag = 'circle'
 		super().__init__(r=r, cx=cx, cy=cy, **attribs)
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		vp = self._getViewport()
 		r  = _size(self['r'] , vp, 'xy')
 		cx = _size(self['cx'], vp, 'x')
@@ -34,8 +33,7 @@ class Ellipse(_ShapeElement):
 		self.tag = 'ellipse'
 		super().__init__(rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		vp = self._getViewport()
 		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
 		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
@@ -58,8 +56,7 @@ class Line(_ShapeElement):
 		self.tag = 'line'
 		super().__init__(x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		x1, y1, x2, y2 = self.vertices()
 		with self.transform.applyContext(surface):
 			surface.context.move_to(x1, y1)
@@ -84,8 +81,7 @@ class Polygon(_ShapeElement):
 		self.tag = 'polygon'
 		super().__init__(points=points, **attribs)
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		points = self.vertices()
 
 		if len(points) > 0:
@@ -136,8 +132,7 @@ class Polyline(_ShapeElement):
 		self.tag = 'polyline'
 		super().__init__(points=points, **attribs)
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		points = self.vertices()
 
 		if len(points) > 0:
@@ -168,8 +163,7 @@ class Rect(_ShapeElement):
 		self.tag = 'rect'
 		super().__init__(width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		vp = self._getViewport()
 		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
 		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')

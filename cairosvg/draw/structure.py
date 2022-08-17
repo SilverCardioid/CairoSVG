@@ -3,7 +3,7 @@ from .. import helpers
 from ..helpers.coordinates import size2 as _size
 from ..helpers.modules import attrib as _attrib, content as _content
 
-class Group(_StructureElement):
+class G(_StructureElement):
 	attribs = _StructureElement.attribs + ['transform']
 	content = _StructureElement.content
 
@@ -11,10 +11,9 @@ class Group(_StructureElement):
 		self.tag = 'g'
 		_Element.__init__(self, **attribs)
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		with self.transform.applyContext(surface):
-			for child in self.children:
+			for child in self._children:
 				child.draw(surface)
 
 class Defs(_StructureElement):
@@ -25,7 +24,7 @@ class Defs(_StructureElement):
 		self.tag = 'defs'
 		_Element.__init__(self, **attribs)
 
-	def draw(self, surface=None):
+	def draw(self, surface):
 		# Draw nothing
 		return
 
@@ -80,8 +79,7 @@ class Use(_Element):
 		# unknown type
 		return None
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		vp = self._getViewport()
 		target = self.target
 
@@ -93,10 +91,10 @@ class Use(_Element):
 
 		# Draw target element in the context of the <use>
 		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
-		targetParent = target.parent
-		target.parent = self
+		targetParent = target._parent
+		target._parent = self
 		self.transform._translate(x, y)
 		with self.transform.applyContext(surface):
 			target.draw(surface)
-		target.parent = targetParent
+		target._parent = targetParent
 		self.transform._translate(-x, -y)

@@ -6,21 +6,20 @@ from ..helpers.modules import attrib as _attrib, content as _content
 class _Element:
 	_strAttrib = {}
 
-	def __init__(self, *, parent=None, childIndex=None, surface=None, **attribs):
+	def __init__(self, *, parent=None, childIndex=None, **attribs):
 		# Tree structure
-		self.parent = parent
-		self.children = []
+		self._parent = parent
+		self._children = []
 		if parent is not None:
 			# child
 			if childIndex is not None:
-				self.parent.children.insert(childIndex, self)
+				self.parent._children.insert(childIndex, self)
 			else:
-				self.parent.children.append(self)
+				self.parent._children.append(self)
 			self._root = parent._root
 		else:
 			# root
 			self._root = helpers.root.Root(self)
-			self.surface = surface
 
 		# Allowed children
 		for tag in self.__class__.content:
@@ -46,11 +45,6 @@ class _Element:
 
 	def _getOutgoingRefs(self):
 		return []
-
-	def _getSurface(self):
-		if not self.root.surface:
-			raise Exception('Surface needed for drawing')
-		return self.root.surface
 
 	def _getViewport(self):
 		elem = self.parent
@@ -157,6 +151,17 @@ class _Element:
 		return self._tagCode(namespaceDeclaration=False)
 
 	@property
+	def parent(self):
+		return self._parent
+	@parent.setter
+	def parent(self, elem):
+		elem.addChild(self)
+
+	@property
+	def children(self):
+		return tuple(self._children)
+
+	@property
 	def id(self):
 		return self._attribs.get('id', None)
 	@id.setter
@@ -193,24 +198,24 @@ class _Element:
 	def delete(self, recursive=True):
 		"""Delete this element from the tree"""
 		if self.parent:
-			self.parent.children.remove(self)
+			self.parent._children.remove(self)
 			if self.id:
 				del self._root._ids[self.id]
 
 		if recursive:
-			while len(self.children) > 0:
-				self.children[-1].delete()
+			while len(self._children) > 0:
+				self._children[-1].delete()
 		else:
-			while len(self.children) > 0:
-				self.children[-1].detach()
+			while len(self._children) > 0:
+				self._children[-1].detach()
 			self._root._updateIDs()
 
 	def detach(self):
 		"""Disconnect this element and its descendants from the tree"""
 		parent = self.parent
 		if parent:
-			self.parent = None
-			parent.children.remove(self)
+			self._parent = None
+			parent._children.remove(self)
 			self._root = helpers.root.Root(self)
 			self._root._updateIDs()
 			for eid in self._root._ids:
@@ -247,10 +252,10 @@ class _Element:
 			if tag.parent:
 				tag.detach()
 			if childIndex is not None:
-				self.children.insert(childIndex, tag)
+				self._children.insert(childIndex, tag)
 			else:
-				self.children.append(tag)
-			tag.parent = self
+				self._children.append(tag)
+			tag._parent = self
 
 			idConflicts = tag._root._ids.keys() & self._root._ids.keys()
 			if idConflicts:
@@ -286,15 +291,15 @@ class _Element:
 
 		tagCode = self._tagCode(close=len(self.children)==0, namespaceDeclaration=namespaceDeclaration)
 		file.write(f'{indentation}{tagCode}{newline}')
-		if len(self.children) > 0:
-			for child in self.children:
+		if len(self._children) > 0:
+			for child in self._children:
 				child.code(file, indent=indent, indentDepth=indentDepth+1, newline=newline)
 			tagClose = f'</{self.tag}>'
 			file.write(f'{indentation}{tagClose}{newline}')
 
 	def descendants(self):
 		yield self
-		for child in self.children:
+		for child in self._children:
 			yield from child.descendants()
 
 	def find(self, function, *, maxResults=None):
@@ -311,9 +316,8 @@ class _StructureElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + _attrib['GraphicalEvents']
 	content = _content['Description'] + _content['Animation'] + _content['Structure'] + _content['Shape'] + _content['Text'] + _content['Image'] + _content['View'] + _content['Conditional'] + _content['Hyperlink'] + _content['Script'] + _content['Style'] + _content['Marker'] + _content['Clip'] + _content['Mask'] + _content['Gradient'] + _content['Pattern'] + _content['Filter'] + _content['Cursor'] + _content['Font'] + _content['ColorProfile']
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
-		for child in self.children:
+	def draw(self, surface):
+		for child in self._children:
 			child.draw(surface)
 
 

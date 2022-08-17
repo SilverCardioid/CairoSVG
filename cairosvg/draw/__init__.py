@@ -7,7 +7,7 @@ elements = {
 	'circle': shapes.Circle,
 	'defs': structure.Defs,
 	'ellipse': shapes.Ellipse,
-	'g': structure.Group,
+	'g': structure.G,
 	'line': shapes.Line,
 	'path': path.Path,
 	'polygon': shapes.Polygon,
@@ -27,7 +27,7 @@ _creators.update({
 	                   cx=helpers._intdef(0), cy=helpers._intdef(0), **attribs: \
 	            	shapes.Ellipse(parent=self, rx=rx, ry=ry, cx=cx, cy=cy, **attribs),
 	'g':        lambda self, **attribs: \
-	            	structure.Group(parent=self, **attribs),
+	            	structure.G(parent=self, **attribs),
 	'line':     lambda self, x1=helpers._intdef(0), y1=helpers._intdef(0),
 	                   x2=helpers._intdef(0), y2=helpers._intdef(0), **attribs: \
 	            	shapes.Line(parent=self, x1=x1, y1=y1, x2=x2, y2=y2, **attribs),

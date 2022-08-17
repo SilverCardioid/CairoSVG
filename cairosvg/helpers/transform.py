@@ -12,14 +12,6 @@ class Transform:
 		if string is not None:
 			self._transform(string)
 
-	def __enter__(self):
-		if self._transformed:
-			self.push()
-
-	def __exit__(self, exc_type, exc_val, exc_tb):
-		if self._transformed:
-			self.pull()
-
 	def _clear(self):
 		self._mat = cairo.Matrix()
 		self._transformed = False
@@ -32,9 +24,41 @@ class Transform:
 			val += string
 			self.parent['transform'] = val
 
-	def __call__(self, string, *params, transform_origin=None, surface=None):
-		self._transform(string, *params, transform_origin=transform_origin,
-		                surface=surface)
+	def _getOrigin(self):
+		transform_origin = self.parent and self.parent.getAttribute('transform-origin', None) # todo: cascadable or not?
+		if transform_origin:
+			vp = self.parent and self.parent.getViewport()
+			width, height = vp.viewBoxSize
+
+			if isinstance(transform_origin, str):
+				origin = transform_origin.split(' ')
+			if len(origin) == 1:
+				origin_x = origin[0]
+				if origin_x in ('top', 'bottom'):
+					origin_x, origin_y = width/2, origin_x
+				else:
+					origin_y = height/2
+			elif len(origin) > 1:
+				origin_x, origin_y = origin[:2]
+				if origin_x in ('top', 'bottom'):
+					origin_x, origin_y = origin_y, origin_x
+
+			if   origin_x == 'center': origin_x = width/2
+			elif origin_x == 'left':   origin_x = 0
+			elif origin_x == 'right':  origin_x = width
+			else:                      origin_x = helpers.coordinates.size2(origin_x, vp, 'x')
+
+			if   origin_y == 'center': origin_y = height/2
+			elif origin_y == 'top':    origin_y = 0
+			elif origin_y == 'bottom': origin_y = height
+			else:                      origin_y = helpers.coordinates.size2(origin_y, vp, 'y')
+
+			return (origin_x, origin_y)
+		else:
+			return (0, 0)
+
+	def __call__(self, string, *params):
+		self._transform(string, *params)
 		if self.parent:
 			# Append to transform attribute
 			trans = string
@@ -44,34 +68,7 @@ class Transform:
 
 		return self.parent or self
 
-	def _transform(self, string, *params, transform_origin=None, surface=None):
-		surface = surface or self.parent._getSurface()
-		if transform_origin:
-			if isinstance(transform_origin, str):
-				origin = transform_origin.split(' ')
-			if len(origin) == 1:
-				origin_x = origin[0]
-				if origin_x in ('top', 'bottom'):
-					origin_x, origin_y = surface.width/2, origin_x
-				else:
-					origin_y = surface.height/2
-			elif len(origin) > 1:
-				origin_x, origin_y = origin[:2]
-				if origin_x in ('top', 'bottom'):
-					origin_x, origin_y = origin_y, origin_x
-
-			if origin_x == 'center':   origin_x = surface.width/2
-			elif origin_x == 'left':   origin_x = 0
-			elif origin_x == 'right':  origin_x = surface.width
-			else:                      origin_x = helpers.coordinates.size(surface, origin_x, 'x')
-
-			if origin_y == 'center':   origin_y = surface.height/2
-			elif origin_y == 'top':    origin_y = 0
-			elif origin_y == 'bottom': origin_y = surface.height
-			else:                      origin_y = helpers.coordinates.size(surface, origin_y, 'y')
-
-			self._mat.translate(float(origin_x), float(origin_y))
-
+	def _transform(self, string, *params):
 		if len(params):
 			# transform('type',values)
 			transformations = [(string, params)]
@@ -85,7 +82,7 @@ class Transform:
 				values = values.split(' ')
 			for i, value in enumerate(values):
 				if isinstance(value, str):
-					values[i] = helpers.coordinates.size(surface, value)
+					values[i] = helpers.coordinates.size2(value, units=False)
 
 			if transformation_type == 'matrix':      self._matrix(*values)
 			elif transformation_type == 'rotate':    self._rotate(*values)
@@ -93,9 +90,6 @@ class Transform:
 			elif transformation_type == 'skewY':     self._skewY(*values)
 			elif transformation_type == 'translate': self._translate(*values)
 			elif transformation_type == 'scale':     self._scale(*values)
-
-		if transform_origin:
-			self._mat.translate(-float(origin_x), -float(origin_y))
 
 		#try:
 		#	self._mat.invert()
@@ -115,13 +109,14 @@ class Transform:
 		#		self._mat.invert()
 		#		surface.context.transform(self._mat)
 
-	def apply(self, surface=None):
-		surface = surface or self.parent._getSurface()
+	def apply(self, surface):
+		origin_x, origin_y = self._getOrigin()
+		surface.context.translate(origin_x, origin_y)
 		surface.context.transform(self._mat)
+		surface.context.translate(-origin_x, -origin_y)
 
 	@contextmanager
-	def applyContext(self, surface=None):
-		surface = surface or self.parent._getSurface()
+	def applyContext(self, surface):
 		if self._transformed:
 			self.push(surface)
 		try:
@@ -130,14 +125,12 @@ class Transform:
 			if self._transformed:
 				self.pull(surface)
 
-	def save(self, surface=None):
-		surface = surface or self.parent._getSurface()
+	def save(self, surface):
 		surface.context.save()
 		self.apply(surface)
 	push = save
 
-	def restore(self, surface=None):
-		surface = surface or self.parent._getSurface()
+	def restore(self, surface):
 		surface.context.restore()
 	pull = restore
 

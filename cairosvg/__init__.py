@@ -1,2 +1,4 @@
-from .draw.svg import SVG
-from .helpers import createSurface
+from . import elements
+from .helpers import surface
+
+SVG = elements.SVG

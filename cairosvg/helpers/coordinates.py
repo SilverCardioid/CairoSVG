@@ -44,6 +44,14 @@ class Viewport:
 		# unknown type
 		return None
 
+	@property
+	def viewBoxSize(self):
+		vb = self.viewBox
+		if vb:
+			return vb[2:]
+		else:
+			return (self.width, self.height)
+
 	def getTransform(self):
 		"""Return a Transform object based on the viewport's viewBox and preserveAspectRatio values."""
 		from . import transform
@@ -125,11 +133,7 @@ def size2(string, viewport=None, reference='xy', *, units=True, autoValue=0, fon
 			# reference in ('x', 'y', 'xy'): use viewport size
 			if not viewport:
 				return 0
-			viewportVB = viewport.viewBox
-			if viewportVB:
-				refWidth, refHeight = viewportVB[2:]
-			else:
-				refWidth, refHeight = viewport.width, viewport.height
+			refWidth, refHeight = viewport.viewBoxSize
 			if reference == 'x':
 				reference = refWidth
 			elif reference == 'y':

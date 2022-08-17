@@ -39,13 +39,13 @@ checkElem(rect, root=svg)
 path = svg.addChild('path', 'M0,0 600,600M0,600 600,0', stroke='#000', id='path')
 checkElem(path, root=svg)
 
-circle = cairosvg.draw.shapes.Circle(180, 300, 300, fill='#05a', id='circle', parent=svg, childIndex=1)
+circle = cairosvg.elements.Circle(180, 300, 300, fill='#05a', id='circle', parent=svg, childIndex=1)
 checkElem(circle, root=svg)
 checkChildren(svg, ['rect', 'circle', 'path'])
 
 # Add g, move path to it, add use
 
-g = cairosvg.draw.structure.Group(id='g')
+g = cairosvg.elements.G(id='g')
 checkElem(g, root=None, notRoot=svg)
 
 g.addChild(path)
@@ -63,7 +63,7 @@ checkTarget(use, target=path)
 
 # Create new set of g, path and use with the same ids, and add it to svg
 
-g1 = cairosvg.draw.structure.Group(id='g')
+g1 = cairosvg.elements.G(id='g')
 checkElem(g1, root=None)
 
 path1 = g1.addChild('path', 'M0,300H600M300,0V600', stroke='#000', id='path')

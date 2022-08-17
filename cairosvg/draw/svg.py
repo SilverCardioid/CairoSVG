@@ -24,31 +24,23 @@ class SVG(_StructureElement):
 		                  **attribs)
 		self.viewport = coordinates.Viewport(parent=self, width=width, height=height,
 		                                     viewBox=viewBox, preserveAspectRatio=preserveAspectRatio)
-		if self.isRoot() and not self.surface:
-			self.setSurface('Image')
 
 	def __setitem__(self, key, value):
 		super().__setitem__(key, value)
 		if key in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
 			self.viewport._attribs[key] = value
-			if key in ('width', 'height') and self.isRoot():
-				# Reset surface to change its size
-				self.setSurface('Image')
 
 	# todo: delitem
 
-	def setSurface(self, surfaceType, filename=None):
-		width, height = round(self.viewport.width), round(self.viewport.height)
-		self.surface = helpers.createSurface(surfaceType, width, height, filename)
-		self.surfaceType = surfaceType
+	@property
+	def width(self):
+		return self.viewport.width
 
-	def clearSurface(self):
-		self.surface.context.set_operator(cairo.OPERATOR_CLEAR)
-		self.surface.context.paint()
-		self.surface.context.set_operator(cairo.OPERATOR_OVER)
+	@property
+	def height(self):
+		return self.viewport.height
 
-	def draw(self, surface=None):
-		surface = surface or self._getSurface()
+	def draw(self, surface):
 		viewportTransform = self.viewport.getTransform()
 
 		x, y = 0, 0
@@ -60,28 +52,29 @@ class SVG(_StructureElement):
 
 		surface.context.translate(x, y)
 		with viewportTransform.applyContext(surface):
-			for child in self.children:
+			for child in self._children:
 				child.draw(surface)
 		surface.context.translate(-x, -y)
 
-	def export(self, filename, *, useCairo=False, indent='', newline='\n', xmlDeclaration=True):
+	def export(self, filename, *, surface=None, useCairo=False,
+	           indent='', newline='\n', xmlDeclaration=True):
 		ext = os.path.splitext(filename)[1]
-		width, height = round(self.viewport.width), round(self.viewport.height)
+		width, height = round(self.width), round(self.height)
 		if ext == '.pdf':
-			surface = helpers.createSurface('PDF', width, height, filename)
+			surface = surface or helpers.surface.createSurface('PDF', width, height, filename)
 			self.draw(surface)
 			surface.finish()
 		elif ext == '.png':
-			self.clearSurface()
-			self.draw()
-			self.surface.write_to_png(filename)
+			surface = surface or helpers.surface.createSurface('Image', width, height, filename)
+			self.draw(surface)
+			surface.write_to_png(filename)
 		elif ext == '.ps':
-			surface = helpers.createSurface('PS', width, height, filename)
+			surface = surface or helpers.surface.createSurface('PS', width, height, filename)
 			self.draw(surface)
 			surface.finish()
 		elif ext == '.svg':
 			if useCairo:
-				surface = helpers.createSurface('SVG', width, height, filename)
+				surface = surface or helpers.surface.createSurface('SVG', width, height, filename)
 				self.draw(surface)
 				surface.finish()
 			else:
@@ -90,12 +83,12 @@ class SVG(_StructureElement):
 		else:
 			raise ValueError('Unsupported file extension: {}'.format(ext))
 
-	def pixels(self, *, alpha=False, bgr=False):
-		self.clearSurface()
-		self.draw()
+	def pixels(self, *, surface=None, alpha=False, bgr=False):
+		surface = surface or helpers.surface.createSurface('Image', round(self.width), round(self.height))
+		self.draw(surface)
 		# based on github.com/Zulko/gizeh
-		im = 0 + np.frombuffer(self.surface.get_data(), np.uint8)
-		im.shape = (self.surface.get_height(), self.surface.get_width(), 4)
+		im = 0 + np.frombuffer(surface.get_data(), np.uint8)
+		im.shape = (surface.get_height(), surface.get_width(), 4)
 		if not bgr:
 			im = im[:,:,[2,1,0,3]]
 		if alpha:
@@ -103,8 +96,8 @@ class SVG(_StructureElement):
 		else:
 			return im[:,:,:3]
 
-	def show(self, windowName='svg', *, wait=0):
-		cv2.imshow(windowName, self.pixels(bgr=True))
+	def show(self, windowName='svg', *, surface=None, wait=0):
+		cv2.imshow(windowName, self.pixels(surface=surface, bgr=True))
 		close = False
 		waitTime = wait if wait > 0 else 100 # ms
 		try:
@@ -133,7 +126,7 @@ class SVG(_StructureElement):
 		elementQueue = [(tree, svg)]
 		while len(elementQueue) > 0:
 			curNode, curElem = elementQueue.pop()
-			for childNode in curNode.children:
+			for childNode in curNode._children:
 				if childNode.tag in _creators:
 					#print(f'<{childNode.tag}> attribs: {dict(childNode)}')
 					childElem = _creators[childNode.tag](curElem, **childNode)
