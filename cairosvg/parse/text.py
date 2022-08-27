@@ -7,9 +7,10 @@ from math import cos, radians, sin
 
 from .bounding_box import (
     EMPTY_BOUNDING_BOX, extend_bounding_box, is_valid_bounding_box)
-from ..helpers import distance, point_angle, zip_letters
+from ..helpers import zip_letters
 from ..helpers.attribs import normalize
 from ..helpers.coordinates import size
+from ..helpers.geometry import distance, point_angle
 from .surface import cairo
 from .url import parse_url
 

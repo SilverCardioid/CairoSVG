@@ -178,9 +178,9 @@ class Node(dict):
 
         # Inherits from parent properties
         if parent is not None:
-            self.update([
-                (attribute, parent[attribute]) for attribute in parent
-                if attribute not in NOT_INHERITED_ATTRIBUTES])
+            # self.update([
+                # (attribute, parent[attribute]) for attribute in parent
+                # if attribute not in NOT_INHERITED_ATTRIBUTES])
             self.url = url or parent.url
             self.parent = parent
         else:

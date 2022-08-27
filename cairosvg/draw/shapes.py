@@ -24,6 +24,13 @@ class Circle(_ShapeElement):
 				surface.context.arc(cx, cy, r, 0, 2*math.pi)
 				self._paint(surface)
 
+	def boundingBox(self):
+		vp = self._getViewport()
+		r  = _size(self['r'] , vp, 'xy')
+		cx = _size(self['cx'], vp, 'x')
+		cy = _size(self['cy'], vp, 'y')
+		return (cx - r, cy - r, 2*r, 2*r)
+
 
 class Ellipse(_ShapeElement):
 	attribs = _ShapeElement.attribs + ['cx','cy','rx','ry','transform']
@@ -47,6 +54,12 @@ class Ellipse(_ShapeElement):
 				surface.context.restore()
 				self._paint(surface)
 
+	def boundingBox(self):
+		vp = self._getViewport()
+		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
+		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
+		return (cx - rx, cy - ry, 2*rx, 2*ry)
+
 
 class Line(_ShapeElement):
 	attribs = _ShapeElement.attribs + ['x1','y1','x2','y2','transform']
@@ -65,13 +78,17 @@ class Line(_ShapeElement):
 
 	def vertices(self):
 		vp = self._getViewport()
-		x1, y1 = _size(self['x1'], vp, 'x'), _size(self['y2'], vp, 'y')
+		x1, y1 = _size(self['x1'], vp, 'x'), _size(self['y1'], vp, 'y')
 		x2, y2 = _size(self['x2'], vp, 'x'), _size(self['y2'], vp, 'y')
 		return [x1, y1, x2, y2]
 
 	def vertexAngles(self):
-		angle = helpers.point_angle(*self.vertices())
+		angle = helpers.geometry.point_angle(*self.vertices())
 		return [angle, angle]
+
+	def boundingBox(self):
+		x1, y1, x2, y2 = self.vertices()
+		return (min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
 
 
 class Polygon(_ShapeElement):
@@ -124,6 +141,14 @@ class Polygon(_ShapeElement):
 		path = Path().polyline(self.vertices(), closed=True)
 		return path.vertexAngles()
 
+	def boundingBox(self):
+		minX, maxX = math.inf, -math.inf
+		minY, maxY = math.inf, -math.inf
+		for x, y in self.vertices():
+			minX = min(minX, x); maxX = max(maxX, x)
+			minY = min(minY, y); maxY = max(maxY, y)
+		return (minX, minY, maxX - minX, maxY - minY)
+
 
 class Polyline(_ShapeElement):
 	attribs = _ShapeElement.attribs + ['points','transform']
@@ -136,13 +161,14 @@ class Polyline(_ShapeElement):
 		points = self.vertices()
 
 		if len(points) > 0:
-			with self.transform:
+			with self.transform.applyContext(surface):
 				surface.context.move_to(*points[0])
 				for point in points[1:]:
 					surface.context.line_to(*point)
 				self._paint(surface)
 
 	vertices = Polygon.vertices
+	boundingBox = Polygon.boundingBox
 
 	def vertexAngles(self):
 		path = Path().polyline(self.vertices(), closed=False)
@@ -207,3 +233,9 @@ class Rect(_ShapeElement):
 				surface.context.close_path()
 
 			self._paint(surface)
+
+	def boundingBox(self):
+		vp = self._getViewport()
+		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
+		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
+		return (x, y, width, height)

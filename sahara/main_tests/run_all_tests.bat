@@ -4,4 +4,5 @@ python test_g_use.py
 python test_nested_svgs.py
 python test_transform.py
 python test_units.py
+python test_bbox.py
 python test_tree_manip.py

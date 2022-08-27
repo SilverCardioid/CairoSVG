@@ -126,7 +126,7 @@ class SVG(_StructureElement):
 		elementQueue = [(tree, svg)]
 		while len(elementQueue) > 0:
 			curNode, curElem = elementQueue.pop()
-			for childNode in curNode._children:
+			for childNode in curNode.children:
 				if childNode.tag in _creators:
 					#print(f'<{childNode.tag}> attribs: {dict(childNode)}')
 					childElem = _creators[childNode.tag](curElem, **childNode)

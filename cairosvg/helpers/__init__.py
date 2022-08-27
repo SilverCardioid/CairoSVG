@@ -4,10 +4,10 @@ Surface helpers.
 """
 
 import re
-from math import atan2, cos, radians, sin, tan
+from math import radians, tan
 
 import cairocffi as cairo
-from . import attribs, coordinates, root, surface
+from . import attribs, coordinates, geometry, root, surface
 #from .parse.url import parse_url
 
 PAINT_URL = re.compile(r'(url\(.+\)) *(.*)')
@@ -23,11 +23,6 @@ class _strdef(str, _Default): pass
 
 class PointError(Exception):
     """Exception raised when parsing a point fails."""
-
-
-def distance(x1, y1, x2, y2):
-    """Get the distance between two points."""
-    return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
 
 def paint(value):
@@ -49,25 +44,6 @@ def paint(value):
         color = value or None
 
     return (source, color)
-
-
-def point_angle(cx, cy, px, py):
-    """Return angle between x axis and point knowing given center."""
-    return atan2(py - cy, px - cx)
-
-
-def bezier_angles(*points):
-    """Return the tangent angles of a Bezier curve of any degree."""
-    if len(points) < 2:
-        # zero-length segment
-        return (0, 0)
-    # Control points that coincide with vertices can be removed
-    elif points[0] == points[1]:
-        return bezier_angles(*points[1:])
-    elif points[-2] == points[-1]:
-        return bezier_angles(*points[:-1])
-    else:
-        return (point_angle(*points[0], *points[1]), point_angle(*points[-2], *points[-1]))
 
 
 def clip_marker_box(surface, node, scale_x, scale_y):
@@ -94,20 +70,6 @@ def clip_marker_box(surface, node, scale_x, scale_y):
         clip_y += viewbox_height - height / scale_y
 
     return clip_x, clip_y, width / scale_x, height / scale_y
-
-
-def quadratic_points(x1, y1, x2, y2, x3, y3):
-    """Return the quadratic points to create quadratic curves."""
-    xq1 = x2 * 2 / 3 + x1 / 3
-    yq1 = y2 * 2 / 3 + y1 / 3
-    xq2 = x2 * 2 / 3 + x3 / 3
-    yq2 = y2 * 2 / 3 + y3 / 3
-    return xq1, yq1, xq2, yq2, x3, y3
-
-
-def rotate(x, y, angle):
-    """Rotate a point of an angle around the origin point."""
-    return x * cos(angle) - y * sin(angle), y * cos(angle) + x * sin(angle)
 
 
 def transform2(surface, transform_string, gradient=None, transform_origin=None):

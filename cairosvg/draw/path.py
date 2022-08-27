@@ -239,7 +239,7 @@ class Path(_ShapeElement):
 				elif letter == 'C':
 					surface.context.curve_to(*coords)
 				elif letter == 'Q':
-					cubicCoords = helpers.quadratic_points(*lastPoint, *coords)
+					cubicCoords = helpers.geometry.quadratic_points(*lastPoint, *coords)
 					surface.context.curve_to(*cubicCoords)
 				elif letter == 'Z':
 					surface.context.close_path()
@@ -251,45 +251,19 @@ class Path(_ShapeElement):
 
 	def _drawArc(self, surface, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
 		surface.context.set_tolerance(0.00001)
-		rotation = helpers.radians(float(rotation))
 		# rx=0 or ry=0 means straight line
 		if not rx or not ry:
 			surface.context.line_to(x3, y3)
 			return
-		# Absolute x3 and y3, convert to relative
-		x3 -= x1
-		y3 -= y1
-		radii_ratio = ry / rx
-		# Cancel the rotation of the second point
-		xe, ye = helpers.rotate(x3, y3, -rotation)
-		ye /= radii_ratio
-		# Find the angle between the second point and the x axis
-		angle = helpers.point_angle(0, 0, xe, ye)
-		# Put the second point onto the x axis
-		xe = (xe ** 2 + ye ** 2) ** .5
-		ye = 0
-		# Update the x radius if it is too small
-		rx = max(rx, xe / 2)
-		# Find one circle centre
-		xc = xe / 2
-		yc = (rx ** 2 - xc ** 2) ** .5
-		# Choose between the two circles according to flags
-		if not (large ^ sweep):
-				yc = -yc
-		# Define the arc sweep
-		arc = (surface.context.arc if sweep else surface.context.arc_negative)
-		# Put the second point and the center back to their positions
-		xe, ye = helpers.rotate(xe, 0, angle)
-		xc, yc = helpers.rotate(xc, yc, angle)
-		# Find the drawing angles
-		angle1 = helpers.point_angle(xc, yc, 0, 0)
-		angle2 = helpers.point_angle(xc, yc, xe, ye)
-		# Draw the arc
+
+		arc = helpers.geometry.Arc(rx, ry, rotation, large, sweep, x3 - x1, y3 - y1)
+		arcFun = (surface.context.arc if arc.sweep else surface.context.arc_negative)
+
 		surface.context.save()
 		surface.context.translate(x1, y1)
-		surface.context.rotate(rotation)
-		surface.context.scale(1, radii_ratio)
-		arc(xc, yc, rx, angle1, angle2)
+		surface.context.rotate(arc.rotation)
+		surface.context.scale(1, arc.radiiRatio)
+		arcFun(*arc.drawCenter, arc.rx, *arc.drawAngles)
 		surface.context.restore()
 
 	def vertices(self, include_z=True):
@@ -312,7 +286,7 @@ class Path(_ShapeElement):
 		#index = 0
 		vertex = None
 		lastVertex = (0, 0) # in case of no M
-		lastM = None
+		lastM = (0, 0)
 		#lastMIndex = None
 		lastLetter = None
 
@@ -329,7 +303,7 @@ class Path(_ShapeElement):
 
 			elif letter == 'L':
 				vertex = coords[-2:]
-				angle = helpers.point_angle(*lastVertex, *vertex)
+				angle = helpers.geometry.point_angle(*lastVertex, *vertex)
 				segmentAngles[-1].append((angle, angle))
 
 			elif letter == 'A':
@@ -340,33 +314,17 @@ class Path(_ShapeElement):
 				rotation = math.radians(rotation)
 				if not rx or not ry:
 					# rx=0 or ry=0 means straight line
-					angle = helpers.point_angle(*lastVertex, *vertex)
+					angle = helpers.geometry.point_angle(*lastVertex, *vertex)
 					segmentAngles[-1].append((angle, angle))
 				else:
-					# Cancel the rotation of the second point
-					radii_ratio = ry / rx
-					xe, ye = helpers.rotate(xe, ye, -rotation)
-					ye /= radii_ratio
-					# Put the second point onto the x axis
-					angle = helpers.point_angle(0, 0, xe, ye)
-					xe, ye = (xe ** 2 + ye ** 2) ** .5, 0
-					rx = max(rx, xe / 2)
-					# Find circle centre
-					xc = xe / 2
-					yc = (rx ** 2 - xc ** 2) ** .5
-					if not (large ^ sweep): yc = -yc
-					# Put the second point and the center back to their positions
-					xe, ye = helpers.rotate(xe, 0, angle)
-					xc, yc = helpers.rotate(xc, yc, angle)
-					# Find the drawing angles
-					angle1 = helpers.point_angle(xc, yc, 0, 0)
-					angle2 = helpers.point_angle(xc, yc, xe, ye)
-					tangent1 = angle1 + (math.pi/2 if sweep else -math.pi/2)
-					tangent2 = angle2 + (math.pi/2 if sweep else -math.pi/2)
-					if radii_ratio != 1:
-						tangent1 = math.atan2(radii_ratio*math.sin(tangent1), math.cos(tangent1))
-						tangent2 = math.atan2(radii_ratio*math.sin(tangent2), math.cos(tangent2))
-					segmentAngles[-1].append((tangent1 + rotation, tangent2 + rotation))
+					arc = helpers.geometry.Arc(rx, ry, rotation, large, sweep, xe, ye)
+					angle1, angle2 = arc.drawAngles
+					tangent1 = angle1 + (math.pi/2 if arc.sweep else -math.pi/2)
+					tangent2 = angle2 + (math.pi/2 if arc.sweep else -math.pi/2)
+					if arc.radiiRatio != 1:
+						tangent1 = math.atan2(arc.radiiRatio*math.sin(tangent1), math.cos(tangent1))
+						tangent2 = math.atan2(arc.radiiRatio*math.sin(tangent2), math.cos(tangent2))
+					segmentAngles[-1].append((tangent1 + arc.rotation, tangent2 + arc.rotation))
 
 			elif letter == 'C':
 				vertex = coords[-2:]
@@ -378,7 +336,7 @@ class Path(_ShapeElement):
 
 			elif letter == 'Z':
 				vertex = lastM
-				angle = helpers.point_angle(*lastVertex, *vertex)
+				angle = helpers.geometry.point_angle(*lastVertex, *vertex)
 				segmentAngles[-1].append((angle, angle))
 
 			lastVertex = vertex
@@ -413,6 +371,67 @@ class Path(_ShapeElement):
 					vertexAngles.append(angleIn)
 		return vertexAngles
 
+	def boundingBox(self, _ex=None):
+		minX, maxX = math.inf, -math.inf
+		minY, maxY = math.inf, -math.inf
+		lastVertex = (0, 0) # in case of no M
+		lastM = (0, 0)
+		for command in self._data:
+			letter, coords = command
+			x0, y0 = lastVertex
+
+			if letter == 'Z':
+				lastVertex = lastM
+				continue
+
+			if letter == 'M':
+				lastM = coords
+
+			if letter == 'C':
+				x1, y1, x2, y2, x3, y3 = coords
+				xExtrema = helpers.geometry.cubic_extrema(x0, x1, x2, x3)
+				yExtrema = helpers.geometry.cubic_extrema(y0, y1, y2, y3)
+				for t, x in xExtrema:
+					minX = min(minX, x); maxX = max(maxX, x)
+					if _ex is not None:
+						_ex.append((x, helpers.geometry.evaluate_cubic(t, y0, y1, y2, y3)))
+				for t, y in yExtrema:
+					minY = min(minY, y); maxY = max(maxY, y)
+					if _ex is not None:
+						_ex.append((helpers.geometry.evaluate_cubic(t, x0, x1, x2, x3), y))
+
+			if letter == 'Q':
+				x1, y1, x2, y2 = coords
+				xExtrema = helpers.geometry.quadratic_extrema(x0, x1, x2)
+				yExtrema = helpers.geometry.quadratic_extrema(y0, y1, y2)
+				for t, x in xExtrema:
+					minX = min(minX, x); maxX = max(maxX, x)
+					if _ex is not None:
+						_ex.append((x, helpers.geometry.evaluate_quadratic(t, y0, y1, y2)))
+				for t, y in yExtrema:
+					minY = min(minY, y); maxY = max(maxY, y)
+					if _ex is not None:
+						_ex.append((helpers.geometry.evaluate_quadratic(t, x0, x1, x2), y))
+
+			if letter == 'A':
+				rx, ry, rotation, large, sweep, x1, y1 = coords
+				if rx and ry:
+					arc = helpers.geometry.Arc(rx, ry, rotation, large, sweep, x1 - x0, y1 - y0)
+					extrema = arc.extrema()
+					for angle, (x, y) in extrema:
+						x += x0; y += y0
+						minX = min(minX, x); maxX = max(maxX, x)
+						minY = min(minY, y); maxY = max(maxY, y)
+						if _ex is not None:
+							_ex.append((x, y))
+
+			newX, newY = coords[-2:]
+			minX = min(minX, newX); maxX = max(maxX, newX)
+			minY = min(minY, newY); maxY = max(maxY, newY)
+			lastVertex = (newX, newY)
+
+		return (minX, minY, maxX - minX, maxY - minY)
+
 	def d(self, d):
 		"""Append path data from a string"""
 		self._d(d)
@@ -438,6 +457,7 @@ class Path(_ShapeElement):
 				# Elliptic curve
 				rx, ry, string = _point(string, units=False)
 				rotation, string = string.split(' ', 1)
+				rotation = _size(rotation, units=False)
 
 				# The large and sweep values are not always separated from the
 				# following values. These flags can only be 0 or 1, so reading a
@@ -561,3 +581,4 @@ class Path(_ShapeElement):
 				self._Z()
 
 			string = string.strip()
+
