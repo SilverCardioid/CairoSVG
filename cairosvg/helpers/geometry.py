@@ -174,3 +174,74 @@ class Arc:
 def arc_extrema(rx, ry, rotation, large, sweep, dx, dy):
 	"""Find points on an arc with zero derivative (horizontal or vertical tangent)"""
 	return Arc(rx, ry, rotation, large, sweep, dx, dy).extrema()
+
+
+class Box:
+	# Helper class for bounding rectangles, to distinguish
+	# single-point boxes at the origin from null boxes without defined location
+	def __init__(self, x=None, y=None, width=0, height=0):
+		self.defined = x is not None and y is not None
+		if self.defined:
+			self.x0 = x
+			self.y0 = y
+			self.x1 = self.x + width
+			self.y1 = self.y + height
+		else:
+			self.x0, self.y0, self.x1, self.y1 = 0, 0, 0, 0
+
+	@property
+	def x(self): return self.x0
+	@property
+	def y(self): return self.y0
+	@property
+	def width(self): return self.x1 - self.x0
+	@property
+	def height(self): return self.y1 - self.y0
+	@property
+	def xywh(self):
+		return (self.x, self.y, self.width, self.height)
+
+	def copy(self):
+		if self.defined:
+			return Box(self.x, self.y, self.width, self.height)
+		else:
+			return Box()
+
+	def addPoint(self, x, y):
+		if self.defined:
+			self.x0, self.x1 = min(self.x0, x), max(self.x1, x)
+			self.y0, self.y1 = min(self.y0, y), max(self.y1, y)
+		else:
+			# Initial point
+			self.x0, self.x1 = x, x
+			self.y0, self.y1 = y, y
+			self.defined = True
+
+	def addBox(self, other):
+		if other.defined:
+			if self.defined:
+				# bounding box of the union of the two
+				self.x0, self.x1 = min(self.x0, other.x0), max(self.x1, other.x1)
+				self.y0, self.y1 = min(self.y0, other.y0), max(self.y1, other.y1)
+			else:
+				# copy other
+				self.x0, self.x1 = other.x0, other.x1
+				self.y0, self.y1 = other.y0, other.y1
+				self.defined = True
+		# other not defined: no change
+
+	def __add__(self, other):
+		return self.copy().addBox(other)
+
+	def __iadd__(self, other):
+		self.addBox(other)
+		return self
+
+	def __and__(self, other):
+		if self.defined and other.defined:
+			x0, x1 = max(self.x0, other.x0), min(self.x1, other.x1)
+			y0, y1 = max(self.y0, other.y0), min(self.y1, other.y1)
+			if x0 <= x1 and y0 <= y1:
+				return Box(x0, y0, x1 - x0, y1 - y0)
+		# either box not defined, or no intersection
+		return Box()

@@ -98,3 +98,17 @@ class Use(_Element):
 			target.draw(surface)
 		target._parent = targetParent
 		self.transform._translate(-x, -y)
+
+	def boundingBox(self):
+		target = self.target
+		if target is None:
+			return helpers.geometry.Box()
+		else:
+			box = target.boundingBox()
+			if box.defined:
+				# Shift box according to x and y attribs
+				vp = self._getViewport()
+				x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
+				box.x0 += x; box.y0 += y
+				box.x1 += x; box.y1 += y
+			return box

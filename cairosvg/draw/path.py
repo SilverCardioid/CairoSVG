@@ -372,8 +372,7 @@ class Path(_ShapeElement):
 		return vertexAngles
 
 	def boundingBox(self, _ex=None):
-		minX, maxX = math.inf, -math.inf
-		minY, maxY = math.inf, -math.inf
+		box = helpers.geometry.Box()
 		lastVertex = (0, 0) # in case of no M
 		lastM = (0, 0)
 		for command in self._data:
@@ -392,26 +391,30 @@ class Path(_ShapeElement):
 				xExtrema = helpers.geometry.cubic_extrema(x0, x1, x2, x3)
 				yExtrema = helpers.geometry.cubic_extrema(y0, y1, y2, y3)
 				for t, x in xExtrema:
-					minX = min(minX, x); maxX = max(maxX, x)
+					y = helpers.geometry.evaluate_cubic(t, y0, y1, y2, y3)
+					box.addPoint(x, y)
 					if _ex is not None:
-						_ex.append((x, helpers.geometry.evaluate_cubic(t, y0, y1, y2, y3)))
+						_ex.append((x, y))
 				for t, y in yExtrema:
-					minY = min(minY, y); maxY = max(maxY, y)
+					x = helpers.geometry.evaluate_cubic(t, x0, x1, x2, x3)
+					box.addPoint(x, y)
 					if _ex is not None:
-						_ex.append((helpers.geometry.evaluate_cubic(t, x0, x1, x2, x3), y))
+						_ex.append((x, y))
 
 			if letter == 'Q':
 				x1, y1, x2, y2 = coords
 				xExtrema = helpers.geometry.quadratic_extrema(x0, x1, x2)
 				yExtrema = helpers.geometry.quadratic_extrema(y0, y1, y2)
 				for t, x in xExtrema:
-					minX = min(minX, x); maxX = max(maxX, x)
+					y = helpers.geometry.evaluate_quadratic(t, y0, y1, y2)
+					box.addPoint(x, y)
 					if _ex is not None:
-						_ex.append((x, helpers.geometry.evaluate_quadratic(t, y0, y1, y2)))
+						_ex.append((x, y))
 				for t, y in yExtrema:
-					minY = min(minY, y); maxY = max(maxY, y)
+					x = helpers.geometry.evaluate_quadratic(t, x0, x1, x2)
+					box.addPoint(x, y)
 					if _ex is not None:
-						_ex.append((helpers.geometry.evaluate_quadratic(t, x0, x1, x2), y))
+						_ex.append((x, y))
 
 			if letter == 'A':
 				rx, ry, rotation, large, sweep, x1, y1 = coords
@@ -420,17 +423,15 @@ class Path(_ShapeElement):
 					extrema = arc.extrema()
 					for angle, (x, y) in extrema:
 						x += x0; y += y0
-						minX = min(minX, x); maxX = max(maxX, x)
-						minY = min(minY, y); maxY = max(maxY, y)
+						box.addPoint(x, y)
 						if _ex is not None:
 							_ex.append((x, y))
 
 			newX, newY = coords[-2:]
-			minX = min(minX, newX); maxX = max(maxX, newX)
-			minY = min(minY, newY); maxY = max(maxY, newY)
+			box.addPoint(newX, newY)
 			lastVertex = (newX, newY)
 
-		return (minX, minY, maxX - minX, maxY - minY)
+		return box
 
 	def d(self, d):
 		"""Append path data from a string"""

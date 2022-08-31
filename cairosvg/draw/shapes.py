@@ -29,7 +29,7 @@ class Circle(_ShapeElement):
 		r  = _size(self['r'] , vp, 'xy')
 		cx = _size(self['cx'], vp, 'x')
 		cy = _size(self['cy'], vp, 'y')
-		return (cx - r, cy - r, 2*r, 2*r)
+		return helpers.geometry.Box(cx - r, cy - r, 2*r, 2*r)
 
 
 class Ellipse(_ShapeElement):
@@ -58,7 +58,7 @@ class Ellipse(_ShapeElement):
 		vp = self._getViewport()
 		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
 		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
-		return (cx - rx, cy - ry, 2*rx, 2*ry)
+		return helpers.geometry.Box(cx - rx, cy - ry, 2*rx, 2*ry)
 
 
 class Line(_ShapeElement):
@@ -87,8 +87,11 @@ class Line(_ShapeElement):
 		return [angle, angle]
 
 	def boundingBox(self):
+		box = helpers.geometry.Box()
 		x1, y1, x2, y2 = self.vertices()
-		return (min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
+		box.addPoint(x1, y1)
+		box.addPoint(x2, y2)
+		return box
 
 
 class Polygon(_ShapeElement):
@@ -142,12 +145,10 @@ class Polygon(_ShapeElement):
 		return path.vertexAngles()
 
 	def boundingBox(self):
-		minX, maxX = math.inf, -math.inf
-		minY, maxY = math.inf, -math.inf
+		box = helpers.geometry.Box()
 		for x, y in self.vertices():
-			minX = min(minX, x); maxX = max(maxX, x)
-			minY = min(minY, y); maxY = max(maxY, y)
-		return (minX, minY, maxX - minX, maxY - minY)
+			box.addPoint(x, y)
+		return box
 
 
 class Polyline(_ShapeElement):
@@ -238,4 +239,4 @@ class Rect(_ShapeElement):
 		vp = self._getViewport()
 		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
 		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
-		return (x, y, width, height)
+		return helpers.geometry.Box(x, y, width, height)

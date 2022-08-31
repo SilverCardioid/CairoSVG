@@ -1,4 +1,6 @@
+import math
 import sys
+
 from . import _creators
 from .. import helpers
 from ..helpers.modules import attrib as _attrib, content as _content
@@ -297,10 +299,19 @@ class _Element:
 			tagClose = f'</{self.tag}>'
 			file.write(f'{indentation}{tagClose}{newline}')
 
-	def descendants(self):
-		yield self
+	def descendants(self, includeSelf=True):
+		if includeSelf:
+			yield self
 		for child in self._children:
-			yield from child.descendants()
+			yield from child.descendants(True)
+
+	def ancestors(self, includeSelf=True):
+		if includeSelf:
+			yield self
+		anc = self.parent
+		while anc:
+			yield anc
+			anc = anc.parent
 
 	def find(self, function, *, maxResults=None):
 		results = []
@@ -311,6 +322,16 @@ class _Element:
 					break
 		return results
 
+	def findID(self, id):
+		res = self._root._ids.get(id, None)
+		if res and self in res.ancestors():
+			return res
+		return None
+
+	def boundingBox(self):
+		# Default to no box
+		return helpers.geometry.Box()
+
 
 class _StructureElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + _attrib['GraphicalEvents']
@@ -319,6 +340,14 @@ class _StructureElement(_Element):
 	def draw(self, surface):
 		for child in self._children:
 			child.draw(surface)
+
+	def boundingBox(self):
+		# todo: account for transformations
+		# https://svgwg.org/svg2-draft/coords.html#bounding-box
+		box = helpers.geometry.Box()
+		for child in self._children:
+			box += child.boundingBox()
+		return box
 
 
 class _ShapeElement(_Element):
