@@ -13,16 +13,17 @@ class Circle(_ShapeElement):
 		self.tag = 'circle'
 		super().__init__(r=r, cx=cx, cy=cy, **attribs)
 
-	def draw(self, surface):
-		vp = self._getViewport()
+	def draw(self, surface, *, paint=True, viewport=None):
+		vp = viewport or self._getViewport()
 		r  = _size(self['r'] , vp, 'xy')
 		cx = _size(self['cx'], vp, 'x')
 		cy = _size(self['cy'], vp, 'y')
 		if r > 0:
-			with self.transform.applyContext(surface):
+			with self._applyTransformations(surface):
 				surface.context.new_sub_path()
 				surface.context.arc(cx, cy, r, 0, 2*math.pi)
-				self._paint(surface)
+				if paint:
+					self._paint(surface, viewport=viewport)
 
 	def boundingBox(self):
 		vp = self._getViewport()
@@ -40,19 +41,20 @@ class Ellipse(_ShapeElement):
 		self.tag = 'ellipse'
 		super().__init__(rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
 
-	def draw(self, surface):
-		vp = self._getViewport()
+	def draw(self, surface, *, paint=True, viewport=None):
+		vp = viewport or self._getViewport()
 		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
 		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
 		if rx > 0 and ry > 0:
 			ratio = ry/rx
-			with self.transform.applyContext(surface):
+			with self._applyTransformations(surface):
 				surface.context.new_sub_path()
 				surface.context.save()
 				surface.context.scale(1, ratio)
 				surface.context.arc(cx, cy/ratio, rx, 0, 2*math.pi)
 				surface.context.restore()
-				self._paint(surface)
+				if paint:
+					self._paint(surface, viewport=viewport)
 
 	def boundingBox(self):
 		vp = self._getViewport()
@@ -69,15 +71,16 @@ class Line(_ShapeElement):
 		self.tag = 'line'
 		super().__init__(x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
 
-	def draw(self, surface):
-		x1, y1, x2, y2 = self.vertices()
-		with self.transform.applyContext(surface):
+	def draw(self, surface, *, paint=True, viewport=None):
+		x1, y1, x2, y2 = self.vertices(viewport=viewport)
+		with self._applyTransformations(surface):
 			surface.context.move_to(x1, y1)
 			surface.context.line_to(x2, y2)
-			self._paint(surface)
+			if paint:
+				self._paint(surface, viewport=viewport)
 
-	def vertices(self):
-		vp = self._getViewport()
+	def vertices(self, *, viewport=None):
+		vp = viewport or self._getViewport()
 		x1, y1 = _size(self['x1'], vp, 'x'), _size(self['y1'], vp, 'y')
 		x2, y2 = _size(self['x2'], vp, 'x'), _size(self['y2'], vp, 'y')
 		return [x1, y1, x2, y2]
@@ -101,19 +104,20 @@ class Polygon(_ShapeElement):
 		self.tag = 'polygon'
 		super().__init__(points=points, **attribs)
 
-	def draw(self, surface):
-		points = self.vertices()
+	def draw(self, surface, *, paint=True, viewport=None):
+		points = self.vertices(viewport=viewport)
 
 		if len(points) > 0:
-			with self.transform.applyContext(surface):
+			with self._applyTransformations(surface):
 				surface.context.move_to(*points[0])
 				for point in points[1:]:
 					surface.context.line_to(*point)
 				surface.context.close_path()
-				self._paint(surface)
+				if paint:
+					self._paint(surface, viewport=viewport)
 
-	def vertices(self):
-		vp = self._getViewport()
+	def vertices(self, viewport=None):
+		vp = viewport or self._getViewport()
 		points = self._attribs.get('points', '')
 		if isinstance(points, str):
 			# convert string to points
@@ -158,15 +162,16 @@ class Polyline(_ShapeElement):
 		self.tag = 'polyline'
 		super().__init__(points=points, **attribs)
 
-	def draw(self, surface):
-		points = self.vertices()
+	def draw(self, surface, *, paint=True, viewport=None):
+		points = self.vertices(viewport=viewport)
 
 		if len(points) > 0:
-			with self.transform.applyContext(surface):
+			with self._applyTransformations(surface):
 				surface.context.move_to(*points[0])
 				for point in points[1:]:
 					surface.context.line_to(*point)
-				self._paint(surface)
+				if paint:
+					self._paint(surface, viewport=viewport)
 
 	vertices = Polygon.vertices
 	boundingBox = Polygon.boundingBox
@@ -190,8 +195,8 @@ class Rect(_ShapeElement):
 		self.tag = 'rect'
 		super().__init__(width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
 
-	def draw(self, surface):
-		vp = self._getViewport()
+	def draw(self, surface, *, paint=True, viewport=None):
+		vp = viewport or self._getViewport()
 		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
 		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
 
@@ -206,7 +211,7 @@ class Rect(_ShapeElement):
 		if rx is None:
 			rx = ry or 0
 
-		with self.transform.applyContext(surface):
+		with self._applyTransformations(surface):
 			if rx == 0 or ry == 0:
 				surface.context.rectangle(x, y, width, height)
 			else:
@@ -233,7 +238,8 @@ class Rect(_ShapeElement):
 				surface.context.rel_curve_to(0, -c2, rx - c1, -ry, rx, -ry)
 				surface.context.close_path()
 
-			self._paint(surface)
+			if paint:
+				self._paint(surface, viewport=viewport)
 
 	def boundingBox(self):
 		vp = self._getViewport()

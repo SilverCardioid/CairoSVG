@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="600">
+<defs>
+<clipPath id="cp1" clipPathUnits="userSpaceOnUse">
+<circle id="c1" cx="50%" cy="50%" r="50%"/>
+</clipPath>
+<clipPath id="cp2" clipPathUnits="objectBoundingBox">
+<circle id="c1n" cx="0.5" cy="0.5" r="0.5"/>
+</clipPath>
+<mask id="m1" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="0%" y="0%" width="100%" height="100%">
+<g fill="#fff">
+<rect width="100%" height="100%"/>
+<use href="#c1" fill="#000"/>
+<circle id="c2" cx="50%" cy="50%" r="45%"/>
+</g>
+</mask>
+<mask id="m2" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox" x="0" y="0" width="1" height="1">
+<g fill="#fff">
+<rect width="100%" height="100%"/>
+<use href="#c1n" fill="#000"/>
+<circle id="c2n" cx="0.5" cy="0.5" r="0.45"/>
+</g>
+</mask>
+<mask id="m3" maskUnits="objectBoundingBox" maskContentUnits="userSpaceOnUse" x="0%" y="0%" width="100%" height="100%">
+<g fill="#fff">
+<rect width="100%" height="100%"/>
+<use href="#c1" fill="#000"/>
+<use href="#c2"/>
+</g>
+</mask>
+</defs>
+<rect width="600" height="600" fill="#fff"/>
+<g>
+<rect width="180" height="180" x="15"  y="15"  fill="#b11" clip-path="url(#cp1)"/>
+<rect width="180" height="180" x="210" y="15"  fill="#04a" clip-path="url(#cp2)"/>
+<rect width="180" height="180" x="405" y="15"  fill="#b11" clip-path="url(#cp1)"/>
+<rect width="180" height="180" x="15"  y="405" fill="#b11" mask="url(#m1)"/>
+<rect width="180" height="180" x="210" y="405" fill="#04a" mask="url(#m2)"/>
+<rect width="180" height="180" x="405" y="405" fill="#b11" mask="url(#m3)"/>
+</g>
+<svg width="600" height="210" x="0" y="195">
+<rect width="180" height="180" x="15"  y="15" fill="#04a" clip-path="url(#cp1)"/>
+<rect width="180" height="180" x="210" y="15" fill="#b11" mask="url(#m2)"/>
+<rect width="180" height="180" x="405" y="15" fill="#04a" mask="url(#m3)"/>
+</svg>
+<use href="#c1" fill="none" stroke="#000"/>
+<use href="#c2" fill="none" stroke="#000"/>
+</svg>

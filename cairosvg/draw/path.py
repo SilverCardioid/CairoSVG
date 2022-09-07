@@ -223,8 +223,8 @@ class Path(_ShapeElement):
 			if closed:
 				self.z()
 
-	def draw(self, surface):
-		with self.transform.applyContext(surface):
+	def draw(self, surface, *, paint=True, viewport=None):
+		with self._applyTransformations(surface):
 			startPoint = None
 			lastPoint = None
 			for command in self._data:
@@ -247,7 +247,8 @@ class Path(_ShapeElement):
 					raise ValueError('Unknown letter: ' + letter)
 				lastPoint = coords[-2:] if letter != 'Z' else startPoint
 
-			self._paint(surface)
+			if paint:
+				self._paint(surface, viewport=viewport)
 
 	def _drawArc(self, surface, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
 		surface.context.set_tolerance(0.00001)

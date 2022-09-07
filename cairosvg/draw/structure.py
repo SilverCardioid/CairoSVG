@@ -11,10 +11,11 @@ class G(_StructureElement):
 		self.tag = 'g'
 		_Element.__init__(self, **attribs)
 
-	def draw(self, surface):
-		with self.transform.applyContext(surface):
+	def draw(self, surface, *, paint=True, viewport=None):
+		with self._applyTransformations(surface):
 			for child in self._children:
-				child.draw(surface)
+				child.draw(surface, paint=paint, viewport=viewport)
+
 
 class Defs(_StructureElement):
 	attribs = _StructureElement.attribs + ['transform'] # can have transform according to spec?
@@ -24,9 +25,14 @@ class Defs(_StructureElement):
 		self.tag = 'defs'
 		_Element.__init__(self, **attribs)
 
-	def draw(self, surface):
+	def draw(self, surface, *, paint=True, viewport=None):
 		# Draw nothing
 		return
+
+	def boundingBox(self):
+		# No box
+		return helpers.geometry.Box()
+
 
 class Use(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['XLinkEmbed'] + _attrib['Presentation'] + _attrib['GraphicalEvents'] + ['transform','x','y','width','height']
@@ -79,8 +85,8 @@ class Use(_Element):
 		# unknown type
 		return None
 
-	def draw(self, surface):
-		vp = self._getViewport()
+	def draw(self, surface, *, paint=True, viewport=None):
+		vp = viewport or self._getViewport()
 		target = self.target
 
 		if target is None:
@@ -95,7 +101,7 @@ class Use(_Element):
 		target._parent = self
 		self.transform._translate(x, y)
 		with self.transform.applyContext(surface):
-			target.draw(surface)
+			target.draw(surface, paint=paint, viewport=vp)
 		target._parent = targetParent
 		self.transform._translate(-x, -y)
 

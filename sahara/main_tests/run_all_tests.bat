@@ -6,3 +6,4 @@ python test_transform.py
 python test_units.py
 python test_bbox.py
 python test_tree_manip.py
+python test_input_files.py

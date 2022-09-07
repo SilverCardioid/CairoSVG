@@ -1,14 +1,16 @@
 _creators = {}
 
-from . import structure, svg, shapes, path
+from . import masks, path, shapes, structure, svg
 from .. import helpers
 
 elements = {
 	'circle': shapes.Circle,
+	'clipPath': masks.ClipPath,
 	'defs': structure.Defs,
 	'ellipse': shapes.Ellipse,
 	'g': structure.G,
 	'line': shapes.Line,
+	'mask': masks.Mask,
 	'path': path.Path,
 	'polygon': shapes.Polygon,
 	'polyline': shapes.Polyline,
@@ -21,6 +23,8 @@ _creators.update({
 	'circle':   lambda self, r=helpers._intdef(0), cx=helpers._intdef(0),
 	                   cy=helpers._intdef(0), **attribs: \
 	            	shapes.Circle(parent=self, r=r, cx=cx, cy=cy, **attribs),
+	'clipPath': lambda self, clipPathUnits=helpers._strdef('userSpaceOnUse'), **attribs: \
+	            	masks.ClipPath(parent=self, clipPathUnits=clipPathUnits, **attribs),
 	'defs':     lambda self, **attribs: \
 	            	structure.Defs(parent=self, **attribs),
 	'ellipse':  lambda self, rx=helpers._intdef(0), ry=helpers._intdef(0),
@@ -31,6 +35,12 @@ _creators.update({
 	'line':     lambda self, x1=helpers._intdef(0), y1=helpers._intdef(0),
 	                   x2=helpers._intdef(0), y2=helpers._intdef(0), **attribs: \
 	            	shapes.Line(parent=self, x1=x1, y1=y1, x2=x2, y2=y2, **attribs),
+	'mask':     lambda self, x=helpers._strdef('-10%'), y=helpers._strdef('-10%'),
+	                   width=helpers._strdef('120%'), height=helpers._strdef('120%'), *,
+	                   maskUnits=helpers._strdef('objectBoundingBox'),
+	                   maskContentUnits=helpers._strdef('userSpaceOnUse'), **attribs: \
+	            	masks.Mask(parent=self, x=x, y=y, width=width, height=height,
+	            	           maskUnits=maskUnits, maskContentUnits=maskContentUnits, **attribs),
 	'path':     lambda self, d=helpers._strdef(''), **attribs: \
 	            	path.Path(parent=self, d=d, **attribs),
 	'polygon':  lambda self, points=helpers._strdef(''), **attribs: \

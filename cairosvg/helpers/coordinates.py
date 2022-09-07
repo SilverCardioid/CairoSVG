@@ -24,11 +24,11 @@ class Viewport:
 
 	@property
 	def width(self):
-		return size2(self._attribs['width'], self.parent._getViewport(), 'x', autoValue='100%')
+		return size2(self._attribs['width'], self.parent and self.parent._getViewport(), 'x', autoValue='100%')
 
 	@property
 	def height(self):
-		return size2(self._attribs['height'], self.parent._getViewport(), 'y', autoValue='100%')
+		return size2(self._attribs['height'], self.parent and self.parent._getViewport(), 'y', autoValue='100%')
 
 	@property
 	def viewBox(self):

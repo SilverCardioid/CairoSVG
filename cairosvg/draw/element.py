@@ -1,4 +1,6 @@
+from contextlib import contextmanager
 import math
+import re
 import sys
 
 from . import _creators
@@ -46,7 +48,14 @@ class _Element:
 			self._setTransform()
 
 	def _getOutgoingRefs(self):
-		return []
+		refs = []
+		clipPath = self._parseReference(self._attribs.get('clip-path', None))
+		if clipPath:
+			refs.append(clipPath)
+		mask = self._parseReference(self._attribs.get('mask', None))
+		if mask:
+			refs.append(mask)
+		return refs
 
 	def _getViewport(self):
 		elem = self.parent
@@ -114,6 +123,50 @@ class _Element:
 			string += f' {attr}="{val}"'
 		string += '/>' if close else '>'
 		return string
+
+	def _parseReference(self, value):
+		if value is None or value == '':
+			return None
+		elif isinstance(value, str):
+			value = re.sub(r'^url\(#(.+)\)$', r'\1', value)
+			if value[0] == '#':
+				value = value[1:]
+			try:
+				return self._root._ids[value]
+			except KeyError:
+				# not found
+				return None
+		elif isinstance(value, _Element):
+			return value
+		# unknown type
+		return None
+
+	@contextmanager
+	def _applyTransformations(self, surface):
+		surface.context.save()
+		try:
+			if hasattr(self, 'transform') and self.transform._transformed:
+				self.transform.apply(surface)
+
+			clipPath = self._attribs.get('clip-path', None)
+			if clipPath:
+				cpElem = self._parseReference(clipPath)
+				if cpElem and cpElem.tag == 'clipPath':
+					cpElem.apply(surface, self)
+				else:
+					print(f'warning: invalid clip-path reference: {clipPath}')
+
+			mask = self._attribs.get('mask', None)
+			if mask:
+				maskElem = self._parseReference(mask)
+				if maskElem and maskElem.tag == 'mask':
+					maskElem.apply(surface, self)
+				else:
+					print(f'warning: invalid mask reference: {mask}')
+
+			yield self
+		finally:
+			surface.context.restore()
 
 	def __getitem__(self, key):
 		return self._attribs[helpers.attribs.parseAttribute(key)]
@@ -328,6 +381,10 @@ class _Element:
 			return res
 		return None
 
+	def draw(self, surface, *, paint=True, viewport=None):
+		# Default to drawing nothing
+		return
+
 	def boundingBox(self):
 		# Default to no box
 		return helpers.geometry.Box()
@@ -337,9 +394,9 @@ class _StructureElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + _attrib['GraphicalEvents']
 	content = _content['Description'] + _content['Animation'] + _content['Structure'] + _content['Shape'] + _content['Text'] + _content['Image'] + _content['View'] + _content['Conditional'] + _content['Hyperlink'] + _content['Script'] + _content['Style'] + _content['Marker'] + _content['Clip'] + _content['Mask'] + _content['Gradient'] + _content['Pattern'] + _content['Filter'] + _content['Cursor'] + _content['Font'] + _content['ColorProfile']
 
-	def draw(self, surface):
+	def draw(self, surface, *, paint=True, viewport=None):
 		for child in self._children:
-			child.draw(surface)
+			child.draw(surface, paint=paint, viewport=viewport)
 
 	def boundingBox(self):
 		# todo: account for transformations
@@ -354,8 +411,8 @@ class _ShapeElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['GraphicalEvents'] + _attrib['Paint'] + _attrib['Opacity'] + _attrib['Graphics'] + _attrib['Cursor'] + _attrib['Filter'] + _attrib['Mask'] + _attrib['Clip']
 	content = _content['Description'] + _content['Animation']
 
-	def _paint(self, surface):
-		vp = self._getViewport()
+	def _paint(self, surface, *, viewport=None):
+		vp = viewport or self._getViewport()
 		opacity = float(self.getAttribute('opacity', 1))
 		assert 0 <= opacity <= 1
 		fillOpacity = float(self.getAttribute('fill-opacity', 1))

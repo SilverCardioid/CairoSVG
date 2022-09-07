@@ -1,6 +1,4 @@
 import cairocffi as cairo
-import cv2
-import numpy as np
 import os
 
 from . import _creators
@@ -40,20 +38,20 @@ class SVG(_StructureElement):
 	def height(self):
 		return self.viewport.height
 
-	def draw(self, surface):
+	def draw(self, surface, *, paint=True, viewport=None):
 		viewportTransform = self.viewport.getTransform()
 
 		x, y = 0, 0
 		if not self.isRoot():
 			# Nested SVG: use the element's x and y attributes
-			vp = self._getViewport()
+			vp = viewport or self._getViewport()
 			x = _size(self.getAttribute('x', 0, cascade=False), vp, 'x')
 			y = _size(self.getAttribute('y', 0, cascade=False), vp, 'y')
 
 		surface.context.translate(x, y)
 		with viewportTransform.applyContext(surface):
 			for child in self._children:
-				child.draw(surface)
+				child.draw(surface, paint=paint, viewport=viewport)
 		surface.context.translate(-x, -y)
 
 	def export(self, filename, *, surface=None, useCairo=False,
@@ -86,36 +84,10 @@ class SVG(_StructureElement):
 	def pixels(self, *, surface=None, alpha=False, bgr=False):
 		surface = surface or helpers.surface.createSurface('Image', round(self.width), round(self.height))
 		self.draw(surface)
-		# based on github.com/Zulko/gizeh
-		im = 0 + np.frombuffer(surface.get_data(), np.uint8)
-		im.shape = (surface.get_height(), surface.get_width(), 4)
-		if not bgr:
-			im = im[:,:,[2,1,0,3]]
-		if alpha:
-			return im
-		else:
-			return im[:,:,:3]
+		return helpers.surface.pixels(surface, alpha=alpha, bgr=bgr)
 
 	def show(self, windowName='svg', *, surface=None, wait=0):
-		cv2.imshow(windowName, self.pixels(surface=surface, bgr=True))
-		close = False
-		waitTime = wait if wait > 0 else 100 # ms
-		try:
-			while not close:
-				key = cv2.waitKey(waitTime)
-				if key >= 0 and (key & 0xFF) in [ord('q'), 27] \
-				or cv2.getWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN) < 0:
-					# Q or Esc key pressed or window manually closed (cv2.WND_PROP_VISIBLE doesn't work correctly)
-					close = True
-				elif wait > 0:
-					# Specified time elapsed
-					close = True
-			if close:
-				cv2.destroyWindow(windowName)
-		except cv2.error as e:
-			# ignore null pointer exception for already-closed window
-			if not (e.code == -27):
-				raise
+		helpers.surface.show(self.pixels(surface=surface, bgr=True), windowName=windowName, wait=wait)
 
 	@classmethod
 	def read(cls, filename, unsafe=False):

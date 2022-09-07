@@ -9,7 +9,7 @@ gExtrema = svg.g(id='extrema', fill='#0a0')
 pointR = 4
 
 for e in gShapes.descendants():
-	print(e)
+	#print(e)
 
 	if e.tag == 'path':
 		extr = []
