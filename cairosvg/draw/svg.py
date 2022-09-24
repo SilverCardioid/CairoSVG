@@ -1,5 +1,8 @@
-import cairocffi as cairo
 import os
+
+import cairocffi as cairo
+import cv2
+import numpy as np
 
 from . import _creators
 from .element import _Element, _StructureElement
@@ -54,32 +57,55 @@ class SVG(_StructureElement):
 				child.draw(surface, paint=paint, viewport=viewport)
 		surface.context.translate(-x, -y)
 
-	def export(self, filename, *, surface=None, useCairo=False,
-	           indent='', newline='\n', xmlDeclaration=True):
-		ext = os.path.splitext(filename)[1]
+	def export(self, filename, *, surface=None, useCairo=False, **svgOptions):
+		ext = os.path.splitext(filename)[1].lower()
 		width, height = round(self.width), round(self.height)
+
 		if ext == '.pdf':
 			surface = surface or helpers.surface.createSurface('PDF', width, height, filename)
-			self.draw(surface)
-			surface.finish()
+			try:
+				self.draw(surface)
+			finally:
+				surface.finish()
+
 		elif ext == '.png':
 			surface = surface or helpers.surface.createSurface('Image', width, height, filename)
-			self.draw(surface)
-			surface.write_to_png(filename)
+			try:
+				self.draw(surface)
+			finally:
+				surface.write_to_png(filename)
+
 		elif ext == '.ps':
 			surface = surface or helpers.surface.createSurface('PS', width, height, filename)
-			self.draw(surface)
-			surface.finish()
+			try:
+				self.draw(surface)
+			finally:
+				surface.finish()
+
 		elif ext == '.svg':
 			if useCairo:
 				surface = surface or helpers.surface.createSurface('SVG', width, height, filename)
-				self.draw(surface)
-				surface.finish()
+				try:
+					self.draw(surface)
+				finally:
+					surface.finish()
 			else:
-				with open(filename, 'w') as file:
-					self.code(file, indent=indent, newline=newline, xmlDeclaration=xmlDeclaration)
+				self.save(filename, **svgOptions)
+
 		else:
-			raise ValueError('Unsupported file extension: {}'.format(ext))
+			# Other format: try saving image with cv2
+			try:
+				# Try drawing an empty file first to test the extension
+				# before bothering to draw the actual image
+				cv2.imwrite(filename, np.zeros((10, 10), dtype='uint8'))
+				img = self.pixels(surface=surface, bgr=True)
+				cv2.imwrite(filename, img)
+			except cv2.error:
+				raise ValueError('Unsupported file extension: {}'.format(ext))
+
+	def save(self, filename, *, indent='', newline='\n', xmlDeclaration=True):
+		with open(filename, 'w') as file:
+			self.code(file, indent=indent, newline=newline, xmlDeclaration=xmlDeclaration)
 
 	def pixels(self, *, surface=None, alpha=False, bgr=False):
 		surface = surface or helpers.surface.createSurface('Image', round(self.width), round(self.height))

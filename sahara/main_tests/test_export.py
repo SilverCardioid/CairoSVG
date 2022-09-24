@@ -11,6 +11,7 @@ svg.export('output/test_export.pdf')
 
 svg.export('output/test_export.png')
 cv2.imwrite('output/test_export_pixels.png', svg.pixels(bgr=True))
+svg.export('output/test_export.jpg')
 
 svg.export('output/test_export_oneline.svg', newline=False)
 svg.export('output/test_export_cairo.svg', useCairo=True)
