@@ -1,6 +1,5 @@
 import os
 
-import cairocffi as cairo
 import cv2
 import numpy as np
 
@@ -40,6 +39,10 @@ class SVG(_StructureElement):
 	@property
 	def height(self):
 		return self.viewport.height
+
+	@property
+	def namespaces(self):
+		return self._root.namespaces
 
 	def draw(self, surface, *, paint=True, viewport=None):
 		viewportTransform = self.viewport.getTransform()

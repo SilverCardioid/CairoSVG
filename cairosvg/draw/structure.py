@@ -33,15 +33,15 @@ class Defs(_StructureElement):
 		# No box
 		return helpers.geometry.Box()
 
-
+_HREF = f'{{{helpers.namespaces.NS_XLINK}}}href'
 class Use(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['XLinkEmbed'] + _attrib['Presentation'] + _attrib['GraphicalEvents'] + ['transform','x','y','width','height']
 	content = _content['Description'] + _content['Animation']
 	_strAttrib = {
-		'xlink:href': lambda val: ('#' + val if val and val[0] != '#'
-		                           else val) if isinstance(val, str) else \
-		                           '#' + val.id if isinstance(val, _Element) \
-		                           else ''
+		_HREF: lambda val: ('#' + val if val and val[0] != '#'
+		                    else val) if isinstance(val, str) else \
+		                    '#' + val.id if isinstance(val, _Element) \
+		                    else ''
 	}
 
 	def __init__(self, href=helpers._strdef(''), *, x=helpers._intdef(0), y=helpers._intdef(0),
@@ -57,7 +57,7 @@ class Use(_Element):
 
 	def __setitem__(self, key, value):
 		super().__setitem__(key, value)
-		if helpers.attribs.parseAttribute(key) == 'xlink:href':
+		if helpers.attribs.parseAttribute(key) == _HREF:
 			target = self.target
 			if target and not target.id:
 				target._setAutoID()
@@ -66,12 +66,12 @@ class Use(_Element):
 		refs = super()._getOutgoingRefs()
 		target = self.target
 		if target:
-			refs.append((target, 'xlink:href'))
+			refs.append((target, _HREF))
 		return refs
 
 	@property
 	def target(self):
-		href = self._attribs.get('xlink:href', None)
+		href = self._attribs.get(_HREF, None)
 		if isinstance(href, str):
 			if href[0] == '#':
 				href = href[1:]
@@ -90,7 +90,7 @@ class Use(_Element):
 		target = self.target
 
 		if target is None:
-			href = self._attribs.get('xlink:href', None)
+			href = self._attribs.get(_HREF, None)
 			if href:
 				print('<use> referencing unknown id or invalid object: {}'.format(href))
 			return

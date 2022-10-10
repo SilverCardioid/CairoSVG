@@ -11,6 +11,8 @@ class _Element:
 	_strAttrib = {}
 
 	def __init__(self, *, parent=None, childIndex=None, **attribs):
+		self.namespace = helpers.namespaces.NS_SVG
+
 		# Tree structure
 		self._parent = parent
 		self._children = []
@@ -35,8 +37,10 @@ class _Element:
 		# Attributes
 		self._attribs = {}
 		for key in attribs:
-			attrib = helpers.attribs.parseAttribute(key)
-			if attrib in self.__class__.attribs:
+			attrib = helpers.attribs.parseAttribute(key, namespaces=self._root.namespaces)
+			if ((attrib and attrib[0] == '{') or
+				attrib in self.__class__.attribs):
+				# allowed SVG attribute, or any attribute in other namespace
 				self._attribs[attrib] = attribs[key]
 			else:
 				raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
@@ -95,19 +99,22 @@ class _Element:
 		self._setID(eid)
 
 	def _tagCode(self, *, close=True, namespaceDeclaration=True):
-		string = '<' + self.tag
+		nss = self._root.namespaces
+		nsPrefix = nss._getPrefix(self.namespace)
+		if nsPrefix: nsPrefix += ':'
+		string = '<' + nsPrefix + self.tag
+
 		if namespaceDeclaration and self.isRoot():
-			nss = ['xmlns'] + helpers.attribs.getNamespaces(self)
-			for ns in nss:
-				key = ns
-				if key != 'xmlns':
-					key = 'xmlns:' + key
-				if ns not in helpers.attribs.NAMESPACES:
-					print(f'warning: unknown namespace: {ns}')
+			nsNames = helpers.namespaces.getNamespaces(self)
+			ns = [(nss._getPrefix(name), name) for name in nsNames]
+			ns.sort()
+			for nsPrefix, nsName in ns:
+				if nsPrefix == 'xml' and nsName == helpers.namespaces.NS_XML:
+					# xml: doesn't need to be declared
 					continue
-				val = helpers.attribs.NAMESPACES[ns]
-				if val:
-					string += f' {key}="{val}"'
+				key = 'xmlns:' + nsPrefix if nsPrefix else 'xmlns'
+				string += f' {key}="{nsName}"'
+
 		for attr in self._attribs:
 			val = self._attribs[attr]
 			if attr in self.__class__._strAttrib:
@@ -120,7 +127,9 @@ class _Element:
 			elif isinstance(val, helpers._Default):
 				# don't print
 				continue
+			attr = self._root.namespaces.qualifyName(attr, defaultName=self.namespace)
 			string += f' {attr}="{val}"'
+
 		string += '/>' if close else '>'
 		return string
 
@@ -280,7 +289,8 @@ class _Element:
 
 	def getAttribute(self, attrib, default=None, *, cascade=True):
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
-		attrib = helpers.attribs.parseAttribute(attrib)
+		attrib = helpers.attribs.parseAttribute(attrib, namespaces=self.root.namespaces,
+		                                        defaultName=self.namespace)
 		if cascade:
 			node = self
 			while attrib not in node._attribs:

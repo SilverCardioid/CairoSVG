@@ -2,12 +2,7 @@ import re
 
 import cairocffi as cairo
 
-NAMESPACES = {
-	'xmlns': 'http://www.w3.org/2000/svg',
-	'svg'  : 'http://www.w3.org/2000/svg',
-	'xlink': 'http://www.w3.org/1999/xlink',
-	'xml'  : None
-}
+from . import namespaces as ns
 
 FILL_RULES = {
 	'nonzero': cairo.FILL_RULE_WINDING,
@@ -33,22 +28,19 @@ def normalize(string):
     return string.strip()
 
 camelCaseAttribs = set(['allowReorder','attributeName','attributeType','autoReverse','baseFrequency','baseProfile','calcMode','clipPathUnits','contentScriptType','contentStyleType','diffuseConstant','edgeMode','externalResourcesRequired','filterRes','filterUnits','glyphRef','gradientTransform','gradientUnits','kernelMatrix','kernelUnitLength','keyPoints','keySplines','keyTimes','lengthAdjust','limitingConeAngle','markerHeight','markerUnits','markerWidth','maskContentUnits','maskUnits','numOctaves','pathLength','patternContentUnits','patternTransform','patternUnits','pointsAtX','pointsAtY','pointsAtZ','preserveAlpha','preserveAspectRatio','primitiveUnits','refX','refY','referrerPolicy','repeatCount','repeatDur','requiredExtensions','requiredFeatures','specularConstant','specularExponent','spreadMethod','startOffset','stdDeviation','stitchTiles','surfaceScale','systemLanguage','tableValues','targetX','targetY','textLength','viewBox','viewTarget','xChannelSelector','yChannelSelector','zoomAndPan'])
-nameSpaceAttribs = {'base':'xml', 'lang':'xml', 'space':'xml', 'type':'xlink', 'href':'xlink', 'role':'xlink', 'arcrole':'xlink', 'title':'xlink', 'show':'xlink', 'actuate':'xlink'}
-def parseAttribute(key):
-	"""Convert a snake_case or camelCase function argument to a hyphenated SVG attribute"""
-	key = key.replace('_','-')
+nameSpaceAttribs = {'base':ns.NS_XML, 'lang':ns.NS_XML, 'space':ns.NS_XML, 'type':ns.NS_XLINK, 'href':ns.NS_XLINK, 'role':ns.NS_XLINK, 'arcrole':ns.NS_XLINK, 'title':ns.NS_XLINK, 'show':ns.NS_XLINK, 'actuate':ns.NS_XLINK}
+def parseAttribute(key, *, namespaces=None, defaultName=None):
+	"""Convert a snake_case or camelCase function argument to a hyphenated SVG attribute, and expand namespaces"""
+	nsName = ''
 	if key in nameSpaceAttribs:
-		key = nameSpaceAttribs[key] + ':' + key
+		nsName = nameSpaceAttribs[key]
+	elif namespaces:
+		nsName, key = namespaces.expandName(key, defaultName=defaultName)
+		if nsName == ns.NS_SVG:
+			# Omit {name} for SVG namespace
+			nsName = ''
+
+	key = key.replace('_','-')
 	if key not in camelCaseAttribs:
 		key = re.sub('(?<!^)(?=[A-Z])', '-', key).lower()
-	return key
-
-def getNamespaces(elem):
-	ns = set()
-	for e in elem.descendants():
-		if ':' in e.tag:
-			ns.add(e.tag.split(':', 2)[0])
-		for attrib in e._attribs.keys():
-			if ':' in attrib:
-				ns.add(attrib.split(':', 2)[0])
-	return sorted(list(ns))
+	return f'{{{nsName}}}{key}' if nsName else key

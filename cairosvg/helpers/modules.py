@@ -1,5 +1,9 @@
+from ..helpers.namespaces import NS_XLINK, NS_XML
+
+_XLINK = '{' + NS_XLINK + '}'
+_XML = '{' + NS_XML + '}'
 attrib = {
-	'Core':['id','xml:base','xml:lang','xml:space'],
+	'Core':['id',f'{_XML}base',f'{_XML}lang',f'{_XML}space'],
 	'Container':['enable-background'],
 	'Conditional':['requiredFeatures','requiredExtensions','systemLanguage'],
 	'Style':['style','class'],
@@ -21,7 +25,7 @@ attrib = {
 	'GraphicalEvents':['onfocusin','onfocusout','onactivate','onclick','onmousedown','onmouseup','onmouseover','onmousemove','onmouseout','onload'],
 	'AnimationEvents':['onbegin','onend','onrepeat','onload'],
 	'Cursor':['cursor'],
-	'XLink':['xlink:type','xlink:href','xlink:role','xlink:arcrole','xlink:title','xlink:show','xlink:actuate'],
+	'XLink':[f'{_XLINK}type',f'{_XLINK}href',f'{_XLINK}role',f'{_XLINK}arcrole',f'{_XLINK}title',f'{_XLINK}show',f'{_XLINK}actuate'],
 	'External':['externalResourcesRequired'],
 	'AnimationAttribute':['attributeName','attributeType'],
 	'AnimationTiming':['begin','dur','end','min','max','restart','repeatCount','repeatDur','fill'],
