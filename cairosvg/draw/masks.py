@@ -35,7 +35,7 @@ class ClipPath(_Element):
 		surface.context.restore()
 
 		# TODO: fill rules are not handled by cairo for clips
-		# fillRule = self.getAttribute('fill-rule', 'nonzero')
+		# fillRule = self.getAttribute('fill-rule', 'nonzero', cascade=True)
 		# assert fillRule in helpers.attribs.FILL_RULES
 		# surface.context.set_fill_rule(helpers.attribs.FILL_RULES[fillRule])
 		surface.context.clip()

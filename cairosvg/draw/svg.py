@@ -51,8 +51,8 @@ class SVG(_StructureElement):
 		if not self.isRoot():
 			# Nested SVG: use the element's x and y attributes
 			vp = viewport or self._getViewport()
-			x = _size(self.getAttribute('x', 0, cascade=False), vp, 'x')
-			y = _size(self.getAttribute('y', 0, cascade=False), vp, 'y')
+			x = _size(self.getAttribute('x', 0), vp, 'x')
+			y = _size(self.getAttribute('y', 0), vp, 'y')
 
 		surface.context.translate(x, y)
 		with viewportTransform.applyContext(surface):

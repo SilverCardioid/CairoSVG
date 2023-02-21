@@ -20,12 +20,12 @@ LINE_JOINS = {
 }
 
 def normalize(string):
-    """Normalize a string corresponding to an array of various values."""
-    string = string.replace('E', 'e')
-    string = re.sub('(?<!e)-', ' -', string)
-    string = re.sub('[ \n\r\t,]+', ' ', string)
-    string = re.sub(r'(\.[0-9-]+)(?=\.)', r'\1 ', string)
-    return string.strip()
+	"""Normalize a string corresponding to an array of various values."""
+	string = string.replace('E', 'e')
+	string = re.sub('(?<!e)-', ' -', string)
+	string = re.sub('[ \n\r\t,]+', ' ', string)
+	string = re.sub(r'(\.[0-9-]+)(?=\.)', r'\1 ', string)
+	return string.strip()
 
 camelCaseAttribs = set(['allowReorder','attributeName','attributeType','autoReverse','baseFrequency','baseProfile','calcMode','clipPathUnits','contentScriptType','contentStyleType','diffuseConstant','edgeMode','externalResourcesRequired','filterRes','filterUnits','glyphRef','gradientTransform','gradientUnits','kernelMatrix','kernelUnitLength','keyPoints','keySplines','keyTimes','lengthAdjust','limitingConeAngle','markerHeight','markerUnits','markerWidth','maskContentUnits','maskUnits','numOctaves','pathLength','patternContentUnits','patternTransform','patternUnits','pointsAtX','pointsAtY','pointsAtZ','preserveAlpha','preserveAspectRatio','primitiveUnits','refX','refY','referrerPolicy','repeatCount','repeatDur','requiredExtensions','requiredFeatures','specularConstant','specularExponent','spreadMethod','startOffset','stdDeviation','stitchTiles','surfaceScale','systemLanguage','tableValues','targetX','targetY','textLength','viewBox','viewTarget','xChannelSelector','yChannelSelector','zoomAndPan'])
 nameSpaceAttribs = {'base':ns.NS_XML, 'lang':ns.NS_XML, 'space':ns.NS_XML, 'type':ns.NS_XLINK, 'href':ns.NS_XLINK, 'role':ns.NS_XLINK, 'arcrole':ns.NS_XLINK, 'title':ns.NS_XLINK, 'show':ns.NS_XLINK, 'actuate':ns.NS_XLINK}
@@ -44,3 +44,24 @@ def parseAttribute(key, *, namespaces=None, defaultName=None):
 	if key not in camelCaseAttribs:
 		key = re.sub('(?<!^)(?=[A-Z])', '-', key).lower()
 	return f'{{{nsName}}}{key}' if nsName else key
+
+def getFloat(elem, attrName, defaultValue=None, *, range=[None, None], cascade=False):
+	"""Get an attribute value and parse it as a float, and check if it's in the allowed range if one is given"""
+	val = elem.getAttribute(attrName, defaultValue, cascade=cascade)
+	try:
+		val = float(val)
+		assert (range[0] is None or val >= range[0]) and \
+		       (range[1] is None or val <= range[1])
+		return val
+	except (ValueError, AssertionError) as _:
+		print(f'warning: invalid value "{val}" for {attrName}')
+		return defaultValue
+
+def getEnum(elem, attrName, defaultValue, valueDict, *, cascade=True):
+	"""Get an attribute value and check if is in a dict of allowed values, returning the corresponding value from the dict"""
+	val = elem.getAttribute(attrName, defaultValue, cascade=cascade)
+	try:
+		return valueDict[val]
+	except KeyError:
+		print(f'warning: invalid value "{val}" for {attrName}')
+		return valueDict[defaultValue]

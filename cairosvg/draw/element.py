@@ -18,6 +18,9 @@ class _Element:
 		self._children = []
 		if parent is not None:
 			# child
+			if (parent.__class__.content and (not self.tag or self.tag[0] != '{') and
+			    self.tag not in parent.__class__.content):
+				print(f'warning: <{parent.tag}> element doesn\'t take "{self.tag}" child element')
 			if childIndex is not None:
 				self.parent._children.insert(childIndex, self)
 			else:
@@ -38,12 +41,10 @@ class _Element:
 		self._attribs = {}
 		for key in attribs:
 			attrib = helpers.attribs.parseAttribute(key, namespaces=self._root.namespaces)
-			if ((attrib and attrib[0] == '{') or
-				attrib in self.__class__.attribs):
-				# allowed SVG attribute, or any attribute in other namespace
-				self._attribs[attrib] = attribs[key]
-			else:
-				raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
+			if (self.__class__.attribs and (not attrib or attrib[0] != '{') and
+			    attrib not in self.__class__.attribs):
+				print(f'warning: <{self.tag}> element doesn\'t take "{attrib}" attribute')
+			self._attribs[attrib] = attribs[key]
 
 		if 'id' in attribs:
 			self._setID(attribs['id'])
@@ -182,21 +183,21 @@ class _Element:
 
 	def __setitem__(self, key, value):
 		attrib = helpers.attribs.parseAttribute(key)
-		if attrib in self.__class__.attribs:
-			prevValue = self._attribs.get(attrib, None)
-			self._attribs[attrib] = value
+		if (self.__class__.attribs and (not attrib or attrib[0] != '{') and
+		    attrib not in self.__class__.attribs):
+			print(f'warning: <{self.tag}> element doesn\'t take "{attrib}" attribute')
 
-			if attrib == 'id':
-				try:
-					del self._root._ids[prevValue]
-				except KeyError:
-					pass
-				self._setID(value)
-			elif attrib == 'transform':
-				self.transform._clear()
-				self.transform._transform(value)
-		else:
-			raise AttributeError(f'<{self.tag}> element doesn\'t take {attrib} attribute')
+		prevValue = self._attribs.get(attrib, None)
+		self._attribs[attrib] = value
+		if attrib == 'id':
+			try:
+				del self._root._ids[prevValue]
+			except KeyError:
+				pass
+			self._setID(value)
+		elif attrib == 'transform':
+			self.transform._clear()
+			self.transform._transform(value)
 
 	def __delitem__(self, key):
 		attrib = helpers.attribs.parseAttribute(key)
@@ -287,7 +288,7 @@ class _Element:
 			for e in self.descendants():
 				e._root = self._root
 
-	def getAttribute(self, attrib, default=None, *, cascade=True):
+	def getAttribute(self, attrib, default=None, *, cascade=False):
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
 		attrib = helpers.attribs.parseAttribute(attrib, namespaces=self.root.namespaces,
 		                                        defaultName=self.namespace)
@@ -314,6 +315,11 @@ class _Element:
 	def addChild(self, tag, *attribs, childIndex=None, **kwattribs):
 		"""Add a child element to this element"""
 		if isinstance(tag, _Element):
+			if tag in self.ancestors():
+				raise ValueError('can\'t add an element\'s ancestor to itself')
+			if (self.__class__.content and (not tag.tag or tag.tag[0] != '{') and
+			    attrib not in self.__class__.content):
+				print(f'warning: <{self.tag}> element doesn\'t take "{tag.tag}" child element')
 			if tag.parent:
 				tag.detach()
 			if childIndex is not None:
@@ -423,38 +429,39 @@ class _ShapeElement(_Element):
 
 	def _paint(self, surface, *, viewport=None):
 		vp = viewport or self._getViewport()
-		opacity = float(self.getAttribute('opacity', 1))
-		assert 0 <= opacity <= 1
-		fillOpacity = float(self.getAttribute('fill-opacity', 1))
-		assert 0 <= fillOpacity <= 1
-		strokeOpacity = float(self.getAttribute('stroke-opacity', 1))
-		assert 0 <= strokeOpacity <= 1
+		opacity = helpers.attribs.getFloat(self, 'opacity', 1, range=[0, 1], cascade=True)
+		fillOpacity = helpers.attribs.getFloat(self, 'fill-opacity', 1, range=[0, 1], cascade=True)
+		strokeOpacity = helpers.attribs.getFloat(self, 'stroke-opacity', 1, range=[0, 1], cascade=True)
 
-		fill = helpers.colors.color(self.getAttribute('fill', '#000'), fillOpacity*opacity)
-		fillRule = self.getAttribute('fill-rule', 'nonzero')
-		assert fillRule in helpers.attribs.FILL_RULES
+		fill = self.getAttribute('fill', '#000', cascade=True)
+		fill = helpers.colors.color(fill, fillOpacity*opacity)
+		fillRule = helpers.attribs.getEnum(self, 'fill-rule', 'nonzero',
+		                                   helpers.attribs.FILL_RULES, cascade=True)
 
-		stroke = helpers.colors.color(self.getAttribute('stroke', 'none'), strokeOpacity*opacity)
-		strokeWidth = helpers.coordinates.size2(self.getAttribute('stroke-width', 1), vp, 'xy')
-		strokeLinecap = self.getAttribute('stroke-linecap', 'butt')
-		assert strokeLinecap in helpers.attribs.LINE_CAPS
-		strokeLinejoin = self.getAttribute('stroke-linejoin', 'miter')
-		assert strokeLinejoin in helpers.attribs.LINE_JOINS
+		stroke = self.getAttribute('stroke', 'none', cascade=True)
+		stroke = helpers.colors.color(stroke, strokeOpacity*opacity)
+		strokeWidth = self.getAttribute('stroke-width', 1, cascade=True)
+		strokeWidth = helpers.coordinates.size2(strokeWidth, vp, 'xy')
+		strokeLinecap = helpers.attribs.getEnum(self, 'stroke-linecap', 'butt',
+		                                        helpers.attribs.LINE_CAPS, cascade=True)
+		strokeLinejoin = helpers.attribs.getEnum(self, 'stroke-linejoin', 'miter',
+		                                         helpers.attribs.LINE_JOINS, cascade=True)
 
-		dashArray = helpers.attribs.normalize(self.getAttribute('stroke-dasharray', '')).split()
+		dashArray = self.getAttribute('stroke-dasharray', '', cascade=True)
+		dashArray = helpers.attribs.normalize(dashArray).split()
 		if dashArray:
 			dashes = [helpers.coordinates.size2(dash, vp, 'xy') for dash in dashArray]
 			if sum(dashes):
-				offset = helpers.coordinates.size2(self.getAttribute('stroke-dashoffset'), vp, 'xy')
+				offset = self.getAttribute('stroke-dashoffset', cascade=True)
+				offset = helpers.coordinates.size2(offset, vp, 'xy')
 				surface.context.set_dash(dashes, offset)
 
 		surface.context.set_source_rgba(*fill)
-		surface.context.set_fill_rule(helpers.attribs.FILL_RULES[fillRule])
+		surface.context.set_fill_rule(fillRule)
 		surface.context.fill_preserve()
 
 		surface.context.set_source_rgba(*stroke)
 		surface.context.set_line_width(strokeWidth)
-		surface.context.set_line_cap(helpers.attribs.LINE_CAPS[strokeLinecap])
-		surface.context.set_line_join(helpers.attribs.LINE_JOINS[strokeLinejoin])
+		surface.context.set_line_cap(strokeLinecap)
+		surface.context.set_line_join(strokeLinejoin)
 		surface.context.stroke()
-

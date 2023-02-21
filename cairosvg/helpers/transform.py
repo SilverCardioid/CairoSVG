@@ -8,13 +8,9 @@ from .. import helpers
 class Transform:
 	def __init__(self, string=None, *, parent=None):
 		self.parent = parent
-		self._clear()
+		self._reset()
 		if string is not None:
 			self._transform(string)
-
-	def _clear(self):
-		self._mat = cairo.Matrix()
-		self._transformed = False
 
 	def _addToAttr(self, string):
 		if self.parent:
@@ -194,3 +190,11 @@ class Transform:
 	def _matrix(self, xx, yx, xy, yy, x0, y0):
 		self._mat = cairo.Matrix(xx, yx, xy, yy, x0, y0) * self._mat
 		self._transformed = True
+
+	def reset(self):
+		self._reset()
+		if self.parent:
+			self.parent['transform'] = ''
+	def _reset(self):
+		self._mat = cairo.Matrix()
+		self._transformed = False
