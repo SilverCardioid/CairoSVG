@@ -1,6 +1,6 @@
 _creators = {}
 
-from . import masks, path, shapes, structure, svg
+from . import element, masks, path, shapes, structure, svg
 from .. import helpers
 
 elements = {
@@ -16,7 +16,8 @@ elements = {
 	'polyline': shapes.Polyline,
 	'rect': shapes.Rect,
 	'svg': svg.SVG,
-	'use': structure.Use
+	'use': structure.Use,
+	'custom': element.CustomElement
 }
 
 _creators.update({
@@ -58,7 +59,9 @@ _creators.update({
 	            	     viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs),
 	'use':      lambda self, href=helpers._strdef(''), *, x=helpers._intdef(0), y=helpers._intdef(0),
 	                   width=helpers._intdef(0), height=helpers._intdef(0), **attribs: \
-	            	structure.Use(parent=self, href=href, x=x, y=y, width=width, height=height, **attribs)
+	            	structure.Use(parent=self, href=href, x=x, y=y, width=width, height=height, **attribs),
+	'custom':   lambda self, tag, namespace=helpers.namespaces.NS_SVG, **attribs: \
+	            	element.CustomElement(parent=self, tag=tag, namespace=namespace, **attribs)
 })
 for tag in _creators:
 	_creators[tag].__doc__ = f'Add a <{tag}> as a child of this element'

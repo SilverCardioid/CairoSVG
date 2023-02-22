@@ -119,19 +119,29 @@ class SVG(_StructureElement):
 		helpers.surface.show(self.pixels(surface=surface, bgr=True), windowName=windowName, wait=wait)
 
 	@classmethod
-	def read(cls, filename, unsafe=False):
-		tree = parser.Tree(url=filename, unsafe=unsafe)
-		assert tree.tag == 'svg'
-		#print(f'<{tree.tag}> attribs: {dict(tree)}')
-		svg = cls(**tree)
-		elementQueue = [(tree, svg)]
-		while len(elementQueue) > 0:
-			curNode, curElem = elementQueue.pop()
-			for childNode in curNode.children:
-				if childNode.tag in _creators:
-					#print(f'<{childNode.tag}> attribs: {dict(childNode)}')
-					childElem = _creators[childNode.tag](curElem, **childNode)
-					elementQueue.append((childNode, childElem))
-				else:
-					print(f'<{childNode.tag}> node skipped')
-		return svg
+	def read(cls, source):
+		root = helpers.parse.read(source)
+		assert root.tag == 'svg'
+		return root
+
+	# @classmethod
+	# def read(cls, filename, unsafe=False):
+		# tree = parser.Tree(url=filename, unsafe=unsafe)
+		# assert tree.tag == 'svg'
+		# #print(f'<{tree.tag}> attribs: {dict(tree)}')
+		# svg = cls(**tree)
+		# elementQueue = [(tree, svg)]
+		# while len(elementQueue) > 0:
+			# curNode, curElem = elementQueue.pop()
+			# for childNode in curNode.children:
+				# if childNode.tag in _creators:
+					# #print(f'<{childNode.tag}> attribs: {dict(childNode)}')
+					# childElem = _creators[childNode.tag](curElem, **childNode)
+					# elementQueue.append((childNode, childElem))
+				# else:
+					# print(f'<{childNode.tag}> node not supported; can be saved but not drawn')
+					# nsName, nsPrefix, tag = helpers.namespaces._split(childNode.tag)
+					# if nsPrefix:
+						# tag = nsPrefix + ':' + tag
+					# childElem = _creators['custom'](curElem, tag, nsName or helpers.namespaces.NS_SVG)
+		# return svg

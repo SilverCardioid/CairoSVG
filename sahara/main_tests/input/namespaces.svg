@@ -3,4 +3,6 @@
 <foo:rect width="600" height="600" fill="#fff" card:foo="bar"/>
 <foo:rect id="bar" width="180" height="600" x="80" fill="#000"/>
 <foo:use bar:href="#bar" x="260"/>
+<!-- foo -->
+<card:bar bar="baz"/>
 </foo:svg>

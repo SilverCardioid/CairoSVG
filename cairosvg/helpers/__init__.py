@@ -7,7 +7,7 @@ import re
 from math import radians, tan
 
 import cairocffi as cairo
-from . import attribs, coordinates, geometry, root, surface
+from . import attribs, coordinates, geometry, parse, root, surface
 #from .parse.url import parse_url
 
 PAINT_URL = re.compile(r'(url\(.+\)) *(.*)')

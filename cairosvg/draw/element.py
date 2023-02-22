@@ -8,11 +8,12 @@ from .. import helpers
 from ..helpers.modules import attrib as _attrib, content as _content
 
 class _Element:
+	attribs = None
+	content = None
+	namespace = helpers.namespaces.NS_SVG
 	_strAttrib = {}
 
-	def __init__(self, *, parent=None, childIndex=None, **attribs):
-		self.namespace = helpers.namespaces.NS_SVG
-
+	def __init__(self, *, parent=None, childIndex=None, namespaces=None, **attribs):
 		# Tree structure
 		self._parent = parent
 		self._children = []
@@ -28,14 +29,15 @@ class _Element:
 			self._root = parent._root
 		else:
 			# root
-			self._root = helpers.root.Root(self)
+			self._root = helpers.root.Root(self, namespaces=namespaces)
 
 		# Allowed children
-		for tag in self.__class__.content:
-			try:
-				setattr(self, tag, _creators[tag].__get__(self, self.__class__))
-			except KeyError:
-				pass
+		if self.__class__.content:
+			for tag in self.__class__.content:
+				try:
+					setattr(self, tag, _creators[tag].__get__(self, self.__class__))
+				except KeyError:
+					pass
 
 		# Attributes
 		self._attribs = {}
@@ -49,17 +51,17 @@ class _Element:
 		if 'id' in attribs:
 			self._setID(attribs['id'])
 
-		if 'transform' in self.__class__.attribs:
+		if self.__class__.attribs and 'transform' in self.__class__.attribs:
 			self._setTransform()
 
 	def _getOutgoingRefs(self):
 		refs = []
 		clipPath = self._parseReference(self._attribs.get('clip-path', None))
 		if clipPath:
-			refs.append(clipPath)
+			refs.append((clipPath, 'clip-path'))
 		mask = self._parseReference(self._attribs.get('mask', None))
 		if mask:
-			refs.append(mask)
+			refs.append((mask, 'mask'))
 		return refs
 
 	def _getViewport(self):
@@ -196,7 +198,7 @@ class _Element:
 				pass
 			self._setID(value)
 		elif attrib == 'transform':
-			self.transform._clear()
+			self.transform._reset()
 			self.transform._transform(value)
 
 	def __delitem__(self, key):
@@ -210,10 +212,11 @@ class _Element:
 			except KeyError:
 				pass
 		elif attrib == 'transform':
-			self.transform._clear()
+			self.transform._reset()
 
 	def __repr__(self):
-		return self._tagCode(namespaceDeclaration=False)
+		return self._tagCode(close=len(self._children) == 0,
+		                     namespaceDeclaration=False)
 
 	@property
 	def parent(self):
@@ -318,7 +321,7 @@ class _Element:
 			if tag in self.ancestors():
 				raise ValueError('can\'t add an element\'s ancestor to itself')
 			if (self.__class__.content and (not tag.tag or tag.tag[0] != '{') and
-			    attrib not in self.__class__.content):
+			    tag.tag not in self.__class__.content):
 				print(f'warning: <{self.tag}> element doesn\'t take "{tag.tag}" child element')
 			if tag.parent:
 				tag.detach()
@@ -465,3 +468,10 @@ class _ShapeElement(_Element):
 		surface.context.set_line_cap(strokeLinecap)
 		surface.context.set_line_join(strokeLinejoin)
 		surface.context.stroke()
+
+
+class CustomElement(_Element):
+	def __init__(self, tag, namespace=helpers.namespaces.NS_SVG, **attribs):
+		self.tag = tag
+		self.namespace = namespace
+		super().__init__(**attribs)
