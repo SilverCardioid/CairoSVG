@@ -8,6 +8,7 @@ from .. import helpers
 from ..helpers.modules import attrib as _attrib, content as _content
 
 class _Element:
+	tag = ''
 	attribs = None
 	content = None
 	namespace = helpers.namespaces.NS_SVG
@@ -444,7 +445,7 @@ class _ShapeElement(_Element):
 		stroke = self.getAttribute('stroke', 'none', cascade=True)
 		stroke = helpers.colors.color(stroke, strokeOpacity*opacity)
 		strokeWidth = self.getAttribute('stroke-width', 1, cascade=True)
-		strokeWidth = helpers.coordinates.size2(strokeWidth, vp, 'xy')
+		strokeWidth = helpers.coordinates.size(strokeWidth, vp, 'xy')
 		strokeLinecap = helpers.attribs.getEnum(self, 'stroke-linecap', 'butt',
 		                                        helpers.attribs.LINE_CAPS, cascade=True)
 		strokeLinejoin = helpers.attribs.getEnum(self, 'stroke-linejoin', 'miter',
@@ -453,10 +454,10 @@ class _ShapeElement(_Element):
 		dashArray = self.getAttribute('stroke-dasharray', '', cascade=True)
 		dashArray = helpers.attribs.normalize(dashArray).split()
 		if dashArray:
-			dashes = [helpers.coordinates.size2(dash, vp, 'xy') for dash in dashArray]
+			dashes = [helpers.coordinates.size(dash, vp, 'xy') for dash in dashArray]
 			if sum(dashes):
 				offset = self.getAttribute('stroke-dashoffset', cascade=True)
-				offset = helpers.coordinates.size2(offset, vp, 'xy')
+				offset = helpers.coordinates.size(offset, vp, 'xy')
 				surface.context.set_dash(dashes, offset)
 
 		surface.context.set_source_rgba(*fill)

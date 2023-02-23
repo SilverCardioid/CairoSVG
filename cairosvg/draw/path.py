@@ -2,14 +2,14 @@ import math
 
 from .element import _ShapeElement
 from .. import helpers
-from ..helpers.coordinates import size2 as _size, point2 as _point
+from ..helpers.coordinates import size as _size, point as _point
 from ..helpers.modules import attrib as _attrib
 
 class Path(_ShapeElement):
+	tag = 'path'
 	attribs = _ShapeElement.attribs + _attrib['Marker'] + ['d','pathLength','transform']
 
 	def __init__(self, d=helpers._strdef(''), **attribs):
-		self.tag = 'path'
 		super().__init__(d=d, **attribs)
 		self._clear()
 		if d is not None:

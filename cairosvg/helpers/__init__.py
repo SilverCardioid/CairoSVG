@@ -7,8 +7,7 @@ import re
 from math import radians, tan
 
 import cairocffi as cairo
-from . import attribs, coordinates, geometry, parse, root, surface
-#from .parse.url import parse_url
+from . import attribs, coordinates, geometry, parse, root, surface, url
 
 PAINT_URL = re.compile(r'(url\(.+\)) *(.*)')
 PATH_LETTERS = 'achlmqstvzACHLMQSTVZ'
@@ -37,7 +36,7 @@ def paint(value):
     value = value.strip()
     match = PAINT_URL.search(value)
     if match:
-        source = parse_url(match.group(1)).fragment
+        source = url.parse_url(match.group(1)).fragment
         color = match.group(2) or None
     else:
         source = None
@@ -46,11 +45,11 @@ def paint(value):
     return (source, color)
 
 
-def clip_marker_box(surface, node, scale_x, scale_y):
+def clip_marker_box(node, scale_x, scale_y, viewport=None):
     """Get the clip ``(x, y, width, height)`` of the marker box."""
-    width = coordinates.size(surface, node.get('markerWidth', '3'), 'x')
-    height = coordinates.size(surface, node.get('markerHeight', '3'), 'y')
-    _, _, viewbox = coordinates.node_format(surface, node)
+    width = coordinates.size(node.get('markerWidth', '3'), viewport, 'x')
+    height = coordinates.size(node.get('markerHeight', '3'), viewport, 'y')
+    _, _, viewbox = coordinates.node_format(node, viewport)
     viewbox_width, viewbox_height = viewbox[2:]
 
     align = node.get('preserveAspectRatio', 'xMidYMid').split(' ')[0]
@@ -70,104 +69,6 @@ def clip_marker_box(surface, node, scale_x, scale_y):
         clip_y += viewbox_height - height / scale_y
 
     return clip_x, clip_y, width / scale_x, height / scale_y
-
-
-def transform2(surface, transform_string, gradient=None, transform_origin=None):
-    """Transform ``surface`` or ``gradient`` if supplied using ``string``.
-
-    See http://www.w3.org/TR/SVG/coords.html#TransformAttribute
-
-    """
-    if not transform_string:
-        return
-
-    transformations = re.findall(
-        r'(\w+) ?\( ?(.*?) ?\)', attribs.normalize(transform_string))
-    matrix = cairo.Matrix()
-
-    if transform_origin:
-        origin = transform_origin.split(' ')
-        origin_x = origin[0]
-        if len(origin) == 1:
-            if origin_x in ('top', 'bottom'):
-                origin_y = origin_x
-                origin_x = surface.width / 2
-            else:
-                origin_y = surface.height / 2
-        elif len(origin) > 1:
-            if origin_x in ('top', 'bottom'):
-                origin_y = origin_x
-                origin_x = origin[1]
-            else:
-                origin_y = origin[1]
-        else:
-            return
-
-        if origin_x == 'center':
-            origin_x = surface.width / 2
-        elif origin_x == 'left':
-            origin_x = 0
-        elif origin_x == 'right':
-            origin_x = surface.width
-        else:
-            origin_x = coordinates.size(surface, origin_x, 'x')
-
-        if origin_y == 'center':
-            origin_y = surface.height / 2
-        elif origin_y == 'top':
-            origin_y = 0
-        elif origin_y == 'bottom':
-            origin_y = surface.height
-        else:
-            origin_y = coordinates.size(surface, origin_y, 'y')
-
-        matrix.translate(float(origin_x), float(origin_y))
-
-    for transformation_type, transformation in transformations:
-        values = [coordinates.size(surface, value) for value in transformation.split(' ')]
-        if transformation_type == 'matrix':
-            matrix = cairo.Matrix(*values).multiply(matrix)
-        elif transformation_type == 'rotate':
-            angle = radians(float(values.pop(0)))
-            x, y = values or (0, 0)
-            matrix.translate(x, y)
-            matrix.rotate(angle)
-            matrix.translate(-x, -y)
-        elif transformation_type == 'skewX':
-            tangent = tan(radians(float(values[0])))
-            matrix = cairo.Matrix(1, 0, tangent, 1, 0, 0).multiply(matrix)
-        elif transformation_type == 'skewY':
-            tangent = tan(radians(float(values[0])))
-            matrix = cairo.Matrix(1, tangent, 0, 1, 0, 0).multiply(matrix)
-        elif transformation_type == 'translate':
-            if len(values) == 1:
-                values += (0,)
-            matrix.translate(*values)
-        elif transformation_type == 'scale':
-            if len(values) == 1:
-                values = 2 * values
-            matrix.scale(*values)
-
-    if transform_origin:
-        matrix.translate(-float(origin_x), -float(origin_y))
-
-    try:
-        matrix.invert()
-    except cairo.Error:
-        # Matrix not invertible, clip the surface to an empty path
-        active_path = surface.context.copy_path()
-        surface.context.new_path()
-        surface.context.clip()
-        surface.context.append_path(active_path)
-    else:
-        if gradient:
-            # When applied on gradient use already inverted matrix (mapping
-            # from user space to gradient space)
-            matrix_now = gradient.get_matrix()
-            gradient.set_matrix(matrix_now.multiply(matrix))
-        else:
-            matrix.invert()
-            surface.context.transform(matrix)
 
 
 def clip_rect(string):

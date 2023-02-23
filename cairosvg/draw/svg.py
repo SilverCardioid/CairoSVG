@@ -7,18 +7,17 @@ from . import _creators
 from .element import _Element, _StructureElement
 from .. import helpers
 from ..helpers import coordinates
-from ..helpers.coordinates import size2 as _size
+from ..helpers.coordinates import size as _size
 from ..helpers.modules import attrib as _attrib
-from ..parse import parser
 
 class SVG(_StructureElement):
+	tag = 'svg'
 	attribs = _StructureElement.attribs + _attrib['DocumentEvents'] + ['x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType','xmlns','xmlns:xlink']
 	content = _StructureElement.content
 
 	def __init__(self, width, height, *, x=helpers._intdef(0), y=helpers._intdef(0),
 	             viewBox=helpers._strdef('none'), preserveAspectRatio=helpers._strdef('xMidYMid meet'),
 	             **attribs):
-		self.tag = 'svg'
 		_Element.__init__(self, width=width, height=height, x=x, y=y,
 		                  viewBox=viewBox, preserveAspectRatio=preserveAspectRatio,
 		                  **attribs)
@@ -123,25 +122,3 @@ class SVG(_StructureElement):
 		root = helpers.parse.read(source)
 		assert root.tag == 'svg'
 		return root
-
-	# @classmethod
-	# def read(cls, filename, unsafe=False):
-		# tree = parser.Tree(url=filename, unsafe=unsafe)
-		# assert tree.tag == 'svg'
-		# #print(f'<{tree.tag}> attribs: {dict(tree)}')
-		# svg = cls(**tree)
-		# elementQueue = [(tree, svg)]
-		# while len(elementQueue) > 0:
-			# curNode, curElem = elementQueue.pop()
-			# for childNode in curNode.children:
-				# if childNode.tag in _creators:
-					# #print(f'<{childNode.tag}> attribs: {dict(childNode)}')
-					# childElem = _creators[childNode.tag](curElem, **childNode)
-					# elementQueue.append((childNode, childElem))
-				# else:
-					# print(f'<{childNode.tag}> node not supported; can be saved but not drawn')
-					# nsName, nsPrefix, tag = helpers.namespaces._split(childNode.tag)
-					# if nsPrefix:
-						# tag = nsPrefix + ':' + tag
-					# childElem = _creators['custom'](curElem, tag, nsName or helpers.namespaces.NS_SVG)
-		# return svg

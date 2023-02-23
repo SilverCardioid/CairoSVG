@@ -24,11 +24,11 @@ class Viewport:
 
 	@property
 	def width(self):
-		return size2(self._attribs['width'], self.parent and self.parent._getViewport(), 'x', autoValue='100%')
+		return size(self._attribs['width'], self.parent and self.parent._getViewport(), 'x', autoValue='100%')
 
 	@property
 	def height(self):
-		return size2(self._attribs['height'], self.parent and self.parent._getViewport(), 'y', autoValue='100%')
+		return size(self._attribs['height'], self.parent and self.parent._getViewport(), 'y', autoValue='100%')
 
 	@property
 	def viewBox(self):
@@ -38,7 +38,7 @@ class Viewport:
 		elif isinstance(vb, str):
 			# vb = re.sub('[ \n\r\t,]+', ' ', vb)
 			vb = attribs.normalize(vb)
-			vb = tuple(size2(position, units=False) for position in vb.split())
+			vb = tuple(size(position, units=False) for position in vb.split())
 			assert len(vb) == 4
 			return vb
 		# unknown type
@@ -99,7 +99,7 @@ class Viewport:
 
 		return tr
 
-def size2(string, viewport=None, reference='xy', *, units=True, autoValue=0, fontSize=None, dpi=96):
+def size(string, viewport=None, reference='xy', *, units=True, autoValue=0, fontSize=None, dpi=96):
 	"""Replace a ``string`` with units by a float value.
 
 	If ``reference`` is a float, it is used as reference for percentages. If it
@@ -160,22 +160,20 @@ def size2(string, viewport=None, reference='xy', *, units=True, autoValue=0, fon
 	# Unknown size
 	return 0
 
-def point2(string, viewport=None, *, units=True):
+def point(string, viewport=None, *, units=True):
 	"""Return ``(x, y, trailing_text)`` from ``string``."""
 	match = re.match('(.*?) (.*?)(?: |$)', string)
 	if match:
 		x, y = match.group(1, 2)
 		string = string[match.end():]
-		return (size2(x, viewport, 'x', units=units),
-		        size2(y, viewport, 'y', units=units),
+		return (size(x, viewport, 'x', units=units),
+		        size(y, viewport, 'y', units=units),
 		        string)
 	else:
 		raise PointError
 
 
-## Original functions
-
-def node_format(surface, node, reference=True):
+def node_format(node, viewport=None, reference=True):
     """Return ``(width, height, viewbox)`` of ``node``.
 
     If ``reference`` is ``True``, we can rely on surface size to resolve
@@ -183,8 +181,8 @@ def node_format(surface, node, reference=True):
 
     """
     reference_size = 'xy' if reference else (0, 0)
-    width = size(surface, node.get('width', '100%'), reference_size[0])
-    height = size(surface, node.get('height', '100%'), reference_size[1])
+    width = size(node.get('width', '100%'), viewport, reference_size[0])
+    height = size(node.get('height', '100%'), viewport, reference_size[1])
     viewbox = node.get('viewBox')
     if viewbox:
         viewbox = re.sub('[ \n\r\t,]+', ' ', viewbox)
@@ -192,121 +190,3 @@ def node_format(surface, node, reference=True):
         width = width or viewbox[2]
         height = height or viewbox[3]
     return width, height, viewbox
-
-
-def point(surface, string):
-    """Return ``(x, y, trailing_text)`` from ``string``."""
-    match = re.match('(.*?) (.*?)(?: |$)', string)
-    if match:
-        x, y = match.group(1, 2)
-        string = string[match.end():]
-        return (size(surface, x, 'x'), size(surface, y, 'y'), string)
-    else:
-        raise PointError
-
-
-def preserve_ratio(surface, node, width=None, height=None):
-    """Manage the ratio preservation."""
-    if node.tag == 'marker':
-        width = width or size(surface, node.get('markerWidth', '3'), 'x')
-        height = height or size(surface, node.get('markerHeight', '3'), 'y')
-        _, _, viewbox = node_format(surface, node)
-        viewbox_width, viewbox_height = viewbox[2:]
-    elif node.tag in ('svg', 'image', 'g'):
-        node_width, node_height, _ = node_format(surface, node)
-        width = width or node_width
-        height = height or node_height
-        viewbox_width, viewbox_height = node.image_width, node.image_height
-    else:
-        raise TypeError(
-            ('Root node is {}. Should be one of '
-             'marker, svg, image, or g.').format(node.tag))
-
-    translate_x = 0
-    translate_y = 0
-    scale_x = width / viewbox_width if viewbox_width > 0 else 1
-    scale_y = height / viewbox_height if viewbox_height > 0 else 1
-
-    aspect_ratio = node.get('preserveAspectRatio', 'xMidYMid').split()
-    align = aspect_ratio[0]
-    if align == 'none':
-        x_position = 'min'
-        y_position = 'min'
-    else:
-        meet_or_slice = aspect_ratio[1] if len(aspect_ratio) > 1 else None
-        if meet_or_slice == 'slice':
-            scale_value = max(scale_x, scale_y)
-        else:
-            scale_value = min(scale_x, scale_y)
-        scale_x = scale_y = scale_value
-        x_position = align[1:4].lower()
-        y_position = align[5:].lower()
-
-    if node.tag == 'marker':
-        translate_x = -size(surface, node.get('refX', '0'), 'x')
-        translate_y = -size(surface, node.get('refY', '0'), 'y')
-    else:
-        translate_x = 0
-        if x_position == 'mid':
-            translate_x = (width / scale_x - viewbox_width) / 2
-        elif x_position == 'max':
-            translate_x = width / scale_x - viewbox_width
-
-        translate_y = 0
-        if y_position == 'mid':
-            translate_y += (height / scale_y - viewbox_height) / 2
-        elif y_position == 'max':
-            translate_y += height / scale_y - viewbox_height
-
-    return scale_x, scale_y, translate_x, translate_y
-
-
-def size(surface, string, reference='xy'):
-    """Replace a ``string`` with units by a float value.
-
-    If ``reference`` is a float, it is used as reference for percentages. If it
-    is ``'x'``, we use the viewport width as reference. If it is ``'y'``, we
-    use the viewport height as reference. If it is ``'xy'``, we use
-    ``(viewport_width ** 2 + viewport_height ** 2) ** .5 / 2 ** .5`` as
-    reference.
-
-    """
-    if not string:
-        return 0
-
-    try:
-        return float(string)
-    except ValueError:
-        # Not a float, try something else
-        pass
-
-    # No surface (for parsing only)
-    if surface is None:
-        return 0
-
-    string = attribs.normalize(string).split(' ', 1)[0]
-    if string.endswith('%'):
-        if reference == 'x':
-            reference = surface.context_width or 0
-        elif reference == 'y':
-            reference = surface.context_height or 0
-        elif reference == 'xy':
-            reference = (
-                (surface.context_width ** 2 +
-                 surface.context_height ** 2) ** .5 /
-                2 ** .5)
-        return float(string[:-1]) * reference / 100
-    elif string.endswith('em'):
-        return surface.font_size * float(string[:-2])
-    elif string.endswith('ex'):
-        # Assume that 1em == 2ex
-        return surface.font_size * float(string[:-2]) / 2
-
-    for unit, coefficient in UNITS.items():
-        if string.endswith(unit):
-            number = float(string[:-len(unit)])
-            return number * (surface.dpi * coefficient if coefficient else 1)
-
-    # Unknown size
-    return 0
-

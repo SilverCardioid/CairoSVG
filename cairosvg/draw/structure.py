@@ -1,14 +1,14 @@
 from .element import _Element, _StructureElement
 from .. import helpers
-from ..helpers.coordinates import size2 as _size
+from ..helpers.coordinates import size as _size
 from ..helpers.modules import attrib as _attrib, content as _content
 
 class G(_StructureElement):
+	tag = 'g'
 	attribs = _StructureElement.attribs + ['transform']
 	content = _StructureElement.content
 
 	def __init__(self, **attribs):
-		self.tag = 'g'
 		_Element.__init__(self, **attribs)
 
 	def draw(self, surface, *, paint=True, viewport=None):
@@ -18,11 +18,11 @@ class G(_StructureElement):
 
 
 class Defs(_StructureElement):
+	tag = 'defs'
 	attribs = _StructureElement.attribs + ['transform'] # can have transform according to spec?
 	content = _StructureElement.content
 
 	def __init__(self, **attribs):
-		self.tag = 'defs'
 		_Element.__init__(self, **attribs)
 
 	def draw(self, surface, *, paint=True, viewport=None):
@@ -35,6 +35,7 @@ class Defs(_StructureElement):
 
 _HREF = f'{{{helpers.namespaces.NS_XLINK}}}href'
 class Use(_Element):
+	tag = 'use'
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['XLinkEmbed'] + _attrib['Presentation'] + _attrib['GraphicalEvents'] + ['transform','x','y','width','height']
 	content = _content['Description'] + _content['Animation']
 	_strAttrib = {
@@ -46,7 +47,6 @@ class Use(_Element):
 
 	def __init__(self, href=helpers._strdef(''), *, x=helpers._intdef(0), y=helpers._intdef(0),
 	             width=helpers._intdef(0), height=helpers._intdef(0), **attribs):
-		self.tag = 'use'
 		_Element.__init__(self, href=href, x=x, y=y, width=width, height=height, **attribs)
 
 		# Make sure the target has an id, in case

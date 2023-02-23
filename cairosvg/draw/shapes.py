@@ -3,14 +3,14 @@ import math
 from .element import _ShapeElement
 from .path import Path
 from .. import helpers
-from ..helpers.coordinates import size2 as _size, point2 as _point
+from ..helpers.coordinates import size as _size, point as _point
 
 class Circle(_ShapeElement):
+	tag = 'circle'
 	attribs = _ShapeElement.attribs + ['cx','cy','r','transform']
 
 	def __init__(self, r=helpers._intdef(0), cx=helpers._intdef(0),
 	             cy=helpers._intdef(0), **attribs):
-		self.tag = 'circle'
 		super().__init__(r=r, cx=cx, cy=cy, **attribs)
 
 	def draw(self, surface, *, paint=True, viewport=None):
@@ -34,11 +34,11 @@ class Circle(_ShapeElement):
 
 
 class Ellipse(_ShapeElement):
+	tag = 'ellipse'
 	attribs = _ShapeElement.attribs + ['cx','cy','rx','ry','transform']
 
 	def __init__(self, rx=helpers._intdef(0), ry=helpers._intdef(0),
 	             cx=helpers._intdef(0), cy=helpers._intdef(0), **attribs):
-		self.tag = 'ellipse'
 		super().__init__(rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
 
 	def draw(self, surface, *, paint=True, viewport=None):
@@ -64,11 +64,11 @@ class Ellipse(_ShapeElement):
 
 
 class Line(_ShapeElement):
+	tag = 'line'
 	attribs = _ShapeElement.attribs + ['x1','y1','x2','y2','transform']
 
 	def __init__(self, x1=helpers._intdef(0), y1=helpers._intdef(0),
 	             x2=helpers._intdef(0), y2=helpers._intdef(0), **attribs):
-		self.tag = 'line'
 		super().__init__(x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
 
 	def draw(self, surface, *, paint=True, viewport=None):
@@ -98,10 +98,10 @@ class Line(_ShapeElement):
 
 
 class Polygon(_ShapeElement):
+	tag = 'polygon'
 	attribs = _ShapeElement.attribs + ['points','transform']
 
 	def __init__(self, points=helpers._strdef(''), **attribs):
-		self.tag = 'polygon'
 		super().__init__(points=points, **attribs)
 
 	def draw(self, surface, *, paint=True, viewport=None):
@@ -156,10 +156,10 @@ class Polygon(_ShapeElement):
 
 
 class Polyline(_ShapeElement):
+	tag = 'polyline'
 	attribs = _ShapeElement.attribs + ['points','transform']
 
 	def __init__(self, points=helpers._strdef(''), **attribs):
-		self.tag = 'polyline'
 		super().__init__(points=points, **attribs)
 
 	def draw(self, surface, *, paint=True, viewport=None):
@@ -182,6 +182,7 @@ class Polyline(_ShapeElement):
 
 
 class Rect(_ShapeElement):
+	tag = 'rect'
 	attribs = _ShapeElement.attribs + ['x','y','width','height','rx','ry','transform']
 	_strAttrib = {
 		# omit if None
@@ -192,7 +193,6 @@ class Rect(_ShapeElement):
 	def __init__(self, width=helpers._intdef(0), height=helpers._intdef(0),
 	             x=helpers._intdef(0), y=helpers._intdef(0),
 	             rx=None, ry=None, **attribs):
-		self.tag = 'rect'
 		super().__init__(width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
 
 	def draw(self, surface, *, paint=True, viewport=None):

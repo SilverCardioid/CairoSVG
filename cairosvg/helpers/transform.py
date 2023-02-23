@@ -42,12 +42,12 @@ class Transform:
 			if   origin_x == 'center': origin_x = width/2
 			elif origin_x == 'left':   origin_x = 0
 			elif origin_x == 'right':  origin_x = width
-			else:                      origin_x = helpers.coordinates.size2(origin_x, vp, 'x')
+			else:                      origin_x = helpers.coordinates.size(origin_x, vp, 'x')
 
 			if   origin_y == 'center': origin_y = height/2
 			elif origin_y == 'top':    origin_y = 0
 			elif origin_y == 'bottom': origin_y = height
-			else:                      origin_y = helpers.coordinates.size2(origin_y, vp, 'y')
+			else:                      origin_y = helpers.coordinates.size(origin_y, vp, 'y')
 
 			return (origin_x, origin_y)
 		else:
@@ -78,7 +78,7 @@ class Transform:
 				values = values.split(' ')
 			for i, value in enumerate(values):
 				if isinstance(value, str):
-					values[i] = helpers.coordinates.size2(value, units=False)
+					values[i] = helpers.coordinates.size(value, units=False)
 
 			if transformation_type == 'matrix':      self._matrix(*values)
 			elif transformation_type == 'rotate':    self._rotate(*values)
