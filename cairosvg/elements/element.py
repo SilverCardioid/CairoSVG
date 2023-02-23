@@ -1,11 +1,14 @@
+from __future__ import annotations
 from contextlib import contextmanager
 import math
 import re
 import sys
+import typing as ty
 
 from . import _creators
 from .. import helpers
 from ..helpers.modules import attrib as _attrib, content as _content
+from ..helpers import types as ht
 
 class _Element:
 	tag = ''
@@ -14,7 +17,8 @@ class _Element:
 	namespace = helpers.namespaces.NS_SVG
 	_strAttrib = {}
 
-	def __init__(self, *, parent=None, childIndex=None, namespaces=None, **attribs):
+	def __init__(self, *, parent:ty.Optional[_Element] = None, childIndex:ty.Optional[int] = None,
+	             namespaces:ty.Optional[ty.Dict[str,str]] = None, **attribs):
 		# Tree structure
 		self._parent = parent
 		self._children = []
@@ -30,7 +34,7 @@ class _Element:
 			self._root = parent._root
 		else:
 			# root
-			self._root = helpers.root.Root(self, namespaces=namespaces)
+			self._root = ht.Root(self, namespaces=namespaces)
 
 		# Allowed children
 		if self.__class__.content:
@@ -55,7 +59,7 @@ class _Element:
 		if self.__class__.attribs and 'transform' in self.__class__.attribs:
 			self._setTransform()
 
-	def _getOutgoingRefs(self):
+	def _getOutgoingRefs(self) -> ty.List[ty.Tuple[_Element, str]]:
 		refs = []
 		clipPath = self._parseReference(self._attribs.get('clip-path', None))
 		if clipPath:
@@ -65,15 +69,15 @@ class _Element:
 			refs.append((mask, 'mask'))
 		return refs
 
-	def _getViewport(self):
+	def _getViewport(self) -> ty.Optional[ht.Viewport]:
 		elem = self.parent
 		while elem and not hasattr(elem, 'viewport'):
 			elem = elem.parent
 		return elem and elem.viewport
 
 	def _setTransform(self):
-		self.transform = helpers.transform.Transform(self._attribs.get('transform', None),
-		                                             parent=self)
+		self.transform = ht.Transform(self._attribs.get('transform', None),
+		                              parent=self)
 
 	def _setID(self, value):
 		if value in self._root._ids:
@@ -81,7 +85,7 @@ class _Element:
 		else:
 			self._root._ids[value] = self
 
-	def _getAutoID(self, prefix=None, idList=None):
+	def _getAutoID(self, prefix:ty.Optional[str] = None, idList:ty.Optional[ty.List[str]] = None) -> str:
 		# Find the first free ID of the form prefix+number
 		prefix = prefix or self.tag
 		if prefix[-1].isnumeric():
@@ -97,12 +101,12 @@ class _Element:
 			eid = prefix + str(i)
 		return eid
 
-	def _setAutoID(self, prefix=None, idList=None):
+	def _setAutoID(self, prefix:ty.Optional[str] = None, idList:ty.Optional[ty.List[str]] = None):
 		eid = self._getAutoID(prefix, idList)
 		self._attribs['id'] = eid
 		self._setID(eid)
 
-	def _tagCode(self, *, close=True, namespaceDeclaration=True):
+	def _tagCode(self, *, close:bool = True, namespaceDeclaration:bool = True) -> str:
 		nss = self._root.namespaces
 		nsPrefix = nss._getPrefix(self.namespace)
 		if nsPrefix: nsPrefix += ':'
@@ -128,7 +132,7 @@ class _Element:
 					continue
 			elif val is None:
 				val = 'none'
-			elif isinstance(val, helpers._Default):
+			elif isinstance(val, ht._Default):
 				# don't print
 				continue
 			attr = self._root.namespaces.qualifyName(attr, defaultName=self.namespace)
@@ -137,7 +141,7 @@ class _Element:
 		string += '/>' if close else '>'
 		return string
 
-	def _parseReference(self, value):
+	def _parseReference(self, value:ty.Union[str,_Element,None]) -> ty.Optional[_Element]:
 		if value is None or value == '':
 			return None
 		elif isinstance(value, str):
@@ -155,7 +159,7 @@ class _Element:
 		return None
 
 	@contextmanager
-	def _applyTransformations(self, surface):
+	def _applyTransformations(self, surface:ht.Surface):
 		surface.context.save()
 		try:
 			if hasattr(self, 'transform') and self.transform._transformed:
@@ -181,10 +185,10 @@ class _Element:
 		finally:
 			surface.context.restore()
 
-	def __getitem__(self, key):
+	def __getitem__(self, key:str) -> ty.Any:
 		return self._attribs[helpers.attribs.parseAttribute(key)]
 
-	def __setitem__(self, key, value):
+	def __setitem__(self, key:str, value:ty.Any):
 		attrib = helpers.attribs.parseAttribute(key)
 		if (self.__class__.attribs and (not attrib or attrib[0] != '{') and
 		    attrib not in self.__class__.attribs):
@@ -202,7 +206,7 @@ class _Element:
 			self.transform._reset()
 			self.transform._transform(value)
 
-	def __delitem__(self, key):
+	def __delitem__(self, key:str):
 		attrib = helpers.attribs.parseAttribute(key)
 		value = self._attribs.get(attrib, None)
 		del self._attribs[attrib]
@@ -215,39 +219,39 @@ class _Element:
 		elif attrib == 'transform':
 			self.transform._reset()
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		return self._tagCode(close=len(self._children) == 0,
 		                     namespaceDeclaration=False)
 
 	@property
-	def parent(self):
+	def parent(self) -> ty.Optional[_Element]:
 		return self._parent
 	@parent.setter
-	def parent(self, elem):
+	def parent(self, elem:_Element):
 		elem.addChild(self)
 
 	@property
-	def children(self):
+	def children(self) -> ty.Tuple[_Element, ...]:
 		return tuple(self._children)
 
 	@property
-	def id(self):
+	def id(self) -> ty.Optional[str]:
 		return self._attribs.get('id', None)
 	@id.setter
-	def id(self, value):
+	def id(self, value:str):
 		self['id'] = value
 	@id.deleter
 	def id(self):
 		del self['id']
 
 	@property
-	def root(self):
+	def root(self) -> _Element:
 		return self._root.element
 
-	def isRoot(self):
+	def isRoot(self) -> bool:
 		return self.root is self
 
-	def changeID(self, newID=None, updateRefs=True):
+	def changeID(self, newID:ty.Optional[str] = None, updateRefs:bool = True):
 		curID = self.id
 		if curID and updateRefs:
 			refs = self.getReferences()
@@ -264,7 +268,7 @@ class _Element:
 				else:
 					refElem[refAttrib] = self
 
-	def delete(self, recursive=True):
+	def delete(self, recursive:bool = True):
 		"""Delete this element from the tree"""
 		if self.parent:
 			self.parent._children.remove(self)
@@ -285,14 +289,14 @@ class _Element:
 		if parent:
 			self._parent = None
 			parent._children.remove(self)
-			self._root = helpers.root.Root(self)
+			self._root = ht.Root(self)
 			self._root._updateIDs()
 			for eid in self._root._ids:
 				del parent._root._ids[eid]
 			for e in self.descendants():
 				e._root = self._root
 
-	def getAttribute(self, attrib, default=None, *, cascade=False):
+	def getAttribute(self, attrib:str, default:ty.Any = None, *, cascade:bool = False) -> ty.Any:
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
 		attrib = helpers.attribs.parseAttribute(attrib, namespaces=self.root.namespaces,
 		                                        defaultName=self.namespace)
@@ -307,7 +311,7 @@ class _Element:
 		else:
 			return self._attribs.get(attrib, default)
 
-	def getReferences(self):
+	def getReferences(self) -> ty.List[ty.Tuple[_Element, str]]:
 		refs = []
 		for e in self._root.element.descendants():
 			outRefs = e._getOutgoingRefs()
@@ -316,7 +320,8 @@ class _Element:
 					refs.append((e, refAttrib))
 		return refs
 
-	def addChild(self, tag, *attribs, childIndex=None, **kwattribs):
+	def addChild(self, tag:ty.Union[str,_Element], *attribs,
+	             childIndex:ty.Optional[int] = None, **kwattribs):
 		"""Add a child element to this element"""
 		if isinstance(tag, _Element):
 			if tag in self.ancestors():
@@ -350,8 +355,9 @@ class _Element:
 				raise ValueError('unknown tag: {}'.format(tag))
 			return elements[tag](parent=self, childIndex=childIndex, *attribs, **kwattribs)
 
-	def code(self, file=None, *, indent='', indentDepth=0, newline='\n',
-	                             xmlDeclaration=False, namespaceDeclaration=True):
+	def code(self, file:ty.Optional[ty.TextIO] = None, *, indent:ty.Optional[str] = '',
+	         indentDepth:int = 0, newline:ty.Optional[str] = '\n',
+	         xmlDeclaration:bool = False, namespaceDeclaration:bool = True):
 		"""Write the SVG code for this element and its children to the screen or to an opened file"""
 		indent = indent or ''
 		newline = newline or ''
@@ -372,13 +378,13 @@ class _Element:
 			tagClose = f'</{self.tag}>'
 			file.write(f'{indentation}{tagClose}{newline}')
 
-	def descendants(self, includeSelf=True):
+	def descendants(self, includeSelf:bool = True) -> ty.Generator[_Element, None, None]:
 		if includeSelf:
 			yield self
 		for child in self._children:
 			yield from child.descendants(True)
 
-	def ancestors(self, includeSelf=True):
+	def ancestors(self, includeSelf:bool = True) -> ty.Generator[_Element, None, None]:
 		if includeSelf:
 			yield self
 		anc = self.parent
@@ -386,7 +392,7 @@ class _Element:
 			yield anc
 			anc = anc.parent
 
-	def find(self, function, *, maxResults=None):
+	def find(self, function:ty.Callable, *, maxResults:ty.Optional[int] = None) -> ty.List[_Element]:
 		results = []
 		for elem in self.descendants():
 			if function(elem):
@@ -395,33 +401,33 @@ class _Element:
 					break
 		return results
 
-	def findID(self, id):
+	def findID(self, id:str) -> ty.Optional[_Element]:
 		res = self._root._ids.get(id, None)
 		if res and self in res.ancestors():
 			return res
 		return None
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		# Default to drawing nothing
 		return
 
-	def boundingBox(self):
+	def boundingBox(self) -> ht.Box:
 		# Default to no box
-		return helpers.geometry.Box()
+		return ht.Box()
 
 
 class _StructureElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + _attrib['GraphicalEvents']
 	content = _content['Description'] + _content['Animation'] + _content['Structure'] + _content['Shape'] + _content['Text'] + _content['Image'] + _content['View'] + _content['Conditional'] + _content['Hyperlink'] + _content['Script'] + _content['Style'] + _content['Marker'] + _content['Clip'] + _content['Mask'] + _content['Gradient'] + _content['Pattern'] + _content['Filter'] + _content['Cursor'] + _content['Font'] + _content['ColorProfile']
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		for child in self._children:
 			child.draw(surface, paint=paint, viewport=viewport)
 
-	def boundingBox(self):
+	def boundingBox(self) -> ht.Box:
 		# todo: account for transformations
 		# https://svgwg.org/svg2-draft/coords.html#bounding-box
-		box = helpers.geometry.Box()
+		box = ht.Box()
 		for child in self._children:
 			box += child.boundingBox()
 		return box
@@ -431,7 +437,7 @@ class _ShapeElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['GraphicalEvents'] + _attrib['Paint'] + _attrib['Opacity'] + _attrib['Graphics'] + _attrib['Cursor'] + _attrib['Filter'] + _attrib['Mask'] + _attrib['Clip']
 	content = _content['Description'] + _content['Animation']
 
-	def _paint(self, surface, *, viewport=None):
+	def _paint(self, surface:ht.Surface, *, viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
 		opacity = helpers.attribs.getFloat(self, 'opacity', 1, range=[0, 1], cascade=True)
 		fillOpacity = helpers.attribs.getFloat(self, 'fill-opacity', 1, range=[0, 1], cascade=True)
@@ -472,7 +478,7 @@ class _ShapeElement(_Element):
 
 
 class CustomElement(_Element):
-	def __init__(self, tag, namespace=helpers.namespaces.NS_SVG, **attribs):
+	def __init__(self, tag:str, namespace:str = helpers.namespaces.NS_SVG, **attribs):
 		self.tag = tag
 		self.namespace = namespace
 		super().__init__(**attribs)

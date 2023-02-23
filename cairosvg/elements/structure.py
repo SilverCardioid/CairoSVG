@@ -1,7 +1,10 @@
+import typing as ty
+
 from .element import _Element, _StructureElement
 from .. import helpers
-from ..helpers.coordinates import size as _size
 from ..helpers.modules import attrib as _attrib, content as _content
+from ..helpers.coordinates import size as _size
+from ..helpers import types as ht
 
 class G(_StructureElement):
 	tag = 'g'
@@ -11,7 +14,7 @@ class G(_StructureElement):
 	def __init__(self, **attribs):
 		_Element.__init__(self, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		with self._applyTransformations(surface):
 			for child in self._children:
 				child.draw(surface, paint=paint, viewport=viewport)
@@ -25,13 +28,13 @@ class Defs(_StructureElement):
 	def __init__(self, **attribs):
 		_Element.__init__(self, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		# Draw nothing
 		return
 
-	def boundingBox(self):
+	def boundingBox(self) -> ht.Box():
 		# No box
-		return helpers.geometry.Box()
+		return ht.Box()
 
 _HREF = f'{{{helpers.namespaces.NS_XLINK}}}href'
 class Use(_Element):
@@ -45,8 +48,9 @@ class Use(_Element):
 		                    else ''
 	}
 
-	def __init__(self, href=helpers._strdef(''), *, x=helpers._intdef(0), y=helpers._intdef(0),
-	             width=helpers._intdef(0), height=helpers._intdef(0), **attribs):
+	def __init__(self, href:ty.Union[str,_Element,None] = ht._strdef(''), *,
+	             x:ht.Length = ht._intdef(0), y:ht.Length = ht._intdef(0),
+	             width:ht.Length = ht._intdef(0), height:ht.Length = ht._intdef(0), **attribs):
 		_Element.__init__(self, href=href, x=x, y=y, width=width, height=height, **attribs)
 
 		# Make sure the target has an id, in case
@@ -55,14 +59,14 @@ class Use(_Element):
 		if target and not target.id:
 			target._setAutoID()
 
-	def __setitem__(self, key, value):
+	def __setitem__(self, key:str, value:ty.Any):
 		super().__setitem__(key, value)
 		if helpers.attribs.parseAttribute(key) == _HREF:
 			target = self.target
 			if target and not target.id:
 				target._setAutoID()
 
-	def _getOutgoingRefs(self):
+	def _getOutgoingRefs(self) -> ty.List[ty.Tuple[_Element, str]]:
 		refs = super()._getOutgoingRefs()
 		target = self.target
 		if target:
@@ -70,7 +74,7 @@ class Use(_Element):
 		return refs
 
 	@property
-	def target(self):
+	def target(self) -> ty.Optional[_Element]:
 		href = self._attribs.get(_HREF, None)
 		if isinstance(href, str):
 			if href[0] == '#':
@@ -85,7 +89,7 @@ class Use(_Element):
 		# unknown type
 		return None
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
 		target = self.target
 
@@ -105,10 +109,10 @@ class Use(_Element):
 		target._parent = targetParent
 		self.transform._translate(-x, -y)
 
-	def boundingBox(self):
+	def boundingBox(self) -> ht.Box:
 		target = self.target
 		if target is None:
-			return helpers.geometry.Box()
+			return ht.Box()
 		else:
 			box = target.boundingBox()
 			if box.defined:

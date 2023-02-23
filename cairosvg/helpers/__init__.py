@@ -14,12 +14,6 @@ PAINT_URL = re.compile(r'(url\(.+\)) *(.*)')
 PATH_LETTERS = 'achlmqstvzACHLMQSTVZ'
 RECT = re.compile(r'rect\( ?(.+?) ?\)')
 
-# Basic type subclasses to mark arguments that haven't been
-# explicitly set, and should be omitted from exported code
-class _Default: pass
-class _intdef(int, _Default): pass
-class _strdef(str, _Default): pass
-
 
 class PointError(Exception):
     """Exception raised when parsing a point fails."""

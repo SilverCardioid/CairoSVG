@@ -1,4 +1,5 @@
 import os
+import typing as ty
 
 import cv2
 import numpy as np
@@ -7,24 +8,26 @@ from . import _creators
 from .element import _Element, _StructureElement
 from .. import helpers
 from ..helpers import coordinates
-from ..helpers.coordinates import size as _size
 from ..helpers.modules import attrib as _attrib
+from ..helpers.coordinates import size as _size
+from ..helpers import types as ht
 
 class SVG(_StructureElement):
 	tag = 'svg'
 	attribs = _StructureElement.attribs + _attrib['DocumentEvents'] + ['x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType','xmlns','xmlns:xlink']
 	content = _StructureElement.content
 
-	def __init__(self, width, height, *, x=helpers._intdef(0), y=helpers._intdef(0),
-	             viewBox=helpers._strdef('none'), preserveAspectRatio=helpers._strdef('xMidYMid meet'),
-	             **attribs):
+	def __init__(self, width:ht.Length, height:ht.Length, *,
+	             x:ht.Length = ht._intdef(0), y:ht.Length = ht._intdef(0),
+	             viewBox:ty.Optional[str] = ht._strdef('none'),
+	             preserveAspectRatio:str = ht._strdef('xMidYMid meet'), **attribs):
 		_Element.__init__(self, width=width, height=height, x=x, y=y,
 		                  viewBox=viewBox, preserveAspectRatio=preserveAspectRatio,
 		                  **attribs)
 		self.viewport = coordinates.Viewport(parent=self, width=width, height=height,
 		                                     viewBox=viewBox, preserveAspectRatio=preserveAspectRatio)
 
-	def __setitem__(self, key, value):
+	def __setitem__(self, key:str, value:ty.Any):
 		super().__setitem__(key, value)
 		if key in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
 			self.viewport._attribs[key] = value
@@ -32,18 +35,18 @@ class SVG(_StructureElement):
 	# todo: delitem
 
 	@property
-	def width(self):
+	def width(self) -> float:
 		return self.viewport.width
 
 	@property
-	def height(self):
+	def height(self) -> float:
 		return self.viewport.height
 
 	@property
-	def namespaces(self):
+	def namespaces(self) -> ht.Namespaces:
 		return self._root.namespaces
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		viewportTransform = self.viewport.getTransform()
 
 		x, y = 0, 0
@@ -59,7 +62,8 @@ class SVG(_StructureElement):
 				child.draw(surface, paint=paint, viewport=viewport)
 		surface.context.translate(-x, -y)
 
-	def export(self, filename, *, surface=None, useCairo=False, **svgOptions):
+	def export(self, filename:str, *, surface:ty.Optional[ht.Surface] = None,
+	           useCairo:bool = False, **svgOptions):
 		ext = os.path.splitext(filename)[1].lower()
 		width, height = round(self.width), round(self.height)
 
@@ -105,20 +109,20 @@ class SVG(_StructureElement):
 			except cv2.error:
 				raise ValueError('Unsupported file extension: {}'.format(ext))
 
-	def save(self, filename, *, indent='', newline='\n', xmlDeclaration=True):
+	def save(self, filename:str, *, indent:ty.Optional[str] = '', newline:ty.Optional[str] = '\n', xmlDeclaration:bool = True):
 		with open(filename, 'w') as file:
 			self.code(file, indent=indent, newline=newline, xmlDeclaration=xmlDeclaration)
 
-	def pixels(self, *, surface=None, alpha=False, bgr=False):
+	def pixels(self, *, surface:ty.Optional[ht.Surface] = None, alpha:bool = False, bgr:bool = False):
 		surface = surface or helpers.surface.createSurface('Image', round(self.width), round(self.height))
 		self.draw(surface)
 		return helpers.surface.pixels(surface, alpha=alpha, bgr=bgr)
 
-	def show(self, windowName='svg', *, surface=None, wait=0):
+	def show(self, windowName:str = 'svg', *, surface:ty.Optional[ht.Surface] = None, wait:int = 0):
 		helpers.surface.show(self.pixels(surface=surface, bgr=True), windowName=windowName, wait=wait)
 
 	@classmethod
-	def read(cls, source):
+	def read(cls, source:ty.Union[str, ty.TextIO]):
 		root = helpers.parse.read(source)
 		assert root.tag == 'svg'
 		return root

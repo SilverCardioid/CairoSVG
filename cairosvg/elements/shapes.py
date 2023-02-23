@@ -1,19 +1,21 @@
 import math
+import typing as ty
 
 from .element import _ShapeElement
 from .path import Path
 from .. import helpers
 from ..helpers.coordinates import size as _size, point as _point
+from ..helpers import types as ht
 
 class Circle(_ShapeElement):
 	tag = 'circle'
 	attribs = _ShapeElement.attribs + ['cx','cy','r','transform']
 
-	def __init__(self, r=helpers._intdef(0), cx=helpers._intdef(0),
-	             cy=helpers._intdef(0), **attribs):
+	def __init__(self, r:ht.Length = ht._intdef(0), cx:ht.Length = ht._intdef(0),
+	             cy:ht.Length = ht._intdef(0), **attribs):
 		super().__init__(r=r, cx=cx, cy=cy, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
 		r  = _size(self['r'] , vp, 'xy')
 		cx = _size(self['cx'], vp, 'x')
@@ -25,23 +27,23 @@ class Circle(_ShapeElement):
 				if paint:
 					self._paint(surface, viewport=viewport)
 
-	def boundingBox(self):
+	def boundingBox(self) -> ht.Box:
 		vp = self._getViewport()
 		r  = _size(self['r'] , vp, 'xy')
 		cx = _size(self['cx'], vp, 'x')
 		cy = _size(self['cy'], vp, 'y')
-		return helpers.geometry.Box(cx - r, cy - r, 2*r, 2*r)
+		return ht.Box(cx - r, cy - r, 2*r, 2*r)
 
 
 class Ellipse(_ShapeElement):
 	tag = 'ellipse'
 	attribs = _ShapeElement.attribs + ['cx','cy','rx','ry','transform']
 
-	def __init__(self, rx=helpers._intdef(0), ry=helpers._intdef(0),
-	             cx=helpers._intdef(0), cy=helpers._intdef(0), **attribs):
+	def __init__(self, rx:ht.Length = ht._intdef(0), ry:ht.Length = ht._intdef(0),
+	             cx:ht.Length = ht._intdef(0), cy:ht.Length = ht._intdef(0), **attribs):
 		super().__init__(rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
 		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
 		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
@@ -56,22 +58,22 @@ class Ellipse(_ShapeElement):
 				if paint:
 					self._paint(surface, viewport=viewport)
 
-	def boundingBox(self):
+	def boundingBox(self) -> ht.Box:
 		vp = self._getViewport()
 		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
 		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
-		return helpers.geometry.Box(cx - rx, cy - ry, 2*rx, 2*ry)
+		return ht.Box(cx - rx, cy - ry, 2*rx, 2*ry)
 
 
 class Line(_ShapeElement):
 	tag = 'line'
 	attribs = _ShapeElement.attribs + ['x1','y1','x2','y2','transform']
 
-	def __init__(self, x1=helpers._intdef(0), y1=helpers._intdef(0),
-	             x2=helpers._intdef(0), y2=helpers._intdef(0), **attribs):
+	def __init__(self, x1:ht.Length = ht._intdef(0), y1:ht.Length = ht._intdef(0),
+	             x2:ht.Length = ht._intdef(0), y2:ht.Length = ht._intdef(0), **attribs):
 		super().__init__(x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		x1, y1, x2, y2 = self.vertices(viewport=viewport)
 		with self._applyTransformations(surface):
 			surface.context.move_to(x1, y1)
@@ -79,7 +81,7 @@ class Line(_ShapeElement):
 			if paint:
 				self._paint(surface, viewport=viewport)
 
-	def vertices(self, *, viewport=None):
+	def vertices(self, *, viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
 		x1, y1 = _size(self['x1'], vp, 'x'), _size(self['y1'], vp, 'y')
 		x2, y2 = _size(self['x2'], vp, 'x'), _size(self['y2'], vp, 'y')
@@ -89,8 +91,8 @@ class Line(_ShapeElement):
 		angle = helpers.geometry.point_angle(*self.vertices())
 		return [angle, angle]
 
-	def boundingBox(self):
-		box = helpers.geometry.Box()
+	def boundingBox(self) -> ht.Box:
+		box = ht.Box()
 		x1, y1, x2, y2 = self.vertices()
 		box.addPoint(x1, y1)
 		box.addPoint(x2, y2)
@@ -101,10 +103,10 @@ class Polygon(_ShapeElement):
 	tag = 'polygon'
 	attribs = _ShapeElement.attribs + ['points','transform']
 
-	def __init__(self, points=helpers._strdef(''), **attribs):
+	def __init__(self, points:ty.Union[str, ty.List[str], ht.VertexList] = ht._strdef(''), **attribs):
 		super().__init__(points=points, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		points = self.vertices(viewport=viewport)
 
 		if len(points) > 0:
@@ -116,7 +118,7 @@ class Polygon(_ShapeElement):
 				if paint:
 					self._paint(surface, viewport=viewport)
 
-	def vertices(self, viewport=None):
+	def vertices(self, viewport:ty.Optional[ht.Viewport] = None) -> ht.VertexList:
 		vp = viewport or self._getViewport()
 		points = self._attribs.get('points', '')
 		if isinstance(points, str):
@@ -144,12 +146,12 @@ class Polygon(_ShapeElement):
 
 		return points
 
-	def vertexAngles(self):
+	def vertexAngles(self) -> ty.List[float]:
 		path = Path().polyline(self.vertices(), closed=True)
 		return path.vertexAngles()
 
-	def boundingBox(self):
-		box = helpers.geometry.Box()
+	def boundingBox(self) -> ht.Box:
+		box = ht.Box()
 		for x, y in self.vertices():
 			box.addPoint(x, y)
 		return box
@@ -159,10 +161,10 @@ class Polyline(_ShapeElement):
 	tag = 'polyline'
 	attribs = _ShapeElement.attribs + ['points','transform']
 
-	def __init__(self, points=helpers._strdef(''), **attribs):
+	def __init__(self, points=ht._strdef(''), **attribs):
 		super().__init__(points=points, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		points = self.vertices(viewport=viewport)
 
 		if len(points) > 0:
@@ -176,7 +178,7 @@ class Polyline(_ShapeElement):
 	vertices = Polygon.vertices
 	boundingBox = Polygon.boundingBox
 
-	def vertexAngles(self):
+	def vertexAngles(self) -> ty.List[float]:
 		path = Path().polyline(self.vertices(), closed=False)
 		return path.vertexAngles()
 
@@ -190,12 +192,12 @@ class Rect(_ShapeElement):
 		'ry': lambda val: val
 	}
 
-	def __init__(self, width=helpers._intdef(0), height=helpers._intdef(0),
-	             x=helpers._intdef(0), y=helpers._intdef(0),
-	             rx=None, ry=None, **attribs):
+	def __init__(self, width:ht.Length = ht._intdef(0), height:ht.Length = ht._intdef(0),
+	             x:ht.Length = ht._intdef(0), y:ht.Length = ht._intdef(0),
+	             rx:ty.Optional[ht.Length] = None, ry:ty.Optional[ht.Length] = None, **attribs):
 		super().__init__(width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
 		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
 		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
@@ -241,8 +243,8 @@ class Rect(_ShapeElement):
 			if paint:
 				self._paint(surface, viewport=viewport)
 
-	def boundingBox(self):
+	def boundingBox(self) -> ht.Box:
 		vp = self._getViewport()
 		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
 		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
-		return helpers.geometry.Box(x, y, width, height)
+		return ht.Box(x, y, width, height)

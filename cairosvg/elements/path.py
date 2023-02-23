@@ -1,7 +1,9 @@
 import math
+import typing as ty
 
 from .element import _ShapeElement
 from .. import helpers
+from ..helpers import types as ht
 from ..helpers.coordinates import size as _size, point as _point
 from ..helpers.modules import attrib as _attrib
 
@@ -9,24 +11,24 @@ class Path(_ShapeElement):
 	tag = 'path'
 	attribs = _ShapeElement.attribs + _attrib['Marker'] + ['d','pathLength','transform']
 
-	def __init__(self, d=helpers._strdef(''), **attribs):
+	def __init__(self, d:str = ht._strdef(''), **attribs):
 		super().__init__(d=d, **attribs)
 		self._clear()
 		if d is not None:
 			self._d(d)
 
-	def __setitem__(self, key, value):
+	def __setitem__(self, key:str, value:ty.Any):
 		super().__setitem__(key, value)
 		if key == 'd':
 			self._clear()
 			self._d(self['d'])
 
-	def __delitem__(self, key):
+	def __delitem__(self, key:str):
 		super().__delitem__(key)
 		if key == 'd':
 			self._clear()
 
-	def _add(self, letter, coords=None):
+	def _add(self, letter:str, coords:ty.List[float] = None):
 		self._data.append([letter, coords])
 		if letter == 'M':
 			self._startPoint = coords[-2:]
@@ -35,7 +37,7 @@ class Path(_ShapeElement):
 		self._currentPoint = coords[-2:] if letter != 'Z' else self._startPoint
 		self._lastBezier = (letter, *coords[-4:-2]) if letter in 'QC' else None
 
-	def _addToAttr(self, string):
+	def _addToAttr(self, string:str):
 		val = self._attribs.get('d', None) or ''
 		val += string
 		self['d'] = val
@@ -46,163 +48,163 @@ class Path(_ShapeElement):
 		self._startPoint = None
 		self._lastBezier = None
 
-	def _rel2abs(self, x, y):
+	def _rel2abs(self, x:float, y:float) -> ty.Tuple[float, float]:
 		return self._currentPoint[0] + x, self._currentPoint[1] + y
 
 	# The public version of each method changes the 'd' attribute;
 	# the private version (with '_') doesn't
-	def M(self, x, y):
+	def M(self, x:float, y:float):
 		"""Moveto: start a new sub-path at (x, y)"""
 		self._M(x, y)
 		self._addToAttr(f'M{x},{y}')
 		return self
-	def _M(self, x, y):
+	def _M(self, x:float, y:float):
 		self._add('M', [x, y])
 
-	def m(self, x, y):
+	def m(self, x:float, y:float):
 		"""Relative moveto: start a new sub-path at (x, y)"""
 		self._m(x, y)
 		self._addToAttr(f'm{x},{y}')
 		return self
-	def _m(self, x, y):
+	def _m(self, x:float, y:float):
 		if self._startPoint is not None:
 			x, y = self._rel2abs(x, y)
 		self._M(x, y)
 
-	def L(self, x, y):
+	def L(self, x:float, y:float):
 		"""Lineto: draw a straight line to (x, y)"""
 		self._L(x, y)
 		self._addToAttr(f'L{x},{y}')
 		return self
-	def _L(self, x, y):
+	def _L(self, x:float, y:float):
 		self._add('L', [x, y])
 
-	def l(self, x, y):
+	def l(self, x:float, y:float):
 		"""Relative lineto: draw a straight line to (x, y)"""
 		self._l(x, y)
 		self._addToAttr(f'l{x},{y}')
 		return self
-	def _l(self, x, y):
+	def _l(self, x:float, y:float):
 		self._L(*self._rel2abs(x, y))
 
-	def H(self, x):
+	def H(self, x:float):
 		"""Horizontal lineto: draw a horizontal line to x"""
 		self._H(x)
 		self._addToAttr(f'H{x}')
 		return self
-	def _H(self, x):
+	def _H(self, x:float):
 		self._L(x, self._currentPoint[1])
 
-	def h(self, x):
+	def h(self, x:float):
 		"""Relative horizontal lineto: draw a horizontal line to x"""
 		self._h(x)
 		self._addToAttr(f'h{x}')
 		return self
-	def _h(self, x):
+	def _h(self, x:float):
 		self._l(x, 0)
 
-	def V(self, y):
+	def V(self, y:float):
 		"""Vertical lineto: draw a vertical line to y"""
 		self._V(y)
 		self._addToAttr(f'V{y}')
 		return self
-	def _V(self, y):
+	def _V(self, y:float):
 		self._L(self._currentPoint[0], y)
 
-	def v(self, y):
+	def v(self, y:float):
 		"""Relative vertical lineto: draw a vertical line to y"""
 		self._v(y)
 		self._addToAttr(f'v{y}')
 		return self
-	def _v(self, y):
+	def _v(self, y:float):
 		self._l(0, y)
 
-	def A(self, rx, ry, rot, large, sweep, x, y):
+	def A(self, rx:float, ry:float, rot:float, large:bool, sweep:bool, x:float, y:float):
 		"""Elliptical arc"""
 		self._A(rx, ry, rot, large, sweep, x, y)
 		self._addToAttr(f'A{rx},{ry} {rot} {large},{sweep} {x},{y}')
 		return self
-	def _A(self, rx, ry, rot, large, sweep, x, y):
+	def _A(self, rx:float, ry:float, rot:float, large:bool, sweep:bool, x:float, y:float):
 		self._add('A', [rx, ry, rot, large, sweep, x, y])
 
-	def a(self, rx, ry, rot, large, sweep, x, y):
+	def a(self, rx:float, ry:float, rot:float, large:bool, sweep:bool, x:float, y:float):
 		"""Relative elliptical arc"""
 		self._a(rx, ry, rot, large, sweep, x, y)
 		self._addToAttr(f'a{rx},{ry} {rot} {large},{sweep} {x},{y}')
 		return self
-	def _a(self, rx, ry, rot, large, sweep, x, y):
+	def _a(self, rx:float, ry:float, rot:float, large:bool, sweep:bool, x:float, y:float):
 		self._A(rx, ry, rot, large, sweep, *self._rel2abs(x, y))
 
-	def C(self, x1, y1, x2, y2, x, y):
+	def C(self, x1:float, y1:float, x2:float, y2:float, x:float, y:float):
 		"""Curveto: cubic Bezier curve"""
 		self._C(x1, y1, x2, y2, x, y)
 		self._addToAttr(f'C{x1},{y1} {x2},{y2} {x},{y}')
 		return self
-	def _C(self, x1, y1, x2, y2, x, y):
+	def _C(self, x1:float, y1:float, x2:float, y2:float, x:float, y:float):
 		self._add('C', [x1, y1, x2, y2, x, y])
 
-	def c(self, x1, y1, x2, y2, x, y):
+	def c(self, x1:float, y1:float, x2:float, y2:float, x:float, y:float):
 		"""Relative curveto: cubic Bezier curve"""
 		self._c(x1, y1, x2, y2, x, y)
 		self._addToAttr(f'c{x1},{y1} {x2},{y2} {x},{y}')
 		return self
-	def _c(self, x1, y1, x2, y2, x, y):
+	def _c(self, x1:float, y1:float, x2:float, y2:float, x:float, y:float):
 		self._C(*self._rel2abs(x1, y1), *self._rel2abs(x2, y2), *self._rel2abs(x, y))
 
-	def Q(self, x1, y1, x, y):
+	def Q(self, x1:float, y1:float, x:float, y:float):
 		"""Quadratic Bezier curveto"""
 		self._Q(x1, y1, x, y)
 		self._addToAttr(f'Q{x1},{y1} {x},{y}')
 		return self
-	def _Q(self, x1, y1, x, y):
+	def _Q(self, x1:float, y1:float, x:float, y:float):
 		self._add('Q', [x1, y1, x, y])
 
-	def q(self, x1, y1, x, y):
+	def q(self, x1:float, y1:float, x:float, y:float):
 		"""Relative quadratic Bezier curveto"""
 		self._q(x1, y1, x, y)
 		self._addToAttr(f'q{x1},{y1} {x},{y}')
 		return self
-	def _q(self, x1, y1, x, y):
+	def _q(self, x1:float, y1:float, x:float, y:float):
 		self._Q(*self._rel2abs(x1, y1), *self._rel2abs(x, y))
 
-	def S(self, x2, y2, x, y):
+	def S(self, x2:float, y2:float, x:float, y:float):
 		"""Smooth curveto: smooth cubic Bezier curve"""
 		self._S(x2, y2, x, y)
 		self._addToAttr(f'S{x2},{y2} {x},{y}')
 		return self
-	def _S(self, x2, y2, x, y):
+	def _S(self, x2:float, y2:float, x:float, y:float):
 		x1, y1 = self._currentPoint
 		if self._lastBezier and self._lastBezier[0]=='C':
 			xp, yp = self._lastBezier[1:]
 			x1, y1 = x1 - (xp - x1), y1 - (yp - y1)
 		self._C(x1, y1, x2, y2, x, y)
 
-	def s(self, x2, y2, x, y):
+	def s(self, x2:float, y2:float, x:float, y:float):
 		"""Relative smooth curveto: smooth cubic Bezier curve"""
 		self._s(x2, y2, x, y)
 		self._addToAttr(f's{x2},{y2} {x},{y}')
 		return self
-	def _s(self, x2, y2, x, y):
+	def _s(self, x2:float, y2:float, x:float, y:float):
 		self._S(*self._rel2abs(x2, y2), *self._rel2abs(x, y))
 
-	def T(self, x, y):
+	def T(self, x:float, y:float):
 		"Smooth quadratic Bezier curveto"
 		self._T(x, y)
 		self._addToAttr(f'T{x},{y}')
 		return self
-	def _T(self, x, y):
+	def _T(self, x:float, y:float):
 		x1, y1 = self._currentPoint
 		if self._lastBezier and self._lastBezier[0]=='Q':
 			xp, yp = self._lastBezier[1:]
 			x1, y1 = x1 - (xp - x1), y1 - (yp - y1)
 		self._Q(x1, y1, x, y)
 
-	def t(self, x, y):
+	def t(self, x:float, y:float):
 		"Relative smooth quadratic Bezier curveto"
 		self._t(x, y)
 		self._addToAttr(f't{x},{y}')
 		return self
-	def _t(self, x, y):
+	def _t(self, x:float, y:float):
 		self._T(*self._rel2abs(x, y))
 
 	def Z(self):
@@ -214,7 +216,7 @@ class Path(_ShapeElement):
 		self._add('Z')
 	z = Z
 
-	def polyline(self, points, closed=False):
+	def polyline(self, points:ht.VertexList, closed:bool = False):
 		"""Add a series of straight lines from an array of [x,y] points"""
 		if len(points) > 0:
 			self.M(*points[0])
@@ -223,7 +225,7 @@ class Path(_ShapeElement):
 			if closed:
 				self.z()
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[helpers.coordinates.Viewport] = None):
 		with self._applyTransformations(surface):
 			startPoint = None
 			lastPoint = None
@@ -250,7 +252,8 @@ class Path(_ShapeElement):
 			if paint:
 				self._paint(surface, viewport=viewport)
 
-	def _drawArc(self, surface, x1, y1, rx, ry, rotation, large, sweep, x3, y3):
+	def _drawArc(self, surface:ht.Surface, x1:float, y1:float, rx:float, ry:float,
+	             rotation:float, large:bool, sweep:bool, x3:float, y3:float):
 		surface.context.set_tolerance(0.00001)
 		# rx=0 or ry=0 means straight line
 		if not rx or not ry:
@@ -267,31 +270,30 @@ class Path(_ShapeElement):
 		arcFun(*arc.drawCenter, arc.rx, *arc.drawAngles)
 		surface.context.restore()
 
-	def vertices(self, include_z=True):
+	def vertices(self, close:bool = True) -> ht.VertexList:
 		"""Get the vertices of the path as a list of [x,y] arrays"""
 		v = []
 		lastM = None
 		for letter, coords in self._data:
 			if letter != 'Z':
 				# M, L, A, C, Q: add coordinate
-				v.append(coords[-2:])
+				v.append(tuple(coords[-2:]))
 				if letter == 'M':
-					lastM = coords[-2:]
-			elif include_z:
+					lastM = tuple(coords[-2:])
+			elif close:
 				v.append(lastM)
 		return v
 
-	def vertexAngles(self):
+	def vertexAngles(self) -> ty.List[float]:
 		"""Get the marker angles at every vertex"""
 		segmentAngles = []
 		#index = 0
 		vertex = None
 		lastVertex = (0, 0) # in case of no M
 		lastM = (0, 0)
-		#lastMIndex = None
 		lastLetter = None
 
-		for command in self._data: #index, command in enumerate(self._data):
+		for command in self._data:
 			letter, coords = command
 
 			if letter == 'M':
@@ -299,7 +301,6 @@ class Path(_ShapeElement):
 					segmentAngles[-1].append(None)
 				vertex = coords[-2:]
 				lastM = vertex
-				#lastMIndex = index
 				segmentAngles.append([])
 
 			elif letter == 'L':
@@ -372,7 +373,7 @@ class Path(_ShapeElement):
 					vertexAngles.append(angleIn)
 		return vertexAngles
 
-	def boundingBox(self, _ex=None):
+	def boundingBox(self, _ex:ty.Optional[ht.VertexList] = None) -> ht.Box:
 		box = helpers.geometry.Box()
 		lastVertex = (0, 0) # in case of no M
 		lastM = (0, 0)
@@ -434,13 +435,13 @@ class Path(_ShapeElement):
 
 		return box
 
-	def d(self, d):
+	def d(self, d:str):
 		"""Append path data from a string"""
 		self._d(d)
 		self._addToAttr(d)
 		return self
 
-	def _d(self, d):
+	def _d(self, d:str):
 		string = d
 		for letter in helpers.PATH_LETTERS:
 			string = string.replace(letter, ' {} '.format(letter))

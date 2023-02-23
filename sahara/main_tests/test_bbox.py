@@ -15,7 +15,7 @@ for e in gShapes.descendants():
 		extr = []
 		bx, by, bw, bh = e.boundingBox(extr).xywh
 		gBoxes.rect(x=bx, y=by, width=bw, height=bh)
-		for vx, vy in e.vertices(include_z=False):
+		for vx, vy in e.vertices(close=False):
 			gVertices.circle(r=pointR, cx=vx, cy=vy)
 		for ex, ey in extr:
 			gExtrema.circle(r=pointR, cx=ex, cy=ey)

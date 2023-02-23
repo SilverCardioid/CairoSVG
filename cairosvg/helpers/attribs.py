@@ -1,4 +1,5 @@
 import re
+import typing as ty
 
 import cairocffi as cairo
 
@@ -19,7 +20,7 @@ LINE_JOINS = {
 	'bevel': cairo.LINE_JOIN_BEVEL
 }
 
-def normalize(string):
+def normalize(string:str) -> str:
 	"""Normalize a string corresponding to an array of various values."""
 	string = string.replace('E', 'e')
 	string = re.sub('(?<!e)-', ' -', string)
@@ -29,7 +30,8 @@ def normalize(string):
 
 camelCaseAttribs = set(['allowReorder','attributeName','attributeType','autoReverse','baseFrequency','baseProfile','calcMode','clipPathUnits','contentScriptType','contentStyleType','diffuseConstant','edgeMode','externalResourcesRequired','filterRes','filterUnits','glyphRef','gradientTransform','gradientUnits','kernelMatrix','kernelUnitLength','keyPoints','keySplines','keyTimes','lengthAdjust','limitingConeAngle','markerHeight','markerUnits','markerWidth','maskContentUnits','maskUnits','numOctaves','pathLength','patternContentUnits','patternTransform','patternUnits','pointsAtX','pointsAtY','pointsAtZ','preserveAlpha','preserveAspectRatio','primitiveUnits','refX','refY','referrerPolicy','repeatCount','repeatDur','requiredExtensions','requiredFeatures','specularConstant','specularExponent','spreadMethod','startOffset','stdDeviation','stitchTiles','surfaceScale','systemLanguage','tableValues','targetX','targetY','textLength','viewBox','viewTarget','xChannelSelector','yChannelSelector','zoomAndPan'])
 nameSpaceAttribs = {'base':ns.NS_XML, 'lang':ns.NS_XML, 'space':ns.NS_XML, 'type':ns.NS_XLINK, 'href':ns.NS_XLINK, 'role':ns.NS_XLINK, 'arcrole':ns.NS_XLINK, 'title':ns.NS_XLINK, 'show':ns.NS_XLINK, 'actuate':ns.NS_XLINK}
-def parseAttribute(key, *, namespaces=None, defaultName=None):
+def parseAttribute(key:str, *, namespaces:ty.Optional[ns.Namespaces] = None,
+                   defaultName:ty.Optional[str] = None) -> str:
 	"""Convert a snake_case or camelCase function argument to a hyphenated SVG attribute, and expand namespaces"""
 	nsName = ''
 	if key in nameSpaceAttribs:
@@ -45,7 +47,8 @@ def parseAttribute(key, *, namespaces=None, defaultName=None):
 		key = re.sub('(?<!^)(?=[A-Z])', '-', key).lower()
 	return f'{{{nsName}}}{key}' if nsName else key
 
-def getFloat(elem, attrName, defaultValue=None, *, range=[None, None], cascade=False):
+def getFloat(elem, attrName:str, defaultValue:ty.Optional[float] = None, *,
+             range:ty.List[ty.Optional[float]] = [None, None], cascade:bool=False) -> ty.Optional[float]:
 	"""Get an attribute value and parse it as a float, and check if it's in the allowed range if one is given"""
 	val = elem.getAttribute(attrName, defaultValue, cascade=cascade)
 	try:
@@ -57,7 +60,7 @@ def getFloat(elem, attrName, defaultValue=None, *, range=[None, None], cascade=F
 		print(f'warning: invalid value "{val}" for {attrName}')
 		return defaultValue
 
-def getEnum(elem, attrName, defaultValue, valueDict, *, cascade=True):
+def getEnum(elem, attrName:str, defaultValue:str, valueDict:ty.Mapping[str, ty.Any], *, cascade:bool = True) -> ty.Any:
 	"""Get an attribute value and check if is in a dict of allowed values, returning the corresponding value from the dict"""
 	val = elem.getAttribute(attrName, defaultValue, cascade=cascade)
 	try:

@@ -1,5 +1,5 @@
 import cairocffi as cairo
-from cairocffi import ImageSurface, PDFSurface, PSSurface, RecordingSurface, SVGSurface
+from cairocffi import Surface, ImageSurface, PDFSurface, PSSurface, RecordingSurface, SVGSurface
 import cv2
 import numpy as np
 

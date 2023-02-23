@@ -1,4 +1,5 @@
 import re
+import typing as ty
 
 NS_SVG = 'http://www.w3.org/2000/svg'
 NS_XLINK = 'http://www.w3.org/1999/xlink'
@@ -13,7 +14,7 @@ def _split(attrib):
 
 # https://stackoverflow.com/questions/3318625/how-to-implement-an-efficient-bidirectional-hash-table
 class Namespaces(dict):
-	def __init__(self, nsMapping=None, *, default=NS_SVG):
+	def __init__(self, nsMapping:ty.Mapping[str, str] = None, *, default:str = NS_SVG):
 		super().__init__()
 		self.default = default
 		self._names = {}
@@ -21,7 +22,7 @@ class Namespaces(dict):
 			for key in nsMapping:
 				self[key] = nsMapping[key]
 
-	def __setitem__(self, key, value):
+	def __setitem__(self, key:str, value:str):
 		if key in self:
 			oldValue = self[key]
 			self._names[oldValue].remove(key) 
@@ -30,7 +31,7 @@ class Namespaces(dict):
 		super().__setitem__(key, value)
 		self._names.setdefault(value, []).append(key)        
 
-	def __delitem__(self, key):
+	def __delitem__(self:str, key:str):
 		value = self[key]
 		if value in self._names:
 			self._names[value].remove(key)
@@ -41,19 +42,19 @@ class Namespaces(dict):
 	def copy(self):
 		return Namespaces(self)
 
-	def fromPrefix(self, prefix):
+	def fromPrefix(self, prefix:str) -> ty.Optional[str]:
 		""" Get the namespace name (a URI) bound to a namespace prefix """
 		return self.get(prefix, None)
 
-	def fromName(self, name):
+	def fromName(self, name:str) -> ty.List[str]:
 		""" Get the namespace prefixes bound to a namespace name """
 		return self._names.get(name, [])
 
-	def changePrefix(self, old, new):
+	def changePrefix(self, old:str, new:str):
 		self[new] = self[old]
 		del self[old]
 
-	def _getPrefix(self, name, *, defaultName=None, defPrefix='ns'):
+	def _getPrefix(self, name:str, *, defaultName:ty.Optional[str] = None, defPrefix:str = 'ns'):
 		# Get the last-declared prefix for a name, or
 		# add one if the name is missing
 		if (defaultName or self.default) == name:
@@ -73,7 +74,7 @@ class Namespaces(dict):
 		self[prefix] = name
 		return prefix
 
-	def expandName(self, attrib, *, defaultName=None):
+	def expandName(self, attrib:str, *, defaultName:ty.Optional[str] = None):
 		""" Get a tuple (nsName, localName) from the qualified name "nsPrefix:localName" """
 		nsName, nsPrefix, localName = _split(attrib)
 		if nsName:
@@ -97,7 +98,7 @@ class Namespaces(dict):
 				nsPrefix = ''
 		return nsName, localName
 
-	def qualifyName(self, attrib, *, defaultName=None):
+	def qualifyName(self, attrib:str, *, defaultName:ty.Optional[str] = None):
 		""" Get a qualified name "nsPrefix:localName" from the expanded name "{nsName}localName" """
 		nsName, nsPrefix, localName = _split(attrib)
 		if nsPrefix:
@@ -115,7 +116,7 @@ DEFAULTS = Namespaces({
 })
 
 
-def getNamespaces(elem):
+def getNamespaces(elem) -> ty.List[str]:
 	# Find the namespaces actually used by elem's descendants
 	nsNames = set()
 	for e in elem.descendants():

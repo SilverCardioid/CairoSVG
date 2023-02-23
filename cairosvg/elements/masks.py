@@ -1,23 +1,24 @@
 from contextlib import contextmanager
+import typing as ty
 
 from .element import _Element
 from .. import helpers
-from ..helpers import _strdef
-from ..helpers.modules import attrib as _attrib, content as _content
 from ..helpers.coordinates import size as _size
+from ..helpers.modules import attrib as _attrib, content as _content
+from ..helpers import types as ht
 
 class ClipPath(_Element):
 	tag = 'clipPath'
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Paint'] + _attrib['Font'] + _attrib['TextContent'] + _attrib['Text'] + _attrib['Opacity'] + _attrib['Graphics'] + _attrib['Mask'] + _attrib['GraphicalEvents'] + _attrib['Clip'] + ['transform', 'clipPathUnits']
 	content = _content['Description'] + _content['Animation'] + _content['Shape'] + _content['Text'] + ['use']
-	def __init__(self, clipPathUnits=_strdef('userSpaceOnUse'), **attribs):
+	def __init__(self, clipPathUnits:str = ht._strdef('userSpaceOnUse'), **attribs):
 		super().__init__(clipPathUnits=clipPathUnits, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		# Draw nothing
 		return
 
-	def apply(self, surface, target):
+	def apply(self, surface:ht.Surface, target:_Element):
 		surface.context.save()
 		clipPathUnits = self['clipPathUnits'].strip()
 		if clipPathUnits == 'objectBoundingBox':
@@ -41,7 +42,7 @@ class ClipPath(_Element):
 		surface.context.clip()
 
 	@contextmanager
-	def applyContext(self, surface, target):
+	def applyContext(self, surface:ht.Surface, target:_Element):
 		surface.context.save()
 		try:
 			self.apply(surface, target)
@@ -55,16 +56,18 @@ class Mask(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + ['maskUnits', 'maskContentUnits', 'x', 'y', 'width', 'height']
 	content = _content['Description'] + _content['Animation'] + _content['Structure'] + _content['Shape'] + _content['Text'] + _content['Image'] + _content['Script'] + _content['Style'] + _content['Marker'] + _content['Clip'] + _content['Mask'] + _content['Gradient'] + _content['Pattern'] + _content['Filter'] + _content['Cursor'] + _content['Font'] + _content['ColorProfile']
 
-	def __init__(self, x=_strdef('-10%'), y=_strdef('-10%'), width=_strdef('120%'), height=_strdef('120%'), *,
-	             maskUnits=_strdef('objectBoundingBox'), maskContentUnits=_strdef('userSpaceOnUse'), **attribs):
+	def __init__(self, x:ht.Length = ht._strdef('-10%'), y:ht.Length = ht._strdef('-10%'),
+	             width:ht.Length = ht._strdef('120%'), height:ht.Length = ht._strdef('120%'), *,
+	             maskUnits:str = ht._strdef('objectBoundingBox'),
+	             maskContentUnits:str = ht._strdef('userSpaceOnUse'), **attribs):
 		super().__init__(maskUnits=maskUnits, maskContentUnits=maskContentUnits,
 		                 x=x, y=y, width=width, height=height, **attribs)
 
-	def draw(self, surface, *, paint=True, viewport=None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		# Draw nothing
 		return
 
-	def apply(self, surface, target):
+	def apply(self, surface:ht.Surface, target:_Element):
 		maskUnits = self['maskUnits'].strip()
 		maskContentUnits = self['maskContentUnits'].strip()
 		if maskUnits == 'userSpaceOnUse':
@@ -107,7 +110,7 @@ class Mask(_Element):
 		surface.context.mask_surface(maskSurface)
 
 	@contextmanager
-	def applyContext(self, surface, target):
+	def applyContext(self, surface:ht.Surface, target:_Element):
 		surface.context.save()
 		try:
 			self.apply(surface, target)
