@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
-from . import VERSION
+VERSION = '2.5.0'
 
 HTTP_HEADERS = {'User-Agent': 'CairoSVG {}'.format(VERSION)}
 

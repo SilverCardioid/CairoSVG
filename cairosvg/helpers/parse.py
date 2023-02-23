@@ -1,6 +1,6 @@
 from xml.etree import ElementTree as ET
 
-from ..draw import _creators
+from ..elements import _creators
 from . import namespaces
 
 def parse(source):

@@ -7,7 +7,8 @@ import re
 from math import radians, tan
 
 import cairocffi as cairo
-from . import attribs, coordinates, geometry, parse, root, surface, url
+from . import (attribs, colors, coordinates, geometry, modules,
+               namespaces, parse, root, surface, transform, url)
 
 PAINT_URL = re.compile(r'(url\(.+\)) *(.*)')
 PATH_LETTERS = 'achlmqstvzACHLMQSTVZ'
