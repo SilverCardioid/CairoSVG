@@ -61,7 +61,7 @@ class Use(_Element):
 
 	def __setitem__(self, key:str, value:ty.Any):
 		super().__setitem__(key, value)
-		if helpers.attribs.parseAttribute(key) == _HREF:
+		if self._parseAttribute(key) == _HREF:
 			target = self.target
 			if target and not target.id:
 				target._setAutoID()

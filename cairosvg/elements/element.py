@@ -47,7 +47,7 @@ class _Element:
 		# Attributes
 		self._attribs = {}
 		for key in attribs:
-			attrib = helpers.attribs.parseAttribute(key, namespaces=self._root.namespaces)
+			attrib = self._parseAttribute(key)
 			if (self.__class__.attribs and (not attrib or attrib[0] != '{') and
 			    attrib not in self.__class__.attribs):
 				print(f'warning: <{self.tag}> element doesn\'t take "{attrib}" attribute')
@@ -142,6 +142,10 @@ class _Element:
 		string += '/>' if close else '>'
 		return string
 
+	def _parseAttribute(self, attrib:str) -> str:
+		return helpers.attribs.parseAttribute(attrib, namespaces=self._root.namespaces,	
+		                                      defaultName=self.namespace)
+
 	def _parseReference(self, value:ty.Union[str,_Element,None]) -> ty.Optional[_Element]:
 		if value is None or value == '':
 			return None
@@ -186,11 +190,11 @@ class _Element:
 		finally:
 			surface.context.restore()
 
-	def __getitem__(self, key:str) -> ty.Any:
-		return self._attribs[helpers.attribs.parseAttribute(key)]
+	def __getitem__(self, attrib:str) -> ty.Any:
+		return self._attribs[self._parseAttribute(attrib)]
 
-	def __setitem__(self, key:str, value:ty.Any):
-		attrib = helpers.attribs.parseAttribute(key)
+	def __setitem__(self, attrib:str, value:ty.Any):
+		attrib = self._parseAttribute(attrib)
 		if (self.__class__.attribs and (not attrib or attrib[0] != '{') and
 		    attrib not in self.__class__.attribs):
 			print(f'warning: <{self.tag}> element doesn\'t take "{attrib}" attribute')
@@ -207,8 +211,8 @@ class _Element:
 			self.transform._reset()
 			self.transform._transform(value)
 
-	def __delitem__(self, key:str):
-		attrib = helpers.attribs.parseAttribute(key)
+	def __delitem__(self, attrib:str):
+		attrib = self._parseAttribute(attrib)
 		value = self._attribs.get(attrib, None)
 		del self._attribs[attrib]
 
@@ -228,12 +232,19 @@ class _Element:
 	def parent(self) -> ty.Optional[_Element]:
 		return self._parent
 	@parent.setter
-	def parent(self, elem:_Element):
-		elem.addChild(self)
+	def parent(self, elem:ty.Optional[_Element]):
+		if elem:
+			elem.addChild(self)
+		else:
+			self.detach()
 
 	@property
 	def children(self) -> ty.Tuple[_Element, ...]:
 		return tuple(self._children)
+
+	@property
+	def depth(self) -> int:
+		return 0 if self.isRoot() else self.parent.depth + 1
 
 	@property
 	def id(self) -> ty.Optional[str]:
@@ -299,11 +310,10 @@ class _Element:
 
 	def getAttribute(self, attrib:str, default:ty.Any = None, *, cascade:bool = False) -> ty.Any:
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
-		attrib = helpers.attribs.parseAttribute(attrib, namespaces=self.root.namespaces,
-		                                        defaultName=self.namespace)
+		attrib = self._parseAttribute(attrib)
 		if cascade:
 			node = self
-			while attrib not in node._attribs:
+			while attrib not in node._attribs or node._attribs[attrib] == 'inherit':
 				node = node.parent
 				if node is None:
 					# root reached
@@ -311,6 +321,11 @@ class _Element:
 			return node._attribs[attrib] #value if value is not None else default
 		else:
 			return self._attribs.get(attrib, default)
+	setAttribute = __setitem__
+	removeAttribute = __delitem__
+
+	def hasAttribute(self, attrib:str) -> bool:
+		return self._parseAttribute(attrib) in self._attribs
 
 	def getReferences(self) -> ty.List[ty.Tuple[_Element, str]]:
 		refs = []
@@ -352,9 +367,22 @@ class _Element:
 
 		else:
 			from . import elements
-			if tag not in elements:
-				raise ValueError('unknown tag: {}'.format(tag))
-			return elements[tag](parent=self, childIndex=childIndex, *attribs, **kwattribs)
+			nsName, nsPrefix, tag = helpers.namespaces._split(tag)
+			if nsPrefix:
+				nsName = self._root.namespaces.fromPrefix(nsPrefix)
+				if not nsName:
+					# Undefined prefix; keep prefix in tag
+					print(f'undefined namespace prefix "{nsPrefix}:"')
+					tag = nsPrefix + ':' + tag
+			elif not nsName:
+				nsName = self._root.namespaces.default
+
+			if nsName == helpers.namespaces.NS_SVG and tag in elements:
+				return elements[tag](parent=self, childIndex=childIndex, *attribs, **kwattribs)
+			else:
+				# Custom element
+				print(f'<{tag}> node not supported; can be saved but not drawn')
+				elem = CustomElement(tag, nsName, parent=parent, *attribs, **kwAttribs)
 
 	def code(self, file:ty.Optional[ty.TextIO] = None, *, indent:ty.Optional[str] = '',
 	         indentDepth:int = 0, newline:ty.Optional[str] = '\n',
@@ -393,7 +421,7 @@ class _Element:
 			yield anc
 			anc = anc.parent
 
-	def find(self, function:ty.Callable, *, maxResults:ty.Optional[int] = None) -> ty.List[_Element]:
+	def find(self, function:ty.Callable[[_Element],bool], *, maxResults:ty.Optional[int] = None) -> ty.List[_Element]:
 		results = []
 		for elem in self.descendants():
 			if function(elem):
