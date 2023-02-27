@@ -32,7 +32,8 @@ class Circle(_ShapeElement):
 		r  = _size(self['r'] , vp, 'xy')
 		cx = _size(self['cx'], vp, 'x')
 		cy = _size(self['cy'], vp, 'y')
-		return ht.Box(cx - r, cy - r, 2*r, 2*r)
+		box = ht.Box(cx - r, cy - r, 2*r, 2*r)
+		return self._transformBox(box)
 
 
 class Ellipse(_ShapeElement):
@@ -62,7 +63,8 @@ class Ellipse(_ShapeElement):
 		vp = self._getViewport()
 		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
 		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
-		return ht.Box(cx - rx, cy - ry, 2*rx, 2*ry)
+		box = ht.Box(cx - rx, cy - ry, 2*rx, 2*ry)
+		return self._transformBox(box)
 
 
 class Line(_ShapeElement):
@@ -74,29 +76,30 @@ class Line(_ShapeElement):
 		super().__init__(x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
-		x1, y1, x2, y2 = self.vertices(viewport=viewport)
+		(x1, y1), (x2, y2) = self.vertices(viewport=viewport)
 		with self._applyTransformations(surface):
 			surface.context.move_to(x1, y1)
 			surface.context.line_to(x2, y2)
 			if paint:
 				self._paint(surface, viewport=viewport)
 
-	def vertices(self, *, viewport:ty.Optional[ht.Viewport] = None):
+	def vertices(self, *, viewport:ty.Optional[ht.Viewport] = None) -> ht.VertexList:
 		vp = viewport or self._getViewport()
 		x1, y1 = _size(self['x1'], vp, 'x'), _size(self['y1'], vp, 'y')
 		x2, y2 = _size(self['x2'], vp, 'x'), _size(self['y2'], vp, 'y')
-		return [x1, y1, x2, y2]
+		return [(x1, y1), (x2, y2)]
 
 	def vertexAngles(self):
-		angle = helpers.geometry.point_angle(*self.vertices())
+		p1, p2 = self.vertices()
+		angle = helpers.geometry.point_angle(*p1, *p2)
 		return [angle, angle]
 
 	def boundingBox(self) -> ht.Box:
 		box = ht.Box()
-		x1, y1, x2, y2 = self.vertices()
+		(x1, y1), (x2, y2) = self.vertices()
 		box.addPoint(x1, y1)
 		box.addPoint(x2, y2)
-		return box
+		return self._transformBox(box)
 
 
 class Polygon(_ShapeElement):
@@ -154,7 +157,7 @@ class Polygon(_ShapeElement):
 		box = ht.Box()
 		for x, y in self.vertices():
 			box.addPoint(x, y)
-		return box
+		return self._transformBox(box)
 
 
 class Polyline(_ShapeElement):
@@ -247,4 +250,5 @@ class Rect(_ShapeElement):
 		vp = self._getViewport()
 		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
 		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
-		return ht.Box(x, y, width, height)
+		box = ht.Box(x, y, width, height)
+		return self._transformBox(box)

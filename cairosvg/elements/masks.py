@@ -50,6 +50,14 @@ class ClipPath(_Element):
 		finally:
 			surface.context.restore()
 
+	def _clipBox(self, box:ht.Box):
+		# Get the bounding box of the clipPath's contents
+		cpBox = ht.Box()
+		for child in self._children:
+			cpBox += child.boundingBox()
+		# Intersect it with the given box
+		return cpBox & box
+
 
 class Mask(_Element):
 	tag = 'mask'

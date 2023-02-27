@@ -56,6 +56,7 @@ class _Element:
 		if 'id' in attribs:
 			self._setID(attribs['id'])
 
+		self.transform = None
 		if self.__class__.attribs and 'transform' in self.__class__.attribs:
 			self._setTransform()
 
@@ -162,7 +163,7 @@ class _Element:
 	def _applyTransformations(self, surface:ht.Surface):
 		surface.context.save()
 		try:
-			if hasattr(self, 'transform') and self.transform._transformed:
+			if self.transform and self.transform._transformed:
 				self.transform.apply(surface)
 
 			clipPath = self._attribs.get('clip-path', None)
@@ -415,6 +416,23 @@ class _Element:
 		# Default to no box
 		return ht.Box()
 
+	def _transformBox(self, box:ht.Box) -> ht.Box:
+		# Apply the element's transformations to its bounding box
+		if box.defined:
+			#if self.transform and self.transform._transformed:
+			#	# transform
+			clipPath = self._attribs.get('clip-path', None)
+			if clipPath:
+				cpElem = self._parseReference(clipPath)
+				if cpElem and cpElem.tag == 'clipPath':
+					box = cpElem._clipBox(box)
+			#mask = self._attribs.get('mask', None)
+			#if mask:
+			#	maskElem = self._parseReference(mask)
+			#	if maskElem and maskElem.tag == 'mask':
+			#		# mask
+		return box
+
 
 class _StructureElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + _attrib['GraphicalEvents']
@@ -430,7 +448,7 @@ class _StructureElement(_Element):
 		box = ht.Box()
 		for child in self._children:
 			box += child.boundingBox()
-		return box
+		return self._transformBox(box)
 
 
 class _ShapeElement(_Element):

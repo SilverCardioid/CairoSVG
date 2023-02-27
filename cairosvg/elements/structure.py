@@ -112,7 +112,10 @@ class Use(_Element):
 	def boundingBox(self) -> ht.Box:
 		target = self.target
 		if target is None:
-			return ht.Box()
+			# Broken references have a bounding box according to the use's attributes
+			x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
+			width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
+			return ht.Box(x, y, width, height)
 		else:
 			box = target.boundingBox()
 			if box.defined:
@@ -121,4 +124,4 @@ class Use(_Element):
 				x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
 				box.x0 += x; box.y0 += y
 				box.x1 += x; box.y1 += y
-			return box
+			return self._transformBox(box)

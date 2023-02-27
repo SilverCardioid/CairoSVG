@@ -182,7 +182,7 @@ class Box:
 	# Helper class for bounding rectangles, to distinguish
 	# single-point boxes at the origin from null boxes without defined location
 	def __init__(self, x:ty.Optional[float] = None, y:ty.Optional[float] = None,
-	             width:ty.Optional[float] = 0, height:ty.Optional[float] = 0):
+	             width:float = 0, height:float = 0):
 		self.defined = x is not None and y is not None
 		if self.defined:
 			self.x0 = x

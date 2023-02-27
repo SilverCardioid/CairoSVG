@@ -433,7 +433,7 @@ class Path(_ShapeElement):
 			box.addPoint(newX, newY)
 			lastVertex = (newX, newY)
 
-		return box
+		return self._transformBox(box)
 
 	def d(self, d:str):
 		"""Append path data from a string"""
