@@ -69,5 +69,6 @@ _creators.update({
 	            	CustomElement(parent=self, tag=tag, namespace=namespace, **attribs)
 })
 for tag in _creators:
-	_creators[tag].__doc__ = f'Add a <{tag}> as a child of this element'
+	if tag != 'custom':
+		_creators[tag].__doc__ = f'Add a <{tag}> as a child of this element'
 del tag

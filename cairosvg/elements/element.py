@@ -263,22 +263,34 @@ class _Element:
 	def isRoot(self) -> bool:
 		return self.root is self
 
-	def changeID(self, newID:ty.Optional[str] = None, updateRefs:bool = True):
+	def changeID(self, newID:ty.Optional[str] = None, updateRefs:bool = True, *, auto:bool = False):
 		curID = self.id
-		if curID and updateRefs:
+		refs = []
+		if updateRefs:
 			refs = self.getReferences()
 
 		if newID:
+			if newID in self._root._ids:
+				if auto:
+					# add number to newID
+					self._setAutoID(newID)
+				else:
+					raise ValueError(f'ID already exists in the tree: {newID}')
 			self.id = newID
 		else:
-			self._setAutoID(curID)
+			if auto:
+				self._setAutoID()
+			else:
+				# remove if not updateRefs or no references
+				if len(refs) > 0:
+					raise ValueError('Removing ID with updateRefs=True when the element has references')
+				del self.id
 
-		if curID and updateRefs:
-			for refElem, refAttrib in refs:
-				if refAttrib in refElem._strAttrib:
-					refElem[refAttrib] = refElem._strAttrib[refAttrib](self)
-				else:
-					refElem[refAttrib] = self
+		for refElem, refAttrib in refs:
+			if refAttrib in refElem._strAttrib:
+				refElem[refAttrib] = refElem._strAttrib[refAttrib](self)
+			else:
+				refElem[refAttrib] = self
 
 	def delete(self, recursive:bool = True):
 		"""Delete this element from the tree"""
