@@ -18,7 +18,7 @@ class _Element:
 	_defaults = {}
 	_strAttrib = {}
 
-	def __init__(self, *, parent:ty.Optional[_Element] = None, childIndex:ty.Optional[int] = None,
+	def __init__(self, *, parent:ty.Optional[_ElemType] = None, childIndex:ty.Optional[int] = None,
 	             namespaces:ty.Optional[ty.Dict[str,str]] = None, **attribs):
 		# Tree structure
 		self._parent = parent
@@ -61,7 +61,7 @@ class _Element:
 		if self.__class__.attribs and 'transform' in self.__class__.attribs:
 			self._setTransform()
 
-	def _getOutgoingRefs(self) -> ty.List[ty.Tuple[_Element, str]]:
+	def _getOutgoingRefs(self) -> ty.List[ty.Tuple[_ElemType, str]]:
 		refs = []
 		clipPath = self._parseReference(self._attribs.get('clip-path', None))
 		if clipPath:
@@ -151,7 +151,7 @@ class _Element:
 		# with getDefault, no attrib parsing
 		return self._attribs.get(attrib, self._defaults[attrib])
 
-	def _parseReference(self, value:ty.Union[str,_Element,None]) -> ty.Optional[_Element]:
+	def _parseReference(self, value:ty.Union[str,_ElemType,None]) -> ty.Optional[_ElemType]:
 		if value is None or value == '':
 			return None
 		elif isinstance(value, str):
@@ -236,17 +236,17 @@ class _Element:
 		                     namespaceDeclaration=False)
 
 	@property
-	def parent(self) -> ty.Optional[_Element]:
+	def parent(self) -> ty.Optional[_ElemType]:
 		return self._parent
 	@parent.setter
-	def parent(self, elem:ty.Optional[_Element]):
+	def parent(self, elem:ty.Optional[_ElemType]):
 		if elem:
 			elem.addChild(self)
 		else:
 			self.detach()
 
 	@property
-	def children(self) -> ty.Tuple[_Element, ...]:
+	def children(self) -> ty.Tuple[_ElemType, ...]:
 		return tuple(self._children)
 
 	@property
@@ -264,7 +264,7 @@ class _Element:
 		del self['id']
 
 	@property
-	def root(self) -> _Element:
+	def root(self) -> _ElemType:
 		return self._root.element
 
 	def isRoot(self) -> bool:
@@ -349,7 +349,7 @@ class _Element:
 	def hasAttribute(self, attrib:str) -> bool:
 		return self._parseAttribute(attrib) in self._attribs
 
-	def getReferences(self) -> ty.List[ty.Tuple[_Element, str]]:
+	def getReferences(self) -> ty.List[ty.Tuple[_ElemType, str]]:
 		refs = []
 		for e in self._root.element.descendants():
 			outRefs = e._getOutgoingRefs()
@@ -358,7 +358,7 @@ class _Element:
 					refs.append((e, refAttrib))
 		return refs
 
-	def addChild(self, tag:ty.Union[str,_Element], *attribs,
+	def addChild(self, tag:ty.Union[str,_ElemType], *attribs,
 	             childIndex:ty.Optional[int] = None, **kwattribs):
 		"""Add a child element to this element"""
 		if isinstance(tag, _Element):
@@ -429,13 +429,13 @@ class _Element:
 			tagClose = f'</{self.tag}>'
 			file.write(f'{indentation}{tagClose}{newline}')
 
-	def descendants(self, includeSelf:bool = True) -> ty.Generator[_Element, None, None]:
+	def descendants(self, includeSelf:bool = True) -> ty.Generator[_ElemType, None, None]:
 		if includeSelf:
 			yield self
 		for child in self._children:
 			yield from child.descendants(True)
 
-	def ancestors(self, includeSelf:bool = True) -> ty.Generator[_Element, None, None]:
+	def ancestors(self, includeSelf:bool = True) -> ty.Generator[_ElemType, None, None]:
 		if includeSelf:
 			yield self
 		anc = self.parent
@@ -443,7 +443,7 @@ class _Element:
 			yield anc
 			anc = anc.parent
 
-	def find(self, function:ty.Callable[[_Element],bool], *, maxResults:ty.Optional[int] = None) -> ty.List[_Element]:
+	def find(self, function:ty.Callable[[_ElemType],bool], *, maxResults:ty.Optional[int] = None) -> ty.List[_ElemType]:
 		results = []
 		for elem in self.descendants():
 			if function(elem):
@@ -452,7 +452,7 @@ class _Element:
 					break
 		return results
 
-	def findID(self, id:str) -> ty.Optional[_Element]:
+	def findID(self, id:str) -> ty.Optional[_ElemType]:
 		res = self._root._ids.get(id, None)
 		if res and self in res.ancestors():
 			return res
@@ -482,6 +482,9 @@ class _Element:
 			#	if maskElem and maskElem.tag == 'mask':
 			#		# mask
 		return box
+
+# Version for type hints
+_ElemType = ty.TypeVar('Element', bound=_Element)
 
 
 class _StructureElement(_Element):

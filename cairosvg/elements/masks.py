@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 import typing as ty
 
-from .element import _Element
+from .element import _Element, _ElemType
 from .. import helpers
 from ..helpers.coordinates import size as _size
 from ..helpers.modules import attrib as _attrib, content as _content
@@ -34,7 +34,7 @@ class ClipPath(_Element):
 		# Draw nothing
 		return
 
-	def apply(self, surface:ht.Surface, target:_Element):
+	def apply(self, surface:ht.Surface, target:_ElemType):
 		surface.context.save()
 		clipPathUnits = self['clipPathUnits'].strip()
 		if clipPathUnits == 'objectBoundingBox':
@@ -58,7 +58,7 @@ class ClipPath(_Element):
 		surface.context.clip()
 
 	@contextmanager
-	def applyContext(self, surface:ht.Surface, target:_Element):
+	def applyContext(self, surface:ht.Surface, target:_ElemType):
 		surface.context.save()
 		try:
 			self.apply(surface, target)
@@ -102,7 +102,7 @@ class Mask(_Element):
 		# Draw nothing
 		return
 
-	def apply(self, surface:ht.Surface, target:_Element):
+	def apply(self, surface:ht.Surface, target:_ElemType):
 		maskUnits = self['maskUnits'].strip()
 		maskContentUnits = self['maskContentUnits'].strip()
 		if maskUnits == 'userSpaceOnUse':
@@ -145,7 +145,7 @@ class Mask(_Element):
 		surface.context.mask_surface(maskSurface)
 
 	@contextmanager
-	def applyContext(self, surface:ht.Surface, target:_Element):
+	def applyContext(self, surface:ht.Surface, target:_ElemType):
 		surface.context.save()
 		try:
 			self.apply(surface, target)

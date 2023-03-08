@@ -108,7 +108,8 @@ class SVG(_StructureElement):
 	def export(self, filename:str, *, surface:ty.Optional[ht.Surface] = None,
 	           useCairo:bool = False, **svgOptions):
 		ext = os.path.splitext(filename)[1].lower()
-		width, height = round(self.width), round(self.height)
+		width, height = self.viewport.getAbsoluteSize()
+		width, height = round(width), round(height)
 
 		if ext == '.pdf':
 			surface = surface or helpers.surface.createSurface('PDF', width, height, filename)

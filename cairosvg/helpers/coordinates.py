@@ -1,4 +1,5 @@
 import re
+import typing as ty
 
 from . import attribs # transform dynamically imported to avoid mutual imports
 
@@ -65,6 +66,31 @@ class Viewport:
 		else:
 			return (self.width, self.height)
 
+	def getAbsoluteSize(self, defaultWidth:float = 1000,
+	                    defaultHeight:float = 1000) -> ty.Tuple[float, float]:
+		"""Get the viewport's absolute width and height.
+		If either is zero, 'auto' or a percentage and there is no
+		ancestor viewport with an absolute size, calculate them from the
+		viewBox's aspect ratio and the one dimension with an absolute size.
+		If both are, calculate them from the viewBox ratio and defaultWidth.
+		If there is no viewBox, return (defaultWidth, defaultHeight).
+		"""
+		width, height = self.width, self.height
+		if width > 0 and height > 0:
+			return (width, height)
+
+		# Calculate aspect ratio from viewBox
+		vb = self.viewBox
+		if vb is not None and vb[2] != 0 and vb[3] != 0:
+			hw_ratio = vb[3] / vb[2]
+			if width > 0:
+				return (width, hw_ratio*width)
+			if height > 0:
+				return (height/hw_ratio, height)
+			return (defaultWidth, hw_ratio*defaultWidth)
+
+		return (defaultWidth, defaultHeight)
+
 	def getTransform(self):
 		"""Return a Transform object based on the viewport's viewBox and preserveAspectRatio values."""
 		from . import transform
@@ -72,7 +98,7 @@ class Viewport:
 		vb = self.viewBox
 		if vb:
 			# Manage the ratio preservation
-			width, height = self.width, self.height
+			width, height = self.getAbsoluteSize()
 			vbWidth, vbHeight = vb[2:]
 
 			translateX = 0
@@ -137,10 +163,10 @@ def size(string, viewport=None, reference='xy', *, units=True, autoValue=0, font
 	if fontSize is None: # default 12pt
 		fontSize = 12 * UNITS['pt'] * dpi
 
-	if string.split() == 'auto':
+	string = attribs.normalize(string).split(' ', 1)[0]
+	if string == 'auto':
 		string = str(autoValue)
 
-	string = attribs.normalize(string).split(' ', 1)[0]
 	if string.endswith('%'):
 		if isinstance(reference, str):
 			# reference in ('x', 'y', 'xy'): use viewport size
