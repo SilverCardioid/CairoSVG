@@ -8,18 +8,33 @@ from ..helpers.coordinates import size as _size, point as _point
 from ..helpers import types as ht
 
 class Circle(_ShapeElement):
+	"""<circle> element.
+	A shape element that draws a circle.
+
+	Main attributes:
+	* r: the circle's radius.
+	* cx, cy: the position of the circle's center.
+	* Presentation attributes (e.g., fill, stroke, transform, clip-path).
+	"""
 	tag = 'circle'
 	attribs = _ShapeElement.attribs + ['cx','cy','r','transform']
+	_defaults = {**_ShapeElement._defaults,
+		'r': 0,
+		'cx': 0,
+		'cy': 0
+	}
 
-	def __init__(self, r:ht.Length = ht._intdef(0), cx:ht.Length = ht._intdef(0),
-	             cy:ht.Length = ht._intdef(0), **attribs):
-		super().__init__(r=r, cx=cx, cy=cy, **attribs)
+	def __init__(self, r_:ty.Optional[ht.Length] = None,
+	             cx_:ty.Optional[ht.Length] = None,
+	             cy_:ty.Optional[ht.Length] = None, /, **attribs):
+		attribs = helpers.attribs.merge(attribs, r=r_, cx=cx_, cy=cy_)
+		super().__init__(**attribs)
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
-		r  = _size(self['r'] , vp, 'xy')
-		cx = _size(self['cx'], vp, 'x')
-		cy = _size(self['cy'], vp, 'y')
+		r  = _size(self._getattrib('r') , vp, 'xy')
+		cx = _size(self._getattrib('cx'), vp, 'x')
+		cy = _size(self._getattrib('cy'), vp, 'y')
 		if r > 0:
 			with self._applyTransformations(surface):
 				surface.context.new_sub_path()
@@ -29,25 +44,45 @@ class Circle(_ShapeElement):
 
 	def boundingBox(self) -> ht.Box:
 		vp = self._getViewport()
-		r  = _size(self['r'] , vp, 'xy')
-		cx = _size(self['cx'], vp, 'x')
-		cy = _size(self['cy'], vp, 'y')
+		r  = _size(self._getattrib('r') , vp, 'xy')
+		cx = _size(self._getattrib('cx'), vp, 'x')
+		cy = _size(self._getattrib('cy'), vp, 'y')
 		box = ht.Box(cx - r, cy - r, 2*r, 2*r)
 		return self._transformBox(box)
 
 
 class Ellipse(_ShapeElement):
+	"""<ellipse> element.
+	A shape element that draws an ellipse, with its major and
+	minor axes aligned with the current coordinate system.
+
+	Main attributes:
+	* rx, ry: the ellipse's radii along the x and y axes.
+	* cx, cy: the position of the ellipse's center.
+	* Presentation attributes (e.g., fill, stroke, transform, clip-path).
+	"""
 	tag = 'ellipse'
 	attribs = _ShapeElement.attribs + ['cx','cy','rx','ry','transform']
+	_defaults = {**_ShapeElement._defaults,
+		'rx': 0,
+		'ry': 0,
+		'cx': 0,
+		'cy': 0
+	}
 
-	def __init__(self, rx:ht.Length = ht._intdef(0), ry:ht.Length = ht._intdef(0),
-	             cx:ht.Length = ht._intdef(0), cy:ht.Length = ht._intdef(0), **attribs):
-		super().__init__(rx=rx, ry=ry, cx=cx, cy=cy, **attribs)
+	def __init__(self, rx_:ty.Optional[ht.Length] = None,
+	             ry_:ty.Optional[ht.Length] = None,
+	             cx_:ty.Optional[ht.Length] = None,
+	             cy_:ty.Optional[ht.Length] = None, /, **attribs):
+		attribs = helpers.attribs.merge(attribs, rx=rx_, ry=ry_, cx=cx_, cy=cy_)
+		super().__init__(**attribs)
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
-		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
-		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
+		rx = _size(self._getattrib('rx'), vp, 'x')
+		ry = _size(self._getattrib('ry'), vp, 'y')
+		cx = _size(self._getattrib('cx'), vp, 'x')
+		cy = _size(self._getattrib('cy'), vp, 'y')
 		if rx > 0 and ry > 0:
 			ratio = ry/rx
 			with self._applyTransformations(surface):
@@ -61,19 +96,38 @@ class Ellipse(_ShapeElement):
 
 	def boundingBox(self) -> ht.Box:
 		vp = self._getViewport()
-		rx, ry = _size(self['rx'], vp, 'x'), _size(self['ry'], vp, 'y')
-		cx, cy = _size(self['cx'], vp, 'x'), _size(self['cy'], vp, 'y')
+		rx = _size(self._getattrib('rx'), vp, 'x')
+		ry = _size(self._getattrib('ry'), vp, 'y')
+		cx = _size(self._getattrib('cx'), vp, 'x')
+		cy = _size(self._getattrib('cy'), vp, 'y')
 		box = ht.Box(cx - rx, cy - ry, 2*rx, 2*ry)
 		return self._transformBox(box)
 
 
 class Line(_ShapeElement):
+	"""<line> element.
+	A shape element that draws a line segment between two points.
+
+	Main attributes:
+	* x1, y1: the start point.
+	* x2, y2: the end point.
+	* Presentation attributes (e.g., fill, stroke, transform, clip-path).
+	"""
 	tag = 'line'
 	attribs = _ShapeElement.attribs + ['x1','y1','x2','y2','transform']
+	_defaults = {**_ShapeElement._defaults,
+		'x1': 0,
+		'y1': 0,
+		'x2': 0,
+		'y2': 0
+	}
 
-	def __init__(self, x1:ht.Length = ht._intdef(0), y1:ht.Length = ht._intdef(0),
-	             x2:ht.Length = ht._intdef(0), y2:ht.Length = ht._intdef(0), **attribs):
-		super().__init__(x1=x1, y1=y1, x2=x2, y2=y2, **attribs)
+	def __init__(self, x1_:ty.Optional[ht.Length] = None,
+	             y1_:ty.Optional[ht.Length] = None,
+	             x2_:ty.Optional[ht.Length] = None,
+	             y2_:ty.Optional[ht.Length] = None, /, **attribs):
+		attribs = helpers.attribs.merge(attribs, x1=x1_, y1=y1_, x2=x2_, y2=y2_)
+		super().__init__(**attribs)
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		(x1, y1), (x2, y2) = self.vertices(viewport=viewport)
@@ -85,8 +139,10 @@ class Line(_ShapeElement):
 
 	def vertices(self, *, viewport:ty.Optional[ht.Viewport] = None) -> ht.VertexList:
 		vp = viewport or self._getViewport()
-		x1, y1 = _size(self['x1'], vp, 'x'), _size(self['y1'], vp, 'y')
-		x2, y2 = _size(self['x2'], vp, 'x'), _size(self['y2'], vp, 'y')
+		x1 = _size(self._getattrib('x1'), vp, 'x')
+		y1 = _size(self._getattrib('y1'), vp, 'y')
+		x2 = _size(self._getattrib('x2'), vp, 'x')
+		y2 = _size(self._getattrib('y2'), vp, 'y')
 		return [(x1, y1), (x2, y2)]
 
 	def vertexAngles(self):
@@ -103,11 +159,26 @@ class Line(_ShapeElement):
 
 
 class Polygon(_ShapeElement):
+	"""<polygon> element.
+	A shape element that draws a closed sequence of line segments
+	through a series of points.
+
+	Main attributes:
+	* points: a list of points. Can be a string containing point coordinates
+	    separated by whitespace and/or commas, or a sequence of points
+	    (each as a string or sequence of an x and a y coordinate).
+	* Presentation attributes (e.g., fill, stroke, transform, clip-path).
+	"""
 	tag = 'polygon'
 	attribs = _ShapeElement.attribs + ['points','transform']
+	_defaults = {**_ShapeElement._defaults,
+		'points': ''
+	}
 
-	def __init__(self, points:ty.Union[str, ty.List[str], ht.VertexList] = ht._strdef(''), **attribs):
-		super().__init__(points=points, **attribs)
+	def __init__(self, points_:ty.Union[str,ty.List[str],ht.VertexList,None] = None,
+	             /, **attribs):
+		attribs = helpers.attribs.merge(attribs, points=points_)
+		super().__init__(**attribs)
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		points = self.vertices(viewport=viewport)
@@ -123,7 +194,7 @@ class Polygon(_ShapeElement):
 
 	def vertices(self, viewport:ty.Optional[ht.Viewport] = None) -> ht.VertexList:
 		vp = viewport or self._getViewport()
-		points = self._attribs.get('points', '')
+		points = self._getattrib('points')
 		if isinstance(points, str):
 			# convert string to points
 			string = helpers.attribs.normalize(points)
@@ -161,11 +232,27 @@ class Polygon(_ShapeElement):
 
 
 class Polyline(_ShapeElement):
+	"""<polyline> element.
+	A shape element that draws a sequence of line segments through a
+	series of points. Similar to <polygon>, but doesn't draw a line
+	segment from the final point back to the initial point.
+
+	Main attributes:
+	* points: a list of points. Can be a string containing point coordinates
+	    separated by whitespace and/or commas, or a sequence of points
+	    (each as a string or sequence of an x and a y coordinate).
+	* Presentation attributes (e.g., fill, stroke, transform, clip-path).
+	"""
 	tag = 'polyline'
 	attribs = _ShapeElement.attribs + ['points','transform']
+	_defaults = {**_ShapeElement._defaults,
+		'points': ''
+	}
 
-	def __init__(self, points=ht._strdef(''), **attribs):
-		super().__init__(points=points, **attribs)
+	def __init__(self, points_:ty.Union[str,ty.List[str],ht.VertexList,None] = None,
+	             /, **attribs):
+		attribs = helpers.attribs.merge(attribs, points=points_)
+		super().__init__(**attribs)
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		points = self.vertices(viewport=viewport)
@@ -187,26 +274,49 @@ class Polyline(_ShapeElement):
 
 
 class Rect(_ShapeElement):
+	"""<rect> element.
+	A shape element that draws a rectangle, optionally with rounded corners.
+
+	Main attributes:
+	* width, height: the rectangle's size.
+	* x, y: the coordinates of rectangle's top left vertex.
+	* rx, ry: elliptical arc radii for corner rounding. If only one of the
+	    two is set, use circular arcs with the given radius. If neither is
+	    set, draw a normal rectangle without rounded corners.
+	* Presentation attributes (e.g., fill, stroke, transform, clip-path).
+	"""
 	tag = 'rect'
 	attribs = _ShapeElement.attribs + ['x','y','width','height','rx','ry','transform']
+	_defaults = {**_ShapeElement._defaults,
+		'width': 0,
+		'height': 0,
+		'x': 0,
+		'y': 0,
+		'rx': None,
+		'ry': None
+	}
 	_strAttrib = {
 		# omit if None
 		'rx': lambda val: val,
 		'ry': lambda val: val
 	}
 
-	def __init__(self, width:ht.Length = ht._intdef(0), height:ht.Length = ht._intdef(0),
-	             x:ht.Length = ht._intdef(0), y:ht.Length = ht._intdef(0),
-	             rx:ty.Optional[ht.Length] = None, ry:ty.Optional[ht.Length] = None, **attribs):
-		super().__init__(width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs)
+	def __init__(self, width_:ty.Optional[ht.Length] = None,
+	             height_:ty.Optional[ht.Length] = None,
+	             x_:ty.Optional[ht.Length] = None,
+	             y_:ty.Optional[ht.Length] = None, /, **attribs):
+		attribs = helpers.attribs.merge(attribs, width=width_, height=height_, x=x_, y=y_)
+		super().__init__(**attribs)
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
-		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
-		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
+		width = _size(self._getattrib('width'), vp, 'x')
+		height = _size(self._getattrib('height'), vp, 'y')
+		x = _size(self._getattrib('x'), vp, 'x')
+		y = _size(self._getattrib('y'), vp, 'y')
 
 		# rx and ry default to each other's value if None
-		rx, ry = self['rx'], self['ry']
+		rx, ry = self._getattrib('rx'), self._getattrib('ry')
 		if rx is not None:
 			rx = _size(rx, vp, 'x')
 		if ry is not None:
@@ -248,7 +358,9 @@ class Rect(_ShapeElement):
 
 	def boundingBox(self) -> ht.Box:
 		vp = self._getViewport()
-		width, height = _size(self['width'], vp, 'x'), _size(self['height'], vp, 'y')
-		x, y = _size(self['x'], vp, 'x'), _size(self['y'], vp, 'y')
+		width = _size(self._getattrib('width'), vp, 'x')
+		height = _size(self._getattrib('height'), vp, 'y')
+		x = _size(self._getattrib('x'), vp, 'x')
+		y = _size(self._getattrib('y'), vp, 'y')
 		box = ht.Box(x, y, width, height)
 		return self._transformBox(box)

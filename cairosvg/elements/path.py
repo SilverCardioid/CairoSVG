@@ -8,20 +8,36 @@ from ..helpers.coordinates import size as _size, point as _point
 from ..helpers.modules import attrib as _attrib
 
 class Path(_ShapeElement):
+	"""<path> element.
+	A general shape element that defines a series of lines,
+	Bezier curves and elliptical arcs.
+
+	Main attributes:
+	* d: path data as a string of single-letter commands and coordinates.
+	    These correspond to, and can be set with methods in this class.
+	* Presentation attributes (e.g., fill, stroke, transform, clip-path).
+	"""
 	tag = 'path'
 	attribs = _ShapeElement.attribs + _attrib['Marker'] + ['d','pathLength','transform']
+	_defaults = {**_ShapeElement._defaults,
+		'd': ''
+	}
 
-	def __init__(self, d:str = ht._strdef(''), **attribs):
-		super().__init__(d=d, **attribs)
+	def __init__(self, d_:ty.Optional[str] = None, /, **attribs):
+		attribs = helpers.attribs.merge(attribs, d=d_)
+		super().__init__(**attribs)
+
+		d = self._getattrib('d')
 		self._clear()
-		if d is not None:
+		if d and d != 'none':
 			self._d(d)
 
 	def __setitem__(self, key:str, value:ty.Any):
 		super().__setitem__(key, value)
 		if key == 'd':
 			self._clear()
-			self._d(self['d'])
+			if value and value != 'none':
+				self._d(value)
 
 	def __delitem__(self, key:str):
 		super().__delitem__(key)

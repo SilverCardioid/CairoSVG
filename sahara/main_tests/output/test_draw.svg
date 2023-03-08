@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" fill="#ffe" stroke-width="5">
 <path d="M 50,50H250V100H175L250,150 250,200 200,250 150,150 100,250  50,200V150L125,100z" stroke="#f00"/>
-<path d="M350,50H550V100H475L550,150L550,200L500,250L450,150L400,250L350,200V150L425,100z" stroke="#00d"/>
+<path stroke="#00d" d="M350,50H550V100H475L550,150L550,200L500,250L450,150L400,250L350,200V150L425,100z"/>
 </svg>

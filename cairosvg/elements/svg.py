@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 from . import _creators
-from .element import _Element, _StructureElement
+from .element import _StructureElement
 from .. import helpers
 from ..helpers import coordinates
 from ..helpers.modules import attrib as _attrib
@@ -13,34 +13,77 @@ from ..helpers.coordinates import size as _size
 from ..helpers import types as ht
 
 class SVG(_StructureElement):
+	"""<svg> element.
+	The main container element for an SVG document.
+	Establishes a viewport and coordinate system.
+
+	Main attributes:
+	* width, height: the displayed size of the document. Default 'auto',
+	    or 100% of its parent viewport (0 if there is no parent viewport).
+	* x, y: position within its parent viewport (default 0).
+	    Only useful for <svg>s that aren't the root element.
+	* viewBox: coordinate system for the <svg>'s contents, in the form
+	    'x y width height'. Defines a rectangular area that will be scaled
+	    and translated to fit the <svg>'s display size. Default 'none'.
+	* preserveAspectRatio: set the method for mapping the viewBox to the <svg>'s
+	    size, in the format '{align} {meetOrSlice}' (default: 'xMidYMid meet').
+	    {align} can be 'none' to stretch the image to fit the <svg>'s dimensions,
+	    or a string of the form 'x{xalign}Y{yalign}' to preserve the aspect ratio
+	    and use the specified alignment ('Mid', 'Min' or 'Max' for either axis).
+	    {meetOrSlice} can be 'meet' to pad the viewBox with empty space, or 'slice'
+	    to let it extend outside the outer viewport (possibly cutting it off).
+	* Presentation attributes (e.g., fill, stroke, transform, clip-path).
+	"""
 	tag = 'svg'
 	attribs = _StructureElement.attribs + _attrib['DocumentEvents'] + ['x','y','width','height','viewBox','preserveAspectRatio','zoomAndPan','version','baseProfile','contentScriptType','contentStyleType','xmlns','xmlns:xlink']
 	content = _StructureElement.content
+	_defaults = {**_StructureElement._defaults,
+		'width': 'auto',
+		'height': 'auto',
+		'x': 0,
+		'y': 0,
+		'viewBox': 'none',
+		'preserveAspectRatio': 'xMidYMid meet',
+	}
 
-	def __init__(self, width:ht.Length, height:ht.Length, *,
-	             x:ht.Length = ht._intdef(0), y:ht.Length = ht._intdef(0),
-	             viewBox:ty.Optional[str] = ht._strdef('none'),
-	             preserveAspectRatio:str = ht._strdef('xMidYMid meet'), **attribs):
-		_Element.__init__(self, width=width, height=height, x=x, y=y,
-		                  viewBox=viewBox, preserveAspectRatio=preserveAspectRatio,
-		                  **attribs)
-		self.viewport = coordinates.Viewport(parent=self, width=width, height=height,
-		                                     viewBox=viewBox, preserveAspectRatio=preserveAspectRatio)
+	def __init__(self, width_:ty.Optional[ht.Length] = None,
+	             height_:ty.Optional[ht.Length] = None, /, **attribs):
+		attribs = helpers.attribs.merge(attribs, width=width_, height=height_)
+		super().__init__(**attribs)
+		self.viewport = coordinates.Viewport(parent=self)
 
-	def __setitem__(self, key:str, value:ty.Any):
-		super().__setitem__(key, value)
-		if key in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
-			self.viewport._attribs[key] = value
-
-	# todo: delitem
+	def __setitem__(self, attrib:str, value:ty.Any):
+		#attrib = self._parseAttribute(attrib)
+		attrib = super().__setitem__(attrib, value)
+		if attrib in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
+			self.viewport._attribs[attrib] = value
+		return attrib
+	def __delitem__(self, attrib:str):
+		#attrib = self._parseAttribute(attrib)
+		attrib = super().__delitem__(attrib, value)
+		if attrib in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
+			self.viewport._attribs[attrib] = self._defaults[attrib]
+		return attrib
 
 	@property
 	def width(self) -> float:
 		return self.viewport.width
+	@width.setter
+	def width(self, value:ht.Length):
+		self['width'] = value
+	@width.deleter
+	def width(self):
+		del self['width']
 
 	@property
 	def height(self) -> float:
 		return self.viewport.height
+	@height.setter
+	def height(self, value:ht.Length):
+		self['height'] = value
+	@height.deleter
+	def height(self):
+		del self['height']
 
 	@property
 	def namespaces(self) -> ht.Namespaces:

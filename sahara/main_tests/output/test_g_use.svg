@@ -2,7 +2,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="600">
 <rect width="600" height="600" fill="#ffe"/>
 <g id="g1" fill="#05a">
-<path d="M75,15 135,75 75,135 15,75z" id="path1"/>
+<path id="path1" d="M75,15 135,75 75,135 15,75z"/>
 <use xlink:href="#path1" transform="translate(150,0)"/>
 <use xlink:href="#path1" transform="translate(0,150)" fill="#084"/>
 <use xlink:href="#path1" transform="translate(150,150)" fill="#084"/>
@@ -13,6 +13,6 @@
 <use xlink:href="#path1" y="150" fill="#084"/>
 <use xlink:href="#use1" y="150" fill="#084"/>
 </g>
-<use xlink:href="#g1" y="300" fill="#000"/>
-<use xlink:href="#g2" y="300" fill="#000"/>
+<use xlink:href="#g1" fill="#000" y="300"/>
+<use xlink:href="#g2" fill="#000" y="300"/>
 </svg>

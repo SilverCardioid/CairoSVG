@@ -27,48 +27,44 @@ elements = {
 }
 
 _creators.update({
-	'circle':   lambda self, r=ht._intdef(0), cx=ht._intdef(0),
-	                   cy=ht._intdef(0), **attribs: \
-	            	Circle(parent=self, r=r, cx=cx, cy=cy, **attribs),
-	'clipPath': lambda self, clipPathUnits=ht._strdef('userSpaceOnUse'), **attribs: \
-	            	ClipPath(parent=self, clipPathUnits=clipPathUnits, **attribs),
+	'circle':   lambda self, r_=None, cx_=None, cy_=None, /, **attribs: \
+	            	Circle(r_, cx_, cy_, parent=self, **attribs),
+	'clipPath': lambda self, **attribs: \
+	            	ClipPath(parent=self, **attribs),
 	'defs':     lambda self, **attribs: \
 	            	Defs(parent=self, **attribs),
-	'ellipse':  lambda self, rx=ht._intdef(0), ry=ht._intdef(0),
-	                   cx=ht._intdef(0), cy=ht._intdef(0), **attribs: \
-	            	Ellipse(parent=self, rx=rx, ry=ry, cx=cx, cy=cy, **attribs),
+	'ellipse':  lambda self, rx_=None, ry_=None,
+	                   cx_=None, cy_=None, /, **attribs: \
+	            	Ellipse(rx_, ry_, cx_, cy_, parent=self, **attribs),
 	'g':        lambda self, **attribs: \
 	            	G(parent=self, **attribs),
-	'line':     lambda self, x1=ht._intdef(0), y1=ht._intdef(0),
-	                   x2=ht._intdef(0), y2=ht._intdef(0), **attribs: \
-	            	Line(parent=self, x1=x1, y1=y1, x2=x2, y2=y2, **attribs),
-	'mask':     lambda self, x=ht._strdef('-10%'), y=ht._strdef('-10%'),
-	                   width=ht._strdef('120%'), height=ht._strdef('120%'), *,
-	                   maskUnits=ht._strdef('objectBoundingBox'),
-	                   maskContentUnits=ht._strdef('userSpaceOnUse'), **attribs: \
-	            	Mask(parent=self, x=x, y=y, width=width, height=height,
-	            	     maskUnits=maskUnits, maskContentUnits=maskContentUnits, **attribs),
-	'path':     lambda self, d=ht._strdef(''), **attribs: \
-	            	Path(parent=self, d=d, **attribs),
-	'polygon':  lambda self, points=ht._strdef(''), **attribs: \
-	            	Polygon(parent=self, points=points, **attribs),
-	'polyline': lambda self, points=ht._strdef(''), **attribs: \
-	            	Polyline(parent=self, points=points, **attribs),
-	'rect':     lambda self, width=ht._intdef(0), height=ht._intdef(0),
-	                   x=ht._intdef(0), y=ht._intdef(0),
-	                   rx=None, ry=None, **attribs: \
-	            	Rect(parent=self, width=width, height=height, x=x, y=y, rx=rx, ry=ry, **attribs),
-	'svg':      lambda self, width, height, *, x=ht._intdef(0), y=ht._intdef(0),
-	                   viewBox=ht._strdef('none'), preserveAspectRatio=ht._strdef('xMidYMid meet'), **attribs: \
-	            	SVG(parent=self, width=width, height=height, x=x, y=y,
-	            	    viewBox=viewBox, preserveAspectRatio=preserveAspectRatio, **attribs),
-	'use':      lambda self, href=ht._strdef(''), *, x=ht._intdef(0), y=ht._intdef(0),
-	                   width=ht._intdef(0), height=ht._intdef(0), **attribs: \
-	            	Use(parent=self, href=href, x=x, y=y, width=width, height=height, **attribs),
+	'line':     lambda self, x1_=None, y1_=None,
+	                   x2_=None, y2_=None, /, **attribs: \
+	            	Line(x1_, y1_, x2_, y2_, parent=self, **attribs),
+	'mask':     lambda self, **attribs: \
+	            	Mask(parent=self, **attribs),
+	'path':     lambda self, d_=None, /, **attribs: \
+	            	Path(d_, parent=self, **attribs),
+	'polygon':  lambda self, points_=None, /, **attribs: \
+	            	Polygon(points_, parent=self, **attribs),
+	'polyline': lambda self, points_=None, /, **attribs: \
+	            	Polyline(points_, parent=self, **attribs),
+	'rect':     lambda self, width_=None, height_=None,
+	                   x_=None, y_=None, /, **attribs: \
+	            	Rect(width_, height_, x_, y_, parent=self, **attribs),
+	'svg':      lambda self, width_=None, height_=None, /, **attribs: \
+	            	SVG(width_, height_, parent=self, **attribs),
+	'use':      lambda self, href_=None, /, **attribs: \
+	            	Use(href_, parent=self, **attribs),
 	'custom':   lambda self, tag, namespace=helpers.namespaces.NS_SVG, **attribs: \
 	            	CustomElement(parent=self, tag=tag, namespace=namespace, **attribs)
 })
 for tag in _creators:
-	if tag != 'custom':
-		_creators[tag].__doc__ = f'Add a <{tag}> as a child of this element'
+	if tag == 'custom':
+		_creators[tag].__doc__ = f'Add a custom element as a child of this element.'
+	else:
+		# Copy docstring from respective class, replacing the first line
+		docLines = elements[tag].__doc__.split('\n', 1) if tag in elements else ['']
+		docLines[0] = f'Add a <{tag}> as a child of this element.'
+		_creators[tag].__doc__ = '\n'.join(docLines)
 del tag

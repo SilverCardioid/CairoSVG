@@ -12,15 +12,28 @@ UNITS = {
 }
 
 class Viewport:
-	def __init__(self, width='auto', height='auto', *, viewBox='none',
-	             preserveAspectRatio='xMidYMid meet', parent=None):
+	_defaults = {
+		'width': 'auto',
+		'height': 'auto',
+		'viewBox': 'none',
+		'preserveAspectRatio': 'xMidYMid meet'
+	}
+
+	def __init__(self, width=None, height=None, *, viewBox=None,
+	             preserveAspectRatio=None, parent=None):
 		self.parent = parent
+		defs = parent._defaults if parent else {}
 		self._attribs = {
-			'width':               width,
-			'height':              height,
-			'viewBox':             viewBox,
+			'width': width, 'height': height, 'viewBox': viewBox,
 			'preserveAspectRatio': preserveAspectRatio
 		}
+		for attrib in self._attribs.keys():
+			if self._attribs[attrib] is None:
+				if self.parent:
+					self._attribs[attrib] = self.parent.getAttribute(
+						attrib, self._defaults[attrib], getDefault=True)
+				else:
+					self._attribs[attrib] = self._defaults[attrib]
 
 	@property
 	def width(self):

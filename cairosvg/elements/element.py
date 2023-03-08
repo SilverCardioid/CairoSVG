@@ -12,9 +12,10 @@ from ..helpers import types as ht
 
 class _Element:
 	tag = ''
+	namespace = helpers.namespaces.NS_SVG
 	attribs = None
 	content = None
-	namespace = helpers.namespaces.NS_SVG
+	_defaults = {}
 	_strAttrib = {}
 
 	def __init__(self, *, parent:ty.Optional[_Element] = None, childIndex:ty.Optional[int] = None,
@@ -146,6 +147,10 @@ class _Element:
 		return helpers.attribs.parseAttribute(attrib, namespaces=self._root.namespaces,	
 		                                      defaultName=self.namespace)
 
+	def _getattrib(self, attrib:str) -> ty.Any:
+		# with getDefault, no attrib parsing
+		return self._attribs.get(attrib, self._defaults[attrib])
+
 	def _parseReference(self, value:ty.Union[str,_Element,None]) -> ty.Optional[_Element]:
 		if value is None or value == '':
 			return None
@@ -207,9 +212,10 @@ class _Element:
 			except KeyError:
 				pass
 			self._setID(value)
-		elif attrib == 'transform':
+		elif attrib == 'transform' and self.transform:
 			self.transform._reset()
 			self.transform._transform(value)
+		return attrib
 
 	def __delitem__(self, attrib:str):
 		attrib = self._parseAttribute(attrib)
@@ -221,8 +227,9 @@ class _Element:
 				del self._root._ids[value]
 			except KeyError:
 				pass
-		elif attrib == 'transform':
+		elif attrib == 'transform' and self.transform:
 			self.transform._reset()
+		return attrib
 
 	def __repr__(self) -> str:
 		return self._tagCode(close=len(self._children) == 0,
@@ -320,9 +327,12 @@ class _Element:
 			for e in self.descendants():
 				e._root = self._root
 
-	def getAttribute(self, attrib:str, default:ty.Any = None, *, cascade:bool = False) -> ty.Any:
+	def getAttribute(self, attrib:str, default:ty.Any = None, *,
+	                 cascade:bool = False, getDefault:bool = False) -> ty.Any:
 		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
 		attrib = self._parseAttribute(attrib)
+		if getDefault:
+			default = self._defaults.get(attrib, default)
 		if cascade:
 			node = self
 			while attrib not in node._attribs or node._attribs[attrib] == 'inherit':
@@ -494,31 +504,52 @@ class _StructureElement(_Element):
 class _ShapeElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['GraphicalEvents'] + _attrib['Paint'] + _attrib['Opacity'] + _attrib['Graphics'] + _attrib['Cursor'] + _attrib['Filter'] + _attrib['Mask'] + _attrib['Clip']
 	content = _content['Description'] + _content['Animation']
+	_defaults = {**_Element._defaults,
+		'opacity': 1,
+		'fill-opacity': 1,
+		'stroke-opacity': 1,
+		'fill': 'black',
+		'fill-rule': 'nonzero',
+		'stroke': 'none',
+		'stroke-width': 1,
+		'stroke-linecap': 'butt',
+		'stroke-linejoin': 'miter',
+		'stroke-dasharray': '',
+		'stroke-dashoffset': 0,
+	}
 
-	def _paint(self, surface:ht.Surface, *, viewport:ty.Optional[ht.Viewport] = None):
+	def _paint(self, surface:ht.Surface, *,
+	           viewport:ty.Optional[ht.Viewport] = None):
 		vp = viewport or self._getViewport()
-		opacity = helpers.attribs.getFloat(self, 'opacity', 1, range=[0, 1], cascade=True)
-		fillOpacity = helpers.attribs.getFloat(self, 'fill-opacity', 1, range=[0, 1], cascade=True)
-		strokeOpacity = helpers.attribs.getFloat(self, 'stroke-opacity', 1, range=[0, 1], cascade=True)
+		opacity = helpers.attribs.getFloat(
+			self, 'opacity', range=[0, 1], cascade=True)
+		fillOpacity = helpers.attribs.getFloat(
+			self, 'fill-opacity', range=[0, 1], cascade=True)
+		strokeOpacity = helpers.attribs.getFloat(
+			self, 'stroke-opacity', range=[0, 1], cascade=True)
 
-		fill = self.getAttribute('fill', '#000', cascade=True)
+		fill = self.getAttribute(
+			'fill', self._defaults['fill'], cascade=True)
 		fill = helpers.colors.color(fill, fillOpacity*opacity)
-		fillRule = helpers.attribs.getEnum(self, 'fill-rule', 'nonzero',
-		                                   helpers.attribs.FILL_RULES, cascade=True)
+		fillRule = helpers.attribs.getEnum(
+			self, 'fill-rule', helpers.attribs.FILL_RULES, cascade=True)
 
-		stroke = self.getAttribute('stroke', 'none', cascade=True)
+		stroke = self.getAttribute(
+			'stroke', self._defaults['stroke'], cascade=True)
 		stroke = helpers.colors.color(stroke, strokeOpacity*opacity)
-		strokeWidth = self.getAttribute('stroke-width', 1, cascade=True)
+		strokeWidth = self.getAttribute(
+			'stroke-width', self._defaults['stroke-width'], cascade=True)
 		strokeWidth = helpers.coordinates.size(strokeWidth, vp, 'xy')
-		strokeLinecap = helpers.attribs.getEnum(self, 'stroke-linecap', 'butt',
-		                                        helpers.attribs.LINE_CAPS, cascade=True)
-		strokeLinejoin = helpers.attribs.getEnum(self, 'stroke-linejoin', 'miter',
-		                                         helpers.attribs.LINE_JOINS, cascade=True)
+		strokeLinecap = helpers.attribs.getEnum(
+			self, 'stroke-linecap', helpers.attribs.LINE_CAPS, cascade=True)
+		strokeLinejoin = helpers.attribs.getEnum(
+			self, 'stroke-linejoin', helpers.attribs.LINE_JOINS, cascade=True)
 
 		dashArray = self.getAttribute('stroke-dasharray', '', cascade=True)
 		dashArray = helpers.attribs.normalize(dashArray).split()
 		if dashArray:
-			dashes = [helpers.coordinates.size(dash, vp, 'xy') for dash in dashArray]
+			dashes = [helpers.coordinates.size(dash, vp, 'xy')
+			          for dash in dashArray]
 			if sum(dashes):
 				offset = self.getAttribute('stroke-dashoffset', cascade=True)
 				offset = helpers.coordinates.size(offset, vp, 'xy')
@@ -536,6 +567,8 @@ class _ShapeElement(_Element):
 
 
 class CustomElement(_Element):
+	"""A placeholder or custom element with any tag name."""
+
 	def __init__(self, tag:str, namespace:str = helpers.namespaces.NS_SVG, **attribs):
 		self.tag = tag
 		self.namespace = namespace

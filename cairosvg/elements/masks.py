@@ -8,11 +8,27 @@ from ..helpers.modules import attrib as _attrib, content as _content
 from ..helpers import types as ht
 
 class ClipPath(_Element):
+	"""<clipPath> element.
+	Define a binary clipping path. When applied to SVG content using the
+	'clip-path' attribute, only parts of the target that lie within the
+	clipping path will be visible.
+
+	Main attributes:
+	* clipPathUnits: set the coordinate system for the clipPath's contents.
+	    If 'userSpaceOnUse' (default), use absolute coordinates as defined
+	    by the nearest ancestor <svg> or other viewport.
+	    If 'objectBoundingBox', use relative coordinates as if in a 1 by 1 unit
+	    viewBox, which is mapped to the target element's bounding box.
+	"""
 	tag = 'clipPath'
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Paint'] + _attrib['Font'] + _attrib['TextContent'] + _attrib['Text'] + _attrib['Opacity'] + _attrib['Graphics'] + _attrib['Mask'] + _attrib['GraphicalEvents'] + _attrib['Clip'] + ['transform', 'clipPathUnits']
 	content = _content['Description'] + _content['Animation'] + _content['Shape'] + _content['Text'] + ['use']
-	def __init__(self, clipPathUnits:str = ht._strdef('userSpaceOnUse'), **attribs):
-		super().__init__(clipPathUnits=clipPathUnits, **attribs)
+	_defaults = {**_Element._defaults,
+		'clipPathUnits': 'userSpaceOnUse'
+	}
+
+	def __init__(self, **attribs):
+		super().__init__(**attribs)
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		# Draw nothing
@@ -60,16 +76,27 @@ class ClipPath(_Element):
 
 
 class Mask(_Element):
+	"""<mask> element.
+
+	Main attributes:
+	* maskUnits
+	* maskContentUnits
+	* x, y, width, height
+	"""
 	tag = 'mask'
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + ['maskUnits', 'maskContentUnits', 'x', 'y', 'width', 'height']
 	content = _content['Description'] + _content['Animation'] + _content['Structure'] + _content['Shape'] + _content['Text'] + _content['Image'] + _content['Script'] + _content['Style'] + _content['Marker'] + _content['Clip'] + _content['Mask'] + _content['Gradient'] + _content['Pattern'] + _content['Filter'] + _content['Cursor'] + _content['Font'] + _content['ColorProfile']
+	_defaults = {**_Element._defaults,
+		'x': '-10%',
+		'y': '-10%',
+		'width': '120%',
+		'height': '120%',
+		'maskUnits': 'objectBoundingBox',
+		'maskContentUnits': 'userSpaceOnUse'
+	}
 
-	def __init__(self, x:ht.Length = ht._strdef('-10%'), y:ht.Length = ht._strdef('-10%'),
-	             width:ht.Length = ht._strdef('120%'), height:ht.Length = ht._strdef('120%'), *,
-	             maskUnits:str = ht._strdef('objectBoundingBox'),
-	             maskContentUnits:str = ht._strdef('userSpaceOnUse'), **attribs):
-		super().__init__(maskUnits=maskUnits, maskContentUnits=maskContentUnits,
-		                 x=x, y=y, width=width, height=height, **attribs)
+	def __init__(self, **attribs):
+		super().__init__(**attribs)
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
 		# Draw nothing
