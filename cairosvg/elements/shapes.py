@@ -138,6 +138,7 @@ class Line(_ShapeElement):
 				self._paint(surface, viewport=viewport)
 
 	def vertices(self, *, viewport:ty.Optional[ht.Viewport] = None) -> ht.VertexList:
+		"""Get the two points of the line as a list of (x,y) tuples."""
 		vp = viewport or self._getViewport()
 		x1 = _size(self._getattrib('x1'), vp, 'x')
 		y1 = _size(self._getattrib('y1'), vp, 'y')
@@ -175,7 +176,7 @@ class Polygon(_ShapeElement):
 		'points': ''
 	}
 
-	def __init__(self, points_:ty.Union[str,ty.List[str],ht.VertexList,None] = None,
+	def __init__(self, points_:ty.Union[str,ty.Sequence[ht.Point],None] = None,
 	             /, **attribs):
 		attribs = helpers.attribs.merge(attribs, points=points_)
 		super().__init__(**attribs)
@@ -193,6 +194,7 @@ class Polygon(_ShapeElement):
 					self._paint(surface, viewport=viewport)
 
 	def vertices(self, viewport:ty.Optional[ht.Viewport] = None) -> ht.VertexList:
+		"""Get the vertices of the polygon as a list of (x,y) tuples."""
 		vp = viewport or self._getViewport()
 		points = self._getattrib('points')
 		if isinstance(points, str):
@@ -202,10 +204,12 @@ class Polygon(_ShapeElement):
 			while string:
 				x, y, string = _point(string, vp)
 				points.append((x, y))
+		else:
+			# assume sequence; convert/copy to list
+			points = list(points)
 
-		# convert array of strings to points
-		points = points.copy()
 		for i, point in enumerate(points):
+			# parse string points/coordinates
 			if isinstance(point, str):
 				x, y, string = _point(helpers.attribs.normalize(point), vp)
 				points[i] = (x, y)
@@ -249,7 +253,7 @@ class Polyline(_ShapeElement):
 		'points': ''
 	}
 
-	def __init__(self, points_:ty.Union[str,ty.List[str],ht.VertexList,None] = None,
+	def __init__(self, points_:ty.Union[str,ty.Sequence[ht.Point],None] = None,
 	             /, **attribs):
 		attribs = helpers.attribs.merge(attribs, points=points_)
 		super().__init__(**attribs)
@@ -266,6 +270,7 @@ class Polyline(_ShapeElement):
 					self._paint(surface, viewport=viewport)
 
 	vertices = Polygon.vertices
+	vertices.__doc__ = vertices.__doc__.replace('polygon', 'polyline')
 	boundingBox = Polygon.boundingBox
 
 	def vertexAngles(self) -> ty.List[float]:

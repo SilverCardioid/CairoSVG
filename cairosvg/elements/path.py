@@ -204,7 +204,7 @@ class Path(_ShapeElement):
 		self._S(*self._rel2abs(x2, y2), *self._rel2abs(x, y))
 
 	def T(self, x:float, y:float):
-		"Smooth quadratic Bezier curveto"
+		"""Smooth quadratic Bezier curveto"""
 		self._T(x, y)
 		self._addToAttr(f'T{x},{y}')
 		return self
@@ -216,7 +216,7 @@ class Path(_ShapeElement):
 		self._Q(x1, y1, x, y)
 
 	def t(self, x:float, y:float):
-		"Relative smooth quadratic Bezier curveto"
+		"""Relative smooth quadratic Bezier curveto"""
 		self._t(x, y)
 		self._addToAttr(f't{x},{y}')
 		return self
@@ -224,7 +224,7 @@ class Path(_ShapeElement):
 		self._T(*self._rel2abs(x, y))
 
 	def Z(self):
-		"Closepath: draw a straight line to the sub-path's initial point"
+		"""Closepath: draw a straight line to the sub-path's initial point"""
 		self._Z()
 		self._addToAttr('z')
 		return self
@@ -232,8 +232,8 @@ class Path(_ShapeElement):
 		self._add('Z')
 	z = Z
 
-	def polyline(self, points:ht.VertexList, closed:bool = False):
-		"""Add a series of straight lines from an array of [x,y] points"""
+	def polyline(self, points:ty.Sequence[ty.Tuple[float, float]], closed:bool = False):
+		"""Add a series of straight lines from an array of (x,y) points."""
 		if len(points) > 0:
 			self.M(*points[0])
 			for p in points[1:]:
@@ -287,7 +287,9 @@ class Path(_ShapeElement):
 		surface.context.restore()
 
 	def vertices(self, close:bool = True) -> ht.VertexList:
-		"""Get the vertices of the path as a list of [x,y] arrays"""
+		"""Get the vertices of the path as a list of (x,y) tuples.
+		If `close` is True, repeat the initial vertex of closed sub-paths at the end.
+		"""
 		v = []
 		lastM = None
 		for letter, coords in self._data:
@@ -301,7 +303,10 @@ class Path(_ShapeElement):
 		return v
 
 	def vertexAngles(self) -> ty.List[float]:
-		"""Get the marker angles at every vertex"""
+		"""Get the marker angles at every vertex.
+		Each angle is in radians, and is the average of the direction of the
+		two adjoining line segments at that vertex.
+		"""
 		segmentAngles = []
 		#index = 0
 		vertex = None
@@ -452,7 +457,7 @@ class Path(_ShapeElement):
 		return self._transformBox(box)
 
 	def d(self, d:str):
-		"""Append path data from a string"""
+		"""Append path data from a string."""
 		self._d(d)
 		self._addToAttr(d)
 		return self

@@ -8,6 +8,7 @@ from .surface import Surface
 from .transform import Transform
 
 Length = ty.Union[str, int, float]
+Point = ty.Union[str, ty.Sequence[Length]]
 VertexList = ty.List[ty.Tuple[float, float]]
 
 # Basic type subclasses to mark arguments that haven't been

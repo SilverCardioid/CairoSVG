@@ -1,5 +1,4 @@
 python test_draw.py
-python test_example.py
 python test_export.py
 python test_g_use.py
 python test_nested_svgs.py
@@ -8,3 +7,4 @@ python test_units.py
 python test_bbox.py
 python test_tree_manip.py
 python test_input_files.py
+python test_example.py

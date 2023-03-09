@@ -268,9 +268,22 @@ class _Element:
 		return self._root.element
 
 	def isRoot(self) -> bool:
+		"""Check whether this element is the root of an element tree."""
 		return self.root is self
 
 	def changeID(self, newID:ty.Optional[str] = None, updateRefs:bool = True, *, auto:bool = False):
+		"""Change an element's ID attribute.
+		If `updateRefs` is True, change references to this element (e.g., <use>
+		elements) to point to the new ID.
+		* If `newID` is a non-empty string and `auto` is False, set the element's ID
+		    to `newID`, raising a `ValueError` if the ID already exists in the tree.
+		* If `newID` is a non-empty string and `auto` is True, set the element's ID
+		    to `newID`, appending a number if the ID already exists in the tree.
+		* If `newID` is None and `auto` is False, remove the ID. This will raise
+		    a `ValueError` if `updateRefs` is True and the element has references.
+		* If `newID` is None and `auto` is True, assign an automatic ID based on
+		    the element's tag name and a number.
+		"""
 		curID = self.id
 		refs = []
 		if updateRefs:
@@ -300,22 +313,33 @@ class _Element:
 				refElem[refAttrib] = self
 
 	def delete(self, recursive:bool = True):
-		"""Delete this element from the tree"""
+		"""Delete this element from the tree.
+		Remove the element from its parent and children, without creating a
+		new element tree. Further method calls on the element may fail.
+		If `recursive` is True, the method will be called recursively on the
+		element's descendants. Otherwise, its direct children will be detached
+		into their own element trees.
+		"""
 		if self.parent:
 			self.parent._children.remove(self)
 			if self.id:
 				del self._root._ids[self.id]
+			self.parent = None
+			self._root = None
 
 		if recursive:
 			while len(self._children) > 0:
-				self._children[-1].delete()
+				self._children[-1].delete(True)
 		else:
 			while len(self._children) > 0:
 				self._children[-1].detach()
-			self._root._updateIDs()
+		self._root._updateIDs()
 
 	def detach(self):
-		"""Disconnect this element and its descendants from the tree"""
+		"""Disconnect this element from the tree.
+		Remove the element from its parent, and make it the root of a new
+		element tree including its descendants.
+		"""
 		parent = self.parent
 		if parent:
 			self._parent = None
@@ -324,12 +348,19 @@ class _Element:
 			self._root._updateIDs()
 			for eid in self._root._ids:
 				del parent._root._ids[eid]
-			for e in self.descendants():
+			for e in self.descendants(False):
 				e._root = self._root
 
 	def getAttribute(self, attrib:str, default:ty.Any = None, *,
 	                 cascade:bool = False, getDefault:bool = False) -> ty.Any:
-		"""Get the value of an attribute, inheriting the value from the element's ancestors if cascade=True"""
+		"""Retrieve an attribute value.
+		This method parses the attribute name, and returns the first value
+		it finds after checking, in the following order:
+		* The element's own attribute values;
+		* if `cascade` is True, the attribute values of its ancestors,
+		* if `getDefault` is True, the element-specific default attribute values;
+		* or the value of the `default` argument.
+		"""
 		attrib = self._parseAttribute(attrib)
 		if getDefault:
 			default = self._defaults.get(attrib, default)
@@ -340,18 +371,27 @@ class _Element:
 				if node is None:
 					# root reached
 					return default
-			return node._attribs[attrib] #value if value is not None else default
+			return node._attribs[attrib]
 		else:
 			return self._attribs.get(attrib, default)
 	setAttribute = __setitem__
 	removeAttribute = __delitem__
 
 	def hasAttribute(self, attrib:str) -> bool:
+		"""Check whether an element has an attribute set.
+		This method parses the attribute name, and doesn't consider inheritance.
+		"""
 		return self._parseAttribute(attrib) in self._attribs
 
 	def getReferences(self) -> ty.List[ty.Tuple[_ElemType, str]]:
+		"""List the references to this element.
+		Return a list of elements in the tree that refer to this element
+		through attributes such as "xlink:href" or "clip-path". Each item
+		in the list is a tuple of the source element, and the name of the
+		source element's attribute that contains the reference.
+		"""
 		refs = []
-		for e in self._root.element.descendants():
+		for e in self._root.element.descendants(True):
 			outRefs = e._getOutgoingRefs()
 			for refTarget, refAttrib in outRefs:
 				if refTarget is self:
@@ -360,9 +400,19 @@ class _Element:
 
 	def addChild(self, tag:ty.Union[str,_ElemType], *attribs,
 	             childIndex:ty.Optional[int] = None, **kwattribs):
-		"""Add a child element to this element"""
+		"""Add a child element to this element.
+		* If `tag` is a string, it specifies the tag name for a new element.
+		    `attribs` and `kwattribs` are passed on to this element's
+		    constructor. For example: `e.addChild('circle', r=10)`.
+		* If `tag` is another element, it will be detached from its current
+		    position in its tree and re-added as a child of this element. A
+		    `ValueError` is raised if this would create a cycle in the tree
+		    (e.g., `e.addChild(e.parent)`). `attribs` and `kwattribs` are ignored.
+		`childIndex` specifies the new element's position in the element's list of
+		children. If `None`, the new element is appended to the end.
+		"""
 		if isinstance(tag, _Element):
-			if tag in self.ancestors():
+			if tag in self.ancestors(True):
 				raise ValueError('can\'t add an element\'s ancestor to itself')
 			if (self.__class__.content and (not tag.tag or tag.tag[0] != '{') and
 			    tag.tag not in self.__class__.content):
@@ -384,7 +434,7 @@ class _Element:
 					newID = elem._getAutoID(eid, idList)
 					elem.changeID(newID)
 			self._root._ids.update(tag._root._ids)
-			for e in tag.descendants():
+			for e in tag.descendants(True):
 				e._root = self._root
 
 		else:
@@ -406,10 +456,21 @@ class _Element:
 				print(f'<{tag}> node not supported; can be saved but not drawn')
 				elem = CustomElement(tag, nsName, parent=parent, *attribs, **kwAttribs)
 
-	def code(self, file:ty.Optional[ty.TextIO] = None, *, indent:ty.Optional[str] = '',
-	         indentDepth:int = 0, newline:ty.Optional[str] = '\n',
-	         xmlDeclaration:bool = False, namespaceDeclaration:bool = True):
-		"""Write the SVG code for this element and its children to the screen or to an opened file"""
+	def writeCode(self, file:ty.Optional[ty.TextIO] = None, *, indent:ty.Optional[str] = '',
+	              indentDepth:int = 0, newline:ty.Optional[str] = '\n',
+	              xmlDeclaration:bool = False, namespaceDeclaration:bool = True):
+		"""Write the SVG code for this element's subtree to `file`.
+		`file` is a file-like object with a `write` method. If None,
+		print to stdout (the screen).
+		If `xmlDeclaration` is True, include the declaration of the XML
+		version and encoding at the start.
+		If `namespaceDeclaration` is True and `self` is the root element,
+		include `xmlns:` attributes for namespaces used in the tree.
+		Pretty-print options:
+		* `indent`: whitespace string used for indentation
+		* `indentDepth`: starting indentation level
+		* `newline`: whitespace string used between tags
+		"""
 		indent = indent or ''
 		newline = newline or ''
 		indentation = indentDepth*indent
@@ -425,17 +486,25 @@ class _Element:
 		file.write(f'{indentation}{tagCode}{newline}')
 		if len(self._children) > 0:
 			for child in self._children:
-				child.code(file, indent=indent, indentDepth=indentDepth+1, newline=newline)
+				child.writeCode(file, indent=indent, indentDepth=indentDepth+1, newline=newline)
 			tagClose = f'</{self.tag}>'
 			file.write(f'{indentation}{tagClose}{newline}')
 
 	def descendants(self, includeSelf:bool = True) -> ty.Generator[_ElemType, None, None]:
+		"""A generator of the element's descendants.
+		Traverses the element's subtree (children, grandchildren etc.), and yields
+		elements depth-first. If `includeSelf` is True, start with the element itself.
+		"""
 		if includeSelf:
 			yield self
 		for child in self._children:
 			yield from child.descendants(True)
 
 	def ancestors(self, includeSelf:bool = True) -> ty.Generator[_ElemType, None, None]:
+		"""A generator of the element's ancestors.
+		Yields the element's parent, grandparent, etc., up to the root
+		element. If `includeSelf` is True, start with the element itself.
+		"""
 		if includeSelf:
 			yield self
 		anc = self.parent
@@ -443,9 +512,19 @@ class _Element:
 			yield anc
 			anc = anc.parent
 
-	def find(self, function:ty.Callable[[_ElemType],bool], *, maxResults:ty.Optional[int] = None) -> ty.List[_ElemType]:
+	def find(self, function:ty.Callable[[_ElemType],bool], *,
+	         maxResults:ty.Optional[int] = None) -> ty.List[_ElemType]:
+		"""List descendant elements satisfying the given function.
+		`function` is a callable that receives an element object, and should
+		return a boolean. The function is evaluated on the element's descendants
+		(depth-first), and a list is returned of those for which it returns True.
+		If `maxResults` is a positive number, return at most that many results.
+
+		For example, to get all path elements among an element's descendants:
+		`e.find(lambda x: x.tag == 'path')`
+		"""
 		results = []
-		for elem in self.descendants():
+		for elem in self.descendants(True):
 			if function(elem):
 				results.append(elem)
 				if maxResults and len(results) >= maxResults:
@@ -453,16 +532,31 @@ class _Element:
 		return results
 
 	def findID(self, id:str) -> ty.Optional[_ElemType]:
+		"""Find a descendant element with a specific ID.
+		Returns None if no element was found, or if the element isn't a
+		descendant of this element.
+		"""
 		res = self._root._ids.get(id, None)
-		if res and self in res.ancestors():
+		if res and self in res.ancestors(True):
 			return res
 		return None
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
+		"""Draw the element on a Cairo surface.
+		`surface` is a surface object from the cairocffi library: `ImageSurface`,
+		`PDFSurface`, `PSSurface`, `RecordingSurface` or `SVGSurface`.
+		If `paint` is False, add the element's contents to the current path
+		without applying fills or strokes.
+		`viewport` is a `Viewport` object. Normally not necessary to specify if
+		the root element has a viewport (such as an <svg> element).
+		"""
 		# Default to drawing nothing
 		return
 
 	def boundingBox(self) -> ht.Box:
+		"""Calculate the element's bounding box.
+		Returns a `Box` element representing the minimum bounding rectangle.
+		"""
 		# Default to no box
 		return ht.Box()
 

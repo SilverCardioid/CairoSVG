@@ -107,26 +107,41 @@ class SVG(_StructureElement):
 
 	def export(self, filename:str, *, surface:ty.Optional[ht.Surface] = None,
 	           useCairo:bool = False, **svgOptions):
+		"""Export the document to `filename`.
+		If `filename` has a '.svg' extension (case-insensitive) and `useCairo` is
+		False, directly write the SVG code to that file using the `save()` method.
+		`**svgOptions` will be passed on to that method.
+
+		Otherwise, draw the document on a new cairocffi surface of the appropriate
+		type (or the given `surface` if not None). '.png', '.pdf', '.ps' and '.svg'
+		files (case-insensitive) can be saved directly using Cairo; other extensions
+		will be assumed to be an image format and saved using OpenCV. A `ValueError`
+		is raised if OpenCV doesn't support the extension or otherwise fails to
+		write the image.
+		"""
 		ext = os.path.splitext(filename)[1].lower()
 		width, height = self.viewport.getAbsoluteSize()
 		width, height = round(width), round(height)
 
 		if ext == '.pdf':
-			surface = surface or helpers.surface.createSurface('PDF', width, height, filename)
+			surface = surface or helpers.surface.createSurface(
+				'PDF', width, height, filename)
 			try:
 				self.draw(surface)
 			finally:
 				surface.finish()
 
 		elif ext == '.png':
-			surface = surface or helpers.surface.createSurface('Image', width, height, filename)
+			surface = surface or helpers.surface.createSurface(
+				'Image', width, height, filename)
 			try:
 				self.draw(surface)
 			finally:
 				surface.write_to_png(filename)
 
 		elif ext == '.ps':
-			surface = surface or helpers.surface.createSurface('PS', width, height, filename)
+			surface = surface or helpers.surface.createSurface(
+				'PS', width, height, filename)
 			try:
 				self.draw(surface)
 			finally:
@@ -134,7 +149,8 @@ class SVG(_StructureElement):
 
 		elif ext == '.svg':
 			if useCairo:
-				surface = surface or helpers.surface.createSurface('SVG', width, height, filename)
+				surface = surface or helpers.surface.createSurface(
+					'SVG', width, height, filename)
 				try:
 					self.draw(surface)
 				finally:
@@ -151,22 +167,55 @@ class SVG(_StructureElement):
 				img = self.pixels(surface=surface, bgr=True)
 				cv2.imwrite(filename, img)
 			except cv2.error:
-				raise ValueError('Unsupported file extension: {}'.format(ext))
+				raise ValueError(f'Failed to write image with extension: {ext}')
 
-	def save(self, filename:str, *, indent:ty.Optional[str] = '', newline:ty.Optional[str] = '\n', xmlDeclaration:bool = True):
-		with open(filename, 'w') as file:
-			self.code(file, indent=indent, newline=newline, xmlDeclaration=xmlDeclaration)
+	def save(self, filename:str, *, indent:ty.Optional[str] = '',
+	         newline:ty.Optional[str] = '\n', xmlDeclaration:bool = True):
+		"""Save the document as a .svg file.
+		Open the given filename, and call `writeCode()` to write the SVG code
+		to it. The keyword parameters are passed on to that method.
+		"""
+		with open(filename, 'w', encoding='utf-8') as file:
+			self.writeCode(file, indent=indent, newline=newline,
+			               xmlDeclaration=xmlDeclaration,
+			               namespaceDeclaration=True)
 
-	def pixels(self, *, surface:ty.Optional[ht.Surface] = None, alpha:bool = False, bgr:bool = False):
-		surface = surface or helpers.surface.createSurface('Image', round(self.width), round(self.height))
+	def pixels(self, *, surface:ty.Optional[ht.Surface] = None,
+	           alpha:bool = False, bgr:bool = False) -> np.ndarray:
+		"""Return the rendered image as a numpy array.
+		For a document with width W and height H (rounded), the array's shape will
+		be `H×W×4` if `alpha` is True, or `H×W×3` otherwise. Its datatype is uint8.
+		If `alpha` is True, include the alpha (opacity) channel, else, omit it.
+		if `bgr` is True, put the channels in OpenCV's BGR order, else, in RGB order.
+		`surface` is a Cairo surface to draw on; if None, create a new one.
+		"""
+		width, height = self.viewport.getAbsoluteSize()
+		surface = surface or helpers.surface.createSurface(
+			'Image', round(width), round(height))
 		self.draw(surface)
 		return helpers.surface.pixels(surface, alpha=alpha, bgr=bgr)
 
-	def show(self, windowName:str = 'svg', *, surface:ty.Optional[ht.Surface] = None, wait:int = 0):
-		helpers.surface.show(self.pixels(surface=surface, bgr=True), windowName=windowName, wait=wait)
+	def show(self, windowName:str = 'svg', *,
+	         surface:ty.Optional[ht.Surface] = None, wait:int = 0):
+		"""Show the image in a pop-up window.
+		The window can be closed by pressing the 'close' button normally, or by
+		pressing the Q or Esc key.
+		`windowName` is the title of the window, and should be unique among windows
+		that are open at the same time.
+		If `wait` is a positive number , automatically close the window after the
+		given time in milliseconds.
+		`surface` is passed through to the `pixels()` method.
+		"""
+		helpers.surface.show(self.pixels(surface=surface, bgr=True),
+		                     windowName=windowName, wait=wait)
 
 	@classmethod
 	def read(cls, source:ty.Union[str, ty.TextIO]):
+		"""Read an SVG file.
+		`source` can be a filename or a file object.
+		Raises a `ValueError` if the document's root element isn't <svg>.
+		"""
 		root = helpers.parse.read(source)
-		assert root.tag == 'svg'
+		if root.tag != 'svg':
+			raise ValueError('SVG document without <svg> root element')
 		return root
