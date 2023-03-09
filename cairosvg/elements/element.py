@@ -170,30 +170,35 @@ class _Element:
 
 	@contextmanager
 	def _applyTransformations(self, surface:ht.Surface):
-		surface.context.save()
-		try:
-			if self.transform and self.transform._transformed:
-				self.transform.apply(surface)
+		transformed = self.transform and self.transform._transformed
+		clipPath = self._attribs.get('clip-path', None)
+		mask = self._attribs.get('mask', None)
 
-			clipPath = self._attribs.get('clip-path', None)
-			if clipPath:
-				cpElem = self._parseReference(clipPath)
-				if cpElem and cpElem.tag == 'clipPath':
-					cpElem.apply(surface, self)
-				else:
-					print(f'warning: invalid clip-path reference: {clipPath}')
+		if transformed or clipPath or mask:
+			surface.context.save()
+			try:
+				if transformed:
+					self.transform.apply(surface)
 
-			mask = self._attribs.get('mask', None)
-			if mask:
-				maskElem = self._parseReference(mask)
-				if maskElem and maskElem.tag == 'mask':
-					maskElem.apply(surface, self)
-				else:
-					print(f'warning: invalid mask reference: {mask}')
+				if clipPath:
+					cpElem = self._parseReference(clipPath)
+					if cpElem and cpElem.tag == 'clipPath':
+						cpElem.apply(surface, self)
+					else:
+						print(f'warning: invalid clip-path reference: {clipPath}')
 
+				if mask:
+					maskElem = self._parseReference(mask)
+					if maskElem and maskElem.tag == 'mask':
+						maskElem.apply(surface, self)
+					else:
+						print(f'warning: invalid mask reference: {mask}')
+
+				yield self
+			finally:
+				surface.context.restore()
+		else:
 			yield self
-		finally:
-			surface.context.restore()
 
 	def __getitem__(self, attrib:str) -> ty.Any:
 		return self._attribs[self._parseAttribute(attrib)]
@@ -324,8 +329,6 @@ class _Element:
 			self.parent._children.remove(self)
 			if self.id:
 				del self._root._ids[self.id]
-			self.parent = None
-			self._root = None
 
 		if recursive:
 			while len(self._children) > 0:
@@ -333,7 +336,10 @@ class _Element:
 		else:
 			while len(self._children) > 0:
 				self._children[-1].detach()
-		self._root._updateIDs()
+			self._root._updateIDs()
+
+		self._parent = None
+		self._root = None
 
 	def detach(self):
 		"""Disconnect this element from the tree.
@@ -553,9 +559,11 @@ class _Element:
 		# Default to drawing nothing
 		return
 
-	def boundingBox(self) -> ht.Box:
+	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
 		"""Calculate the element's bounding box.
 		Returns a `Box` element representing the minimum bounding rectangle.
+		If `withTransform` is True, apply the element's transform and clip-path
+		attributes to the box.
 		"""
 		# Default to no box
 		return ht.Box()
@@ -589,13 +597,14 @@ class _StructureElement(_Element):
 		for child in self._children:
 			child.draw(surface, paint=paint, viewport=viewport)
 
-	def boundingBox(self) -> ht.Box:
+	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
 		# todo: account for transformations
 		# https://svgwg.org/svg2-draft/coords.html#bounding-box
 		box = ht.Box()
 		for child in self._children:
 			box += child.boundingBox()
-		return self._transformBox(box)
+		if withTransform: box = self._transformBox(box)
+		return box
 
 
 class _ShapeElement(_Element):

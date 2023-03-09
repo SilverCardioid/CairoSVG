@@ -42,13 +42,14 @@ class Circle(_ShapeElement):
 				if paint:
 					self._paint(surface, viewport=viewport)
 
-	def boundingBox(self) -> ht.Box:
+	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
 		vp = self._getViewport()
 		r  = _size(self._getattrib('r') , vp, 'xy')
 		cx = _size(self._getattrib('cx'), vp, 'x')
 		cy = _size(self._getattrib('cy'), vp, 'y')
 		box = ht.Box(cx - r, cy - r, 2*r, 2*r)
-		return self._transformBox(box)
+		if withTransform: box = self._transformBox(box)
+		return box
 
 
 class Ellipse(_ShapeElement):
@@ -94,14 +95,15 @@ class Ellipse(_ShapeElement):
 				if paint:
 					self._paint(surface, viewport=viewport)
 
-	def boundingBox(self) -> ht.Box:
+	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
 		vp = self._getViewport()
 		rx = _size(self._getattrib('rx'), vp, 'x')
 		ry = _size(self._getattrib('ry'), vp, 'y')
 		cx = _size(self._getattrib('cx'), vp, 'x')
 		cy = _size(self._getattrib('cy'), vp, 'y')
 		box = ht.Box(cx - rx, cy - ry, 2*rx, 2*ry)
-		return self._transformBox(box)
+		if withTransform: box = self._transformBox(box)
+		return box
 
 
 class Line(_ShapeElement):
@@ -151,12 +153,13 @@ class Line(_ShapeElement):
 		angle = helpers.geometry.point_angle(*p1, *p2)
 		return [angle, angle]
 
-	def boundingBox(self) -> ht.Box:
+	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
 		box = ht.Box()
 		(x1, y1), (x2, y2) = self.vertices()
 		box.addPoint(x1, y1)
 		box.addPoint(x2, y2)
-		return self._transformBox(box)
+		if withTransform: box = self._transformBox(box)
+		return box
 
 
 class Polygon(_ShapeElement):
@@ -228,11 +231,12 @@ class Polygon(_ShapeElement):
 		path = Path().polyline(self.vertices(), closed=True)
 		return path.vertexAngles()
 
-	def boundingBox(self) -> ht.Box:
+	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
 		box = ht.Box()
 		for x, y in self.vertices():
 			box.addPoint(x, y)
-		return self._transformBox(box)
+		if withTransform: box = self._transformBox(box)
+		return box
 
 
 class Polyline(_ShapeElement):
@@ -361,11 +365,12 @@ class Rect(_ShapeElement):
 			if paint:
 				self._paint(surface, viewport=viewport)
 
-	def boundingBox(self) -> ht.Box:
+	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
 		vp = self._getViewport()
 		width = _size(self._getattrib('width'), vp, 'x')
 		height = _size(self._getattrib('height'), vp, 'y')
 		x = _size(self._getattrib('x'), vp, 'x')
 		y = _size(self._getattrib('y'), vp, 'y')
 		box = ht.Box(x, y, width, height)
-		return self._transformBox(box)
+		if withTransform: box = self._transformBox(box)
+		return box

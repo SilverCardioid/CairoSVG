@@ -13,7 +13,7 @@ for e in gShapes.descendants():
 
 	if e.tag == 'path':
 		extr = []
-		bx, by, bw, bh = e.boundingBox(extr).xywh
+		bx, by, bw, bh = e.boundingBox(_ex=extr).xywh
 		gBoxes.rect(x=bx, y=by, width=bw, height=bh)
 		for vx, vy in e.vertices(close=False):
 			gVertices.circle(r=pointR, cx=vx, cy=vy)

@@ -38,9 +38,10 @@ class ClipPath(_Element):
 		surface.context.save()
 		clipPathUnits = self['clipPathUnits'].strip()
 		if clipPathUnits == 'objectBoundingBox':
-			tx, ty, tw, th = target.boundingBox().xywh
-			surface.context.translate(tx, ty)
-			surface.context.scale(tw, th)
+			tx, ty, tw, th = target.boundingBox(withTransform=False).xywh
+			if tw > 0 and th > 0:
+				surface.context.translate(tx, ty)
+				surface.context.scale(tw, th)
 			clipVP = helpers.coordinates.Viewport(width=1, height=1)
 		else:
 			if clipPathUnits != 'userSpaceOnUse':
@@ -120,7 +121,7 @@ class Mask(_Element):
 			# (as if in a "0 0 1 1" viewbox)
 			if maskUnits != 'objectBoundingBox':
 				print(f'warning: invalid attribute value: maskUnits="{maskUnits}"')
-			tx, ty, tw, th = target.boundingBox().xywh
+			tx, ty, tw, th = target.boundingBox(withTransform=False).xywh
 			x      = tw * _size(self['x']     , reference=1) + tx
 			y      = th * _size(self['y']     , reference=1) + ty
 			width  = tw * _size(self['width'] , reference=1)
@@ -128,9 +129,10 @@ class Mask(_Element):
 
 		maskSurface = helpers.surface.createSurface('recording', x=x, y=y, width=width, height=height)
 		if maskContentUnits == 'objectBoundingBox':
-			tx, ty, tw, th = target.boundingBox().xywh
-			maskSurface.context.translate(tx, ty)
-			maskSurface.context.scale(tw, th)
+			tx, ty, tw, th = target.boundingBox(withTransform=False).xywh
+			if tw > 0 and th > 0:
+				maskSurface.context.translate(tx, ty)
+				maskSurface.context.scale(tw, th)
 			maskVP = helpers.coordinates.Viewport(width=1, height=1)
 		else:
 			if maskContentUnits != 'userSpaceOnUse':

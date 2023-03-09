@@ -394,7 +394,7 @@ class Path(_ShapeElement):
 					vertexAngles.append(angleIn)
 		return vertexAngles
 
-	def boundingBox(self, _ex:ty.Optional[ht.VertexList] = None) -> ht.Box:
+	def boundingBox(self, *, withTransform:bool = True, _ex:ty.Optional[ht.VertexList] = None) -> ht.Box:
 		box = helpers.geometry.Box()
 		lastVertex = (0, 0) # in case of no M
 		lastM = (0, 0)
@@ -454,7 +454,8 @@ class Path(_ShapeElement):
 			box.addPoint(newX, newY)
 			lastVertex = (newX, newY)
 
-		return self._transformBox(box)
+		if withTransform: box = self._transformBox(box)
+		return box
 
 	def d(self, d:str):
 		"""Append path data from a string."""

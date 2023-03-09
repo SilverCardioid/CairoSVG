@@ -46,7 +46,7 @@ class Defs(_StructureElement):
 		# Draw nothing
 		return
 
-	def boundingBox(self) -> ht.Box():
+	def boundingBox(self, *, withTransform:bool = True) -> ht.Box():
 		# No box
 		return ht.Box()
 
@@ -158,7 +158,7 @@ class Use(_Element):
 		finally:
 			target._parent = targetParent
 
-	def boundingBox(self) -> ht.Box:
+	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
 		target = self.target
 		if target is None:
 			# Broken references have a bounding box according to the use's attributes
@@ -166,7 +166,7 @@ class Use(_Element):
 			y = _size(self._getattrib('y'), vp, 'y')
 			width = _size(self._getattrib('width'), vp, 'x')
 			height = _size(self._getattrib('height'), vp, 'y')
-			return ht.Box(x, y, width, height)
+			box = ht.Box(x, y, width, height)
 		else:
 			box = target.boundingBox()
 			if box.defined:
@@ -176,4 +176,6 @@ class Use(_Element):
 				y = _size(self._getattrib('y'), vp, 'y')
 				box.x0 += x; box.y0 += y
 				box.x1 += x; box.y1 += y
-			return self._transformBox(box)
+
+		if withTransform: box = self._transformBox(box)
+		return box
