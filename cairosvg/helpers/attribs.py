@@ -29,7 +29,10 @@ def normalize(string:str) -> str:
 	return string.strip()
 
 def merge(kwargs:dict, **posargs) -> dict:
-	"""Return a copy of a dict of attributes with positional arguments inserted at the start"""
+	"""Merge an element's keyword and positional attributes.
+	Return a dict containing all items with non-None values from
+	`posargs`, followed by all items from `kwargs`.
+	"""
 	attribs = {}
 	for attrib, value in posargs.items():
 		if value is not None:
@@ -41,7 +44,13 @@ camelcase_attribs = set(['allowReorder','attributeName','attributeType','autoRev
 namespaced_attribs = {'base':ns.NS_XML, 'lang':ns.NS_XML, 'space':ns.NS_XML, 'type':ns.NS_XLINK, 'href':ns.NS_XLINK, 'role':ns.NS_XLINK, 'arcrole':ns.NS_XLINK, 'title':ns.NS_XLINK, 'show':ns.NS_XLINK, 'actuate':ns.NS_XLINK}
 def parse_attribute(key:str, *, namespaces:ty.Optional[ns.Namespaces] = None,
                     default_name:ty.Optional[str] = None) -> str:
-	"""Convert a snake_case or camelCase function argument to a hyphenated SVG attribute, and expand namespaces"""
+	"""Parse an attribute name.
+	Convert camelCase and snake_case to hyphens (unless the attribute is
+	normally camelCase, e.g. "viewBox"), and add missing xlink or xml
+	namespaces to attributes like "href". If `namespaces` is provided,
+	use it to expand namespace prefixes, using the given `default_name`
+	(or `namespaces.default` if None) for attributes without a prefix.
+	"""
 	ns_name = ''
 	if key in namespaced_attribs:
 		ns_name = namespaced_attribs[key]
@@ -56,7 +65,7 @@ def parse_attribute(key:str, *, namespaces:ty.Optional[ns.Namespaces] = None,
 		key = re.sub('(?<!^)(?=[A-Z])', '-', key).lower()
 	return f'{{{ns_name}}}{key}' if ns_name else key
 
-def get_float(elem, attrib:str, default:ty.Optional[float] = None, *,
+def get_float(elem:'Element', attrib:str, default:ty.Optional[float] = None, *,
               range:ty.List[ty.Optional[float]] = [None, None],
               cascade:bool=False) -> ty.Optional[float]:
 	"""Get an attribute value and parse it as a float.
@@ -73,7 +82,7 @@ def get_float(elem, attrib:str, default:ty.Optional[float] = None, *,
 		print(f'warning: invalid value "{val}" for {attrib}')
 		return default
 
-def get_enum(elem, attrib:str, values:ty.Mapping[str, ty.Any],
+def get_enum(elem:'Element', attrib:str, values:ty.Mapping[str, ty.Any],
             default:ty.Optional[str] = None, *, cascade:bool = True) -> ty.Any:
 	"""Get an attribute value and check if is in a dict of allowed values.
 	Return the corresponding value from the dict."""

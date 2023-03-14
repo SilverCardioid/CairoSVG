@@ -1,7 +1,7 @@
 from . import namespaces as ns
 
 class Root:
-	def __init__(self, element, namespaces=None):
+	def __init__(self, element:'Element', namespaces=None):
 		self.element = element
 		self._ids = {}
 		if namespaces is not None:

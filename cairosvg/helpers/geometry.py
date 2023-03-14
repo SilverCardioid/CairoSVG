@@ -2,24 +2,28 @@ from __future__ import annotations
 import math
 import typing as ty
 
-def distance(x1, y1, x2, y2):
+def distance(x1:float, y1:float, x2:float, y2:float) -> float:
 	"""Get the distance between two points."""
 	return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
 
-def point_angle(cx, cy, px, py):
+def point_angle(cx:float, cy:float, px:float, py:float) -> float:
 	"""Return angle between x axis and point knowing given center."""
 	return math.atan2(py - cy, px - cx)
 
 
-def rotate(x, y, angle):
+def rotate(x:float, y:float, angle:float) -> ty.Tuple[float, float]:
 	"""Rotate a point of an angle around the origin point."""
 	return (x * math.cos(angle) - y * math.sin(angle),
 	        y * math.cos(angle) + x * math.sin(angle))
 
 
-def quadratic_points(x1, y1, x2, y2, x3, y3):
-	"""Return the quadratic points to create quadratic curves."""
+def quadratic_points(x1:float, y1:float, x2:float, y2:float, x3:float, y3:float
+                     )-> ty.Tuple[float, float, float, float, float, float]:
+	"""Convert a quadratic to a cubic Bezier.
+	Return the cubic curve (control points and end point) that is equivalent
+	to the given quadratic curve (start point, control point and end point).
+	"""
 	xq1 = x2 * 2 / 3 + x1 / 3
 	yq1 = y2 * 2 / 3 + y1 / 3
 	xq2 = x2 * 2 / 3 + x3 / 3
@@ -27,7 +31,7 @@ def quadratic_points(x1, y1, x2, y2, x3, y3):
 	return xq1, yq1, xq2, yq2, x3, y3
 
 
-def bezier_angles(*points):
+def bezier_angles(*pointsLfloat) -> ty.Tuple[float, float]:
 	"""Return the tangent angles of a Bezier curve of any degree."""
 	if len(points) < 2:
 		# zero-length segment
@@ -42,17 +46,31 @@ def bezier_angles(*points):
 		        point_angle(*points[-2], *points[-1]))
 
 
-def evaluate_quadratic(t, p0, p1, p2):
-	"""Get the value of either coordinate of a quadratic Bezier at parameter value t"""
+def evaluate_quadratic(t:float, p0:float, p1:float, p2:float) -> float:
+	"""Evaluate a quadratic Bezier curve.
+	Given the coordinates for the start point, control point and end point
+	along one axis, get the coordinate of a point on the curve at the
+	parametric value `t` for that axis.
+	"""
 	return p0*(1-t)*(1-t) + 2*p1*t*(1-t) + p2*t*t
 
-def evaluate_cubic(t, p0, p1, p2, p3):
-	"""Get the value of either coordinate of a cubic Bezier at parameter value t"""
+def evaluate_cubic(t:float, p0:float, p1:float, p2:float, p3:float) -> float:
+	"""Evaluate a cubic Bezier curve.
+	Given the coordinates for the start point, two control points and end
+	point along one axis, get the coordinate of a point on the curve at the
+	parametric value `t` for that axis.
+	"""
 	return p0*(1-t)*(1-t)*(1-t) + 3*p1*t*(1-t)*(1-t) + 3*p2*t*t*(1-t) + p3*t*t*t
 
 
-def quadratic_extrema(p0, p1, p2):
-	"""Find points on a quadratic Bezier with zero derivative (horizontal or vertical tangent)"""
+def quadratic_extrema(p0:float, p1:float, p2:float
+                      ) -> ty.List[ty.Tuple[float, float]]:
+	"""Find the extrema of a quadratic Bezier curve.
+	Given the coordinates for the start point, control point and end point
+	along one axis, get the parametric value `t` at which the curve has a
+	zero derivative (if any), and return a list of solutions as tuples of
+	`t` values and corresponding point coordinates.
+	"""
 	solns = []
 	# solution of dp/dt = 0
 	try:
@@ -64,8 +82,14 @@ def quadratic_extrema(p0, p1, p2):
 		pass
 	return solns
 
-def cubic_extrema(p0, p1, p2, p3):
-	"""Find points on a cubic Bezier with zero derivative (horizontal or vertical tangent)"""
+def cubic_extrema(p0:float, p1:float, p2:float, p3:float
+                  ) -> ty.List[ty.Tuple[float, float]]:
+	"""Find the extrema of a cubic Bezier curve.
+	Given the coordinates for the start point, two control points and end
+	point along one axis, get the parametric values `t` at which the curve
+	has a zero derivative (if any), and return a list of solutions as tuples
+	of `t` values and corresponding point coordinates.
+	"""
 	solns = []
 	# coefficients of dp/dt (a quadratic function)
 	a = 3*(-p0 + 3*p1 - 3*p2 + p3)
@@ -99,7 +123,8 @@ def cubic_extrema(p0, p1, p2, p3):
 
 class Arc:
 	# Helper class for arcs
-	def __init__(self, rx, ry, rotation, large, sweep, dx, dy):
+	def __init__(self, rx:float, ry:float, rotation:float,
+	             large:bool, sweep:bool, dx:float, dy:float):
 		self.rx = rx; self.ry = ry
 		self.rotation = math.radians(float(rotation))
 		self.large = large; self.sweep = sweep
@@ -130,13 +155,13 @@ class Arc:
 		self.center = rotate(self.draw_center[0],
 		                     self.draw_center[1]*self.radii_ratio, self.rotation)
 
-	def evaluate(self, t):
+	def evaluate(self, t:float) -> ty.Tuple[float, float]:
 		return (self.center[0] + self.rx*math.cos(self.rotation)*math.cos(t)
 		                       - self.ry*math.sin(self.rotation)*math.sin(t),
 		        self.center[1] + self.rx*math.sin(self.rotation)*math.cos(t)
 		                       + self.ry*math.cos(self.rotation)*math.sin(t))
 
-	def extrema(self):
+	def extrema(self) -> ty.List[ty.Tuple[float, ty.Tuple[float, float]]]:
 		# Get parametric angles for the extrema of the full circle or ellipse, in [0, 2pi)
 		if self.rotation == 0:
 			# No rotation: extrema must be at multiples of pi/2
@@ -177,8 +202,14 @@ class Arc:
 		return solns
 
 
-def arc_extrema(rx, ry, rotation, large, sweep, dx, dy):
-	"""Find points on an arc with zero derivative (horizontal or vertical tangent)"""
+def arc_extrema(rx:float, ry:float, rotation:float,
+                large:bool, sweep:bool, dx:float, dy:float
+                ) -> ty.List[ty.Tuple[float, ty.Tuple[float, float]]]:
+	"""Find the extrema of an elliptical arc.
+	Given an arc (using the syntax of a path's 'a' command), get the input
+	angles at which the arc has a horizontal or vertical tangent, and return
+	a list of solutions as tuples of angles and (x, y) tuples.
+	"""
 	return Arc(rx, ry, rotation, large, sweep, dx, dy).extrema()
 
 

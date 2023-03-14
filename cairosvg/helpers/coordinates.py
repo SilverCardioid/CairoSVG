@@ -1,7 +1,11 @@
+from __future__ import annotations
 import re
 import typing as ty
 
-from . import attribs # transform dynamically imported to avoid mutual imports
+from . import attribs
+# .transform dynamically imported to avoid mutual imports
+
+Length = ty.Union[str, int, float]
 
 UNITS = {
     'mm': 1 / 25.4,
@@ -20,8 +24,11 @@ class Viewport:
 		'preserveAspectRatio': 'xMidYMid meet'
 	}
 
-	def __init__(self, width=None, height=None, *, viewBox=None,
-	             preserveAspectRatio=None, parent=None):
+	def __init__(self, width:ty.Optional[Length] = None,
+	             height:ty.Optional[Length] = None, *,
+	             viewBox:ty.Optional[str] = None,
+	             preserveAspectRatio:ty.Optional[str] = None,
+	             parent:ty.Optional['Element'] = None):
 		self.parent = parent
 		defs = parent._defaults if parent else {}
 		self._attribs = {
@@ -36,19 +43,19 @@ class Viewport:
 					self._attribs[attrib] = self._defaults[attrib]
 
 	@property
-	def width(self):
+	def width(self) -> float:
 		return size(self._attribs['width'],
 		            self.parent and self.parent._get_viewport(),
 		            'x', auto_value='100%')
 
 	@property
-	def height(self):
+	def height(self) -> float:
 		return size(self._attribs['height'],
 		            self.parent and self.parent._get_viewport(),
 		            'y', auto_value='100%')
 
 	@property
-	def viewBox(self):
+	def viewBox(self) -> ty.Optional[ty.Tuple[float, float, float, float]]:
 		vb = self._attribs['viewBox']
 		if vb in (None, 'none'):
 			return None
@@ -62,7 +69,7 @@ class Viewport:
 		return None
 
 	@property
-	def inner_size(self):
+	def inner_size(self) -> ty.Tuple[float, float]:
 		vb = self.viewBox
 		if vb:
 			return vb[2:]
@@ -94,7 +101,7 @@ class Viewport:
 
 		return (default_width, default_height)
 
-	def get_transform(self):
+	def get_transform(self) -> transform.Transform:
 		"""Return a Transform object based on the viewport's viewBox and preserveAspectRatio values."""
 		from . import transform
 		tr = transform.Transform()
@@ -141,8 +148,9 @@ class Viewport:
 
 		return tr
 
-def size(string, viewport=None, reference='xy', *,
-         units=True, auto_value=0, font_size=None, dpi=96):
+def size(string:Length, viewport:ty.Optional[Viewport] = None,
+         reference:str = 'xy', *, units:bool = True, auto_value:Length = 0,
+         font_size:ty.Optional[float] = None, dpi:float = 96) -> float:
 	"""Replace a ``string`` with units by a float value.
 
 	If ``reference`` is a float, it is used as reference for percentages. If it
@@ -203,7 +211,8 @@ def size(string, viewport=None, reference='xy', *,
 	# Unknown size
 	return 0
 
-def point(string, viewport=None, *, units=True):
+def point(string:str, viewport:ty.Optional[Viewport] = None, *,
+          units:bool = True) -> ty.Tuple[float, float, str]:
 	"""Return ``(x, y, trailing_text)`` from ``string``."""
 	match = re.match('(.*?) (.*?)(?: |$)', string)
 	if match:

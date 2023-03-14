@@ -111,43 +111,6 @@ class _Element:
 		self._attribs['id'] = eid
 		self._set_id(eid)
 
-	def _tag_code(self, *, close:bool = True,
-	              namespace_declaration:bool = True) -> str:
-		nss = self._root.namespaces
-		ns_prefix = nss._get_prefix(self.namespace)
-		if ns_prefix: ns_prefix += ':'
-		string = '<' + ns_prefix + self.tag
-
-		if namespace_declaration and self.is_root():
-			ns_names = helpers.namespaces.get_namespaces(self)
-			ns = [(nss._get_prefix(name), name) for name in ns_names]
-			ns.sort()
-			for ns_prefix, ns_name in ns:
-				if ns_prefix == 'xml' and ns_name == helpers.namespaces.NS_XML:
-					# xml: doesn't need to be declared
-					continue
-				key = 'xmlns:' + ns_prefix if ns_prefix else 'xmlns'
-				string += f' {key}="{ns_name}"'
-
-		for attr in self._attribs:
-			val = self._attribs[attr]
-			if attr in self.__class__._attrib_to_str:
-				val = self.__class__._attrib_to_str[attr](val)
-				if val is None:
-					# don't print
-					continue
-			elif val is None:
-				val = 'none'
-			elif isinstance(val, ht._Default):
-				# don't print
-				continue
-			attr = self._root.namespaces.qualify_name(
-				attr, default_name=self.namespace)
-			string += f' {attr}="{val}"'
-
-		string += '/>' if close else '>'
-		return string
-
 	def _parse_attribute(self, attrib:str) -> str:
 		return helpers.attribs.parse_attribute(
 			attrib, namespaces=self._root.namespaces,
@@ -244,8 +207,8 @@ class _Element:
 		return attrib
 
 	def __repr__(self) -> str:
-		return self._tag_code(close=len(self._children) == 0,
-		                     namespace_declaration=False)
+		return self.code(close=len(self._children) == 0,
+		                 namespace_declaration=False)
 
 	@property
 	def parent(self) -> ty.Optional[_ElemType]:
@@ -474,6 +437,50 @@ class _Element:
 				elem = CustomElement(tag, ns_name, parent=parent,
 				                     *attribs, **kwattribs)
 
+	def code(self, *, close:bool = True,
+	         namespace_declaration:bool = True) -> str:
+		"""Generate the SVG code for this element.
+		Return an XML tag for this element with its attributes.
+		If `close` is True, make a self-closing tag (e.g. <path/>);
+		else, make an open tag (<path>).
+		If `namespace_declaration` is True and `self` is the root element,
+		include `xmlns:` attributes for namespaces used in the tree.
+		"""
+		nss = self._root.namespaces
+		ns_prefix = nss._get_prefix(self.namespace)
+		if ns_prefix: ns_prefix += ':'
+		string = '<' + ns_prefix + self.tag
+
+		if namespace_declaration and self.is_root():
+			ns_names = helpers.namespaces.get_namespaces(self)
+			ns = [(nss._get_prefix(name), name) for name in ns_names]
+			ns.sort()
+			for ns_prefix, ns_name in ns:
+				if ns_prefix == 'xml' and ns_name == helpers.namespaces.NS_XML:
+					# xml: doesn't need to be declared
+					continue
+				key = 'xmlns:' + ns_prefix if ns_prefix else 'xmlns'
+				string += f' {key}="{ns_name}"'
+
+		for attr in self._attribs:
+			val = self._attribs[attr]
+			if attr in self.__class__._attrib_to_str:
+				val = self.__class__._attrib_to_str[attr](val)
+				if val is None:
+					# don't print
+					continue
+			elif val is None:
+				val = 'none'
+			elif isinstance(val, ht._Default):
+				# don't print
+				continue
+			attr = self._root.namespaces.qualify_name(
+				attr, default_name=self.namespace)
+			string += f' {attr}="{val}"'
+
+		string += '/>' if close else '>'
+		return string
+
 	def write_code(self, file:ty.Optional[ty.TextIO] = None, *,
 	               indent:ty.Optional[str] = '', indent_depth:int = 0,
 	               newline:ty.Optional[str] = '\n', xml_declaration:bool = False,
@@ -501,8 +508,8 @@ class _Element:
 			decl = '<?xml version="1.0" encoding="UTF-8"?>'
 			file.write(f'{indentation}{decl}{newline}')
 
-		tag_code = self._tag_code(close=len(self.children)==0,
-		                          namespace_declaration=namespace_declaration)
+		tag_code = self.code(close=len(self.children)==0,
+		                     namespace_declaration=namespace_declaration)
 		file.write(f'{indentation}{tag_code}{newline}')
 		if len(self._children) > 0:
 			for child in self._children:

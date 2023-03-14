@@ -1,9 +1,11 @@
+import typing as ty
 from xml.etree import ElementTree as ET
 
 from ..elements import _creators
 from . import namespaces
 
-def parse(source):
+def parse(source:ty.Union[str, ty.TextIO]
+          ) -> ty.Generator[ty.Tuple[str, 'Element'], None, None]:
 	events = ET.iterparse(source, events=["start", "end", "comment", "pi", "start-ns", "end-ns"])
 	elem_stack = []
 
@@ -57,7 +59,7 @@ def parse(source):
 		next_ev, next_elem = next(events, (None, None))
 
 
-def read(source):
+def read(source:ty.Union[str, ty.TextIO]) -> 'Element':
 	elem_it = parse(source)
 	# First element = root
 	ev, root = next(elem_it, (None, None))

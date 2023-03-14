@@ -7,7 +7,7 @@ import typing as ty
 from ..helpers import attribs, coordinates
 
 class Transform:
-	def __init__(self, string:str = None, *, parent=None):
+	def __init__(self, string:str = None, *, parent:ty.Optional['Element'] = None):
 		self.parent = parent
 		self._reset()
 		if string is not None:
@@ -54,7 +54,7 @@ class Transform:
 		else:
 			return (0, 0)
 
-	def __call__(self, string:str, *params):
+	def __call__(self, string:str, *params:coordinates.Length):
 		self._transform(string, *params)
 		if self.parent:
 			# Append to transform attribute
@@ -65,7 +65,7 @@ class Transform:
 
 		return self.parent or self
 
-	def _transform(self, string:str, *params):
+	def _transform(self, string:str, *params:coordinates.Length):
 		if len(params):
 			# transform('type',values)
 			transformations = [(string, params)]
@@ -131,7 +131,7 @@ class Transform:
 		surface.context.restore()
 	pull = restore
 
-	def transform_point(self, x:float, y:float):
+	def transform_point(self, x:float, y:float) -> ty.Tuple[float, float]:
 		return self._mat.transform_point(x, y)
 
 	# The public version of each method changes
