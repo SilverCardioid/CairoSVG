@@ -9,7 +9,7 @@ class Root:
 		else:
 			self.namespaces = ns.DEFAULTS.copy()
 
-	def _updateIDs(self):
+	def _update_ids(self):
 		self._ids = {}
 		for e in self.element.descendants():
 			eid = e.id

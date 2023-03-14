@@ -13,7 +13,7 @@ class Transform:
 		if string is not None:
 			self._transform(string)
 
-	def _addToAttr(self, string:str):
+	def _add_to_attr(self, string:str):
 		if self.parent:
 			val = self.parent._attribs.get('transform', None) or ''
 			if val:
@@ -21,11 +21,11 @@ class Transform:
 			val += string
 			self.parent['transform'] = val
 
-	def _getOrigin(self) -> ty.Tuple[float, float]:
-		transform_origin = self.parent and self.parent.getAttribute('transform-origin', None) # todo: cascadable or not?
+	def _get_origin(self) -> ty.Tuple[float, float]:
+		transform_origin = self.parent and self.parent.get_attribute('transform-origin', None) # todo: cascadable or not?
 		if transform_origin:
-			vp = self.parent and self.parent.getViewport()
-			width, height = vp.viewBoxSize
+			vp = self.parent and self.parent.get_viewport()
+			width, height = vp.inner_size
 
 			if isinstance(transform_origin, str):
 				origin = transform_origin.split(' ')
@@ -61,7 +61,7 @@ class Transform:
 			trans = string
 			if len(params):
 				trans += '(' + ','.join(str(v) for v in params) + ')'
-			self._addToAttr(trans)
+			self._add_to_attr(trans)
 
 		return self.parent or self
 
@@ -107,13 +107,13 @@ class Transform:
 		#		surface.context.transform(self._mat)
 
 	def apply(self, surface:cairo.Surface):
-		origin_x, origin_y = self._getOrigin()
+		origin_x, origin_y = self._get_origin()
 		surface.context.translate(origin_x, origin_y)
 		surface.context.transform(self._mat)
 		surface.context.translate(-origin_x, -origin_y)
 
 	@contextmanager
-	def applyContext(self, surface:cairo.Surface):
+	def apply_context(self, surface:cairo.Surface):
 		if self._transformed:
 			self.push(surface)
 		try:
@@ -131,7 +131,7 @@ class Transform:
 		surface.context.restore()
 	pull = restore
 
-	def transformPoint(self, x:float, y:float):
+	def transform_point(self, x:float, y:float):
 		return self._mat.transform_point(x, y)
 
 	# The public version of each method changes
@@ -139,7 +139,7 @@ class Transform:
 	# the private version (with '_') doesn't
 	def translate(self, tx:float, ty:float = 0):
 		self._translate(tx, ty)
-		self._addToAttr(f'translate({tx},{ty})' if ty != 0 else
+		self._add_to_attr(f'translate({tx},{ty})' if ty != 0 else
 		                f'translate({tx})')
 		return self
 	def _translate(self, tx:float, ty:float = 0):
@@ -148,7 +148,7 @@ class Transform:
 
 	def scale(self, sx:float, sy:ty.Optional[float] = None):
 		self._scale(sx, sy)
-		self._addToAttr(f'scale({sx},{sy})' if sy is not None else
+		self._add_to_attr(f'scale({sx},{sy})' if sy is not None else
 		                f'scale({sx})')
 		return self
 	def _scale(self, sx:float, sy:ty.Optional[float] = None):
@@ -157,7 +157,7 @@ class Transform:
 
 	def rotate(self, angle:float, cx:float = 0, cy:float = 0):
 		self._rotate(angle)
-		self._addToAttr(f'rotate({angle},{cx},{cy})' if cx != 0 or cy != 0 else
+		self._add_to_attr(f'rotate({angle},{cx},{cy})' if cx != 0 or cy != 0 else
 		                f'rotate({angle})')
 		return self
 	def _rotate(self, angle:float, cx:float = 0, cy:float = 0):
@@ -168,7 +168,7 @@ class Transform:
 
 	def skewX(self, angle:float):
 		self._skewX(angle)
-		self._addToAttr(f'skewX({angle})')
+		self._add_to_attr(f'skewX({angle})')
 		return self
 	def _skewX(self, angle:float):
 		self._mat = cairo.Matrix(1, 0, math.tan(math.radians(angle)),
@@ -177,7 +177,7 @@ class Transform:
 
 	def skewY(self, angle:float):
 		self._skewY(angle)
-		self._addToAttr(f'skewY({angle})')
+		self._add_to_attr(f'skewY({angle})')
 		return self
 	def _skewY(self, angle:float):
 		self._mat = cairo.Matrix(1, math.tan(math.radians(angle)), 0,
@@ -186,7 +186,7 @@ class Transform:
 
 	def matrix(self, xx:float, yx:float, xy:float, yy:float, x0:float, y0:float):
 		self._matrix(xx, yx, xy, yy, x0, y0)
-		self._addToAttr(f'matrix({xx},{yx},{xy},{yy},{x0},{y0})')
+		self._add_to_attr(f'matrix({xx},{yx},{xy},{yy},{x0},{y0})')
 		return self
 	def _matrix(self, xx:float, yx:float, xy:float, yy:float, x0:float, y0:float):
 		self._mat = cairo.Matrix(xx, yx, xy, yy, x0, y0) * self._mat

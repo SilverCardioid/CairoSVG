@@ -2,7 +2,7 @@ from csvg_import import cairosvg
 
 svg = cairosvg.SVG.read('input/bbox.svg')
 
-gShapes = svg.findID('shapes')
+gShapes = svg.find_id('shapes')
 gBoxes = svg.g(id='boxes', fill='none', stroke='#f00', strokeWidth='2')
 gVertices = svg.g(id='vertices', fill='#b00')
 gExtrema = svg.g(id='extrema', fill='#0a0')
@@ -13,7 +13,7 @@ for e in gShapes.descendants():
 
 	if e.tag == 'path':
 		extr = []
-		bx, by, bw, bh = e.boundingBox(_ex=extr).xywh
+		bx, by, bw, bh = e.bounding_box(_ex=extr).xywh
 		gBoxes.rect(x=bx, y=by, width=bw, height=bh)
 		for vx, vy in e.vertices(close=False):
 			gVertices.circle(r=pointR, cx=vx, cy=vy)
@@ -21,7 +21,7 @@ for e in gShapes.descendants():
 			gExtrema.circle(r=pointR, cx=ex, cy=ey)
 
 	else:
-		bx, by, bw, bh = e.boundingBox().xywh
+		bx, by, bw, bh = e.bounding_box().xywh
 		rect = gBoxes.rect(x=bx, y=by, width=bw, height=bh)
 		if e.tag == 'g':
 			rect['stroke'] = '#fc9'

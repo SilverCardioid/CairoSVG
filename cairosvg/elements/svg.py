@@ -25,13 +25,14 @@ class SVG(_StructureElement):
 	* viewBox: coordinate system for the <svg>'s contents, in the form
 	    'x y width height'. Defines a rectangular area that will be scaled
 	    and translated to fit the <svg>'s display size. Default 'none'.
-	* preserveAspectRatio: set the method for mapping the viewBox to the <svg>'s
-	    size, in the format '{align} {meetOrSlice}' (default: 'xMidYMid meet').
-	    {align} can be 'none' to stretch the image to fit the <svg>'s dimensions,
-	    or a string of the form 'x{xalign}Y{yalign}' to preserve the aspect ratio
-	    and use the specified alignment ('Mid', 'Min' or 'Max' for either axis).
-	    {meetOrSlice} can be 'meet' to pad the viewBox with empty space, or 'slice'
-	    to let it extend outside the outer viewport (possibly cutting it off).
+	* preserveAspectRatio: set the method for mapping the viewBox to the
+	    <svg>'s size, in the format '{align} {meetOrSlice}' (default:
+	    'xMidYMid meet'). {align} can be 'none' to stretch the image to fit the
+	    <svg>'s dimensions, or a string of the form 'x{xalign}Y{yalign}' to
+	    preserve the aspect ratio and use the specified alignment ('Mid', 'Min'
+	    or 'Max' for either axis). {meetOrSlice} can be 'meet' to pad the
+	    viewBox with empty space, or 'slice' to let it extend outside the outer
+	    viewport (possibly cutting it off).
 	* Presentation attributes (e.g., fill, stroke, transform, clip-path).
 	"""
 	tag = 'svg'
@@ -53,13 +54,13 @@ class SVG(_StructureElement):
 		self.viewport = coordinates.Viewport(parent=self)
 
 	def __setitem__(self, attrib:str, value:ty.Any):
-		#attrib = self._parseAttribute(attrib)
+		#attrib = self._parse_attribute(attrib)
 		attrib = super().__setitem__(attrib, value)
 		if attrib in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
 			self.viewport._attribs[attrib] = value
 		return attrib
 	def __delitem__(self, attrib:str):
-		#attrib = self._parseAttribute(attrib)
+		#attrib = self._parse_attribute(attrib)
 		attrib = super().__delitem__(attrib, value)
 		if attrib in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
 			self.viewport._attribs[attrib] = self._defaults[attrib]
@@ -89,28 +90,29 @@ class SVG(_StructureElement):
 	def namespaces(self) -> ht.Namespaces:
 		return self._root.namespaces
 
-	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
-		viewportTransform = self.viewport.getTransform()
+	def draw(self, surface:ht.Surface, *, paint:bool = True,
+	         viewport:ty.Optional[ht.Viewport] = None):
+		vp_transform = self.viewport.get_transform()
 
 		x, y = 0, 0
-		if not self.isRoot():
+		if not self.is_root():
 			# Nested SVG: use the element's x and y attributes
-			vp = viewport or self._getViewport()
-			x = _size(self.getAttribute('x', 0), vp, 'x')
-			y = _size(self.getAttribute('y', 0), vp, 'y')
+			vp = viewport or self._get_viewport()
+			x = _size(self.get_attribute('x', 0), vp, 'x')
+			y = _size(self.get_attribute('y', 0), vp, 'y')
 
 		surface.context.translate(x, y)
-		with viewportTransform.applyContext(surface):
+		with vp_transform.apply_context(surface):
 			for child in self._children:
 				child.draw(surface, paint=paint, viewport=viewport)
 		surface.context.translate(-x, -y)
 
 	def export(self, filename:str, *, surface:ty.Optional[ht.Surface] = None,
-	           useCairo:bool = False, **svgOptions):
+	           use_cairo:bool = False, **svg_options):
 		"""Export the document to `filename`.
-		If `filename` has a '.svg' extension (case-insensitive) and `useCairo` is
+		If `filename` has a '.svg' extension (case-insensitive) and `use_cairo` is
 		False, directly write the SVG code to that file using the `save()` method.
-		`**svgOptions` will be passed on to that method.
+		`**svg_options` will be passed on to that method.
 
 		Otherwise, draw the document on a new cairocffi surface of the appropriate
 		type (or the given `surface` if not None). '.png', '.pdf', '.ps' and '.svg'
@@ -120,11 +122,11 @@ class SVG(_StructureElement):
 		write the image.
 		"""
 		ext = os.path.splitext(filename)[1].lower()
-		width, height = self.viewport.getAbsoluteSize()
+		width, height = self.viewport.get_absolute_size()
 		width, height = round(width), round(height)
 
 		if ext == '.pdf':
-			surface = surface or helpers.surface.createSurface(
+			surface = surface or helpers.surface.create_surface(
 				'PDF', width, height, filename)
 			try:
 				self.draw(surface)
@@ -132,7 +134,7 @@ class SVG(_StructureElement):
 				surface.finish()
 
 		elif ext == '.png':
-			surface = surface or helpers.surface.createSurface(
+			surface = surface or helpers.surface.create_surface(
 				'Image', width, height, filename)
 			try:
 				self.draw(surface)
@@ -140,7 +142,7 @@ class SVG(_StructureElement):
 				surface.write_to_png(filename)
 
 		elif ext == '.ps':
-			surface = surface or helpers.surface.createSurface(
+			surface = surface or helpers.surface.create_surface(
 				'PS', width, height, filename)
 			try:
 				self.draw(surface)
@@ -148,15 +150,15 @@ class SVG(_StructureElement):
 				surface.finish()
 
 		elif ext == '.svg':
-			if useCairo:
-				surface = surface or helpers.surface.createSurface(
+			if use_cairo:
+				surface = surface or helpers.surface.create_surface(
 					'SVG', width, height, filename)
 				try:
 					self.draw(surface)
 				finally:
 					surface.finish()
 			else:
-				self.save(filename, **svgOptions)
+				self.save(filename, **svg_options)
 
 		else:
 			# Other format: try saving image with cv2
@@ -170,15 +172,15 @@ class SVG(_StructureElement):
 				raise ValueError(f'Failed to write image with extension: {ext}')
 
 	def save(self, filename:str, *, indent:ty.Optional[str] = '',
-	         newline:ty.Optional[str] = '\n', xmlDeclaration:bool = True):
+	         newline:ty.Optional[str] = '\n', xml_declaration:bool = True):
 		"""Save the document as a .svg file.
-		Open the given filename, and call `writeCode()` to write the SVG code
+		Open the given filename, and call `write_code()` to write the SVG code
 		to it. The keyword parameters are passed on to that method.
 		"""
 		with open(filename, 'w', encoding='utf-8') as file:
-			self.writeCode(file, indent=indent, newline=newline,
-			               xmlDeclaration=xmlDeclaration,
-			               namespaceDeclaration=True)
+			self.write_code(file, indent=indent, newline=newline,
+			                xml_declaration=xml_declaration,
+			                namespace_declaration=True)
 
 	def pixels(self, *, surface:ty.Optional[ht.Surface] = None,
 	           alpha:bool = False, bgr:bool = False) -> np.ndarray:
@@ -189,25 +191,25 @@ class SVG(_StructureElement):
 		if `bgr` is True, put the channels in OpenCV's BGR order, else, in RGB order.
 		`surface` is a Cairo surface to draw on; if None, create a new one.
 		"""
-		width, height = self.viewport.getAbsoluteSize()
-		surface = surface or helpers.surface.createSurface(
+		width, height = self.viewport.get_absolute_size()
+		surface = surface or helpers.surface.create_surface(
 			'Image', round(width), round(height))
 		self.draw(surface)
 		return helpers.surface.pixels(surface, alpha=alpha, bgr=bgr)
 
-	def show(self, windowName:str = 'svg', *,
+	def show(self, window_name:str = 'svg', *,
 	         surface:ty.Optional[ht.Surface] = None, wait:int = 0):
 		"""Show the image in a pop-up window.
 		The window can be closed by pressing the 'close' button normally, or by
 		pressing the Q or Esc key.
-		`windowName` is the title of the window, and should be unique among windows
+		`window_name` is the title of the window, and should be unique among windows
 		that are open at the same time.
 		If `wait` is a positive number , automatically close the window after the
 		given time in milliseconds.
 		`surface` is passed through to the `pixels()` method.
 		"""
 		helpers.surface.show(self.pixels(surface=surface, bgr=True),
-		                     windowName=windowName, wait=wait)
+		                     window_name=window_name, wait=wait)
 
 	@classmethod
 	def read(cls, source:ty.Union[str, ty.TextIO]):

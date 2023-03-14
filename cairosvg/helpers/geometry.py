@@ -14,7 +14,8 @@ def point_angle(cx, cy, px, py):
 
 def rotate(x, y, angle):
 	"""Rotate a point of an angle around the origin point."""
-	return x * math.cos(angle) - y * math.sin(angle), y * math.cos(angle) + x * math.sin(angle)
+	return (x * math.cos(angle) - y * math.sin(angle),
+	        y * math.cos(angle) + x * math.sin(angle))
 
 
 def quadratic_points(x1, y1, x2, y2, x3, y3):
@@ -37,7 +38,8 @@ def bezier_angles(*points):
 	elif points[-2] == points[-1]:
 		return bezier_angles(*points[:-1])
 	else:
-		return (point_angle(*points[0], *points[1]), point_angle(*points[-2], *points[-1]))
+		return (point_angle(*points[0], *points[1]),
+		        point_angle(*points[-2], *points[-1]))
 
 
 def evaluate_quadratic(t, p0, p1, p2):
@@ -106,15 +108,15 @@ class Arc:
 
 	def calculate(self):
 		# Cancel the rotation & eccentricity
-		self.radiiRatio = self.ry / self.rx
+		self.radii_ratio = self.ry / self.rx
 		dx, dy = rotate(self.dx, self.dy, -self.rotation)
-		dy /= self.radiiRatio
+		dy /= self.radii_ratio
 		# Put the second point onto the x axis
 		angle = point_angle(0, 0, dx, dy)
 		dx, dy = (dx ** 2 + dy ** 2) ** .5, 0
 		# Update the x radius if it is too small
 		self.rx = max(self.rx, dx / 2)
-		self.ry = self.rx * self.radiiRatio
+		self.ry = self.rx * self.radii_ratio
 		# Find circle centre
 		xc = dx / 2
 		yc = (self.rx ** 2 - xc ** 2) ** .5
@@ -122,11 +124,11 @@ class Arc:
 			yc = -yc
 		# Put the second point and the center back to their positions
 		dx, dy = rotate(dx, 0, angle)
-		self.drawCenter = rotate(xc, yc, angle)
-		self.drawAngles = (point_angle(*self.drawCenter, 0, 0),
-		                   point_angle(*self.drawCenter, dx, dy))
-		self.center = rotate(self.drawCenter[0],
-		                     self.drawCenter[1]*self.radiiRatio, self.rotation)
+		self.draw_center = rotate(xc, yc, angle)
+		self.draw_angles = (point_angle(*self.draw_center, 0, 0),
+		                    point_angle(*self.draw_center, dx, dy))
+		self.center = rotate(self.draw_center[0],
+		                     self.draw_center[1]*self.radii_ratio, self.rotation)
 
 	def evaluate(self, t):
 		return (self.center[0] + self.rx*math.cos(self.rotation)*math.cos(t)
@@ -138,25 +140,27 @@ class Arc:
 		# Get parametric angles for the extrema of the full circle or ellipse, in [0, 2pi)
 		if self.rotation == 0:
 			# No rotation: extrema must be at multiples of pi/2
-			exAngles = [0, math.pi/2, math.pi, 3*math.pi/2]
-		elif self.radiiRatio == 1:
+			ex_angles = [0, math.pi/2, math.pi, 3*math.pi/2]
+		elif self.radii_ratio == 1:
 			# Rotated circular arc: account for rotation
-			exAngles = sorted([(-self.rotation              ) % (2*math.pi),
-			                   (-self.rotation +   math.pi/2) % (2*math.pi),
-			                   (-self.rotation +   math.pi  ) % (2*math.pi),
-			                   (-self.rotation + 3*math.pi/2) % (2*math.pi)])
+			ex_angles = sorted([(-self.rotation              ) % (2*math.pi),
+			                    (-self.rotation +   math.pi/2) % (2*math.pi),
+			                    (-self.rotation +   math.pi  ) % (2*math.pi),
+			                    (-self.rotation + 3*math.pi/2) % (2*math.pi)])
 		else:
 			# Rotated elliptical arc: get solutions for dx/dt = 0 and dy/dt = 0
-			tx = math.atan2(-self.ry * math.sin(self.rotation), self.rx * math.cos(self.rotation))
-			ty = math.atan2( self.ry * math.cos(self.rotation), self.rx * math.sin(self.rotation))
-			exAngles = sorted([(tx          ) % (2*math.pi),
-			                   (tx + math.pi) % (2*math.pi),
-			                   (ty          ) % (2*math.pi),
-			                   (ty + math.pi) % (2*math.pi)])
+			tx = math.atan2(-self.ry * math.sin(self.rotation),
+			                 self.rx * math.cos(self.rotation))
+			ty = math.atan2( self.ry * math.cos(self.rotation),
+			                 self.rx * math.sin(self.rotation))
+			ex_angles = sorted([(tx          ) % (2*math.pi),
+			                    (tx + math.pi) % (2*math.pi),
+			                    (ty          ) % (2*math.pi),
+			                    (ty + math.pi) % (2*math.pi)])
 
 		# Normalise angles to make sure 0 <= a1 <= a2
-		a1 = self.drawAngles[0] % (2*math.pi)
-		a2 = self.drawAngles[1] % (2*math.pi)
+		a1 = self.draw_angles[0] % (2*math.pi)
+		a2 = self.draw_angles[1] % (2*math.pi)
 		if not self.sweep:
 			a1, a2 = a2, a1
 		if a1 > a2:
@@ -164,7 +168,7 @@ class Arc:
 
 		# Check which possible angles are between a1 and a2
 		solns = []
-		for angle in exAngles:
+		for angle in ex_angles:
 			# check angle+2pi too since a2 may be up to 4pi
 			if a1 < angle < a2 or a1 < (angle + 2*math.pi) < a2:
 				x, y = self.evaluate(angle)
@@ -210,7 +214,7 @@ class Box:
 		else:
 			return Box()
 
-	def addPoint(self, x:float, y:float):
+	def add_point(self, x:float, y:float):
 		if self.defined:
 			self.x0, self.x1 = min(self.x0, x), max(self.x1, x)
 			self.y0, self.y1 = min(self.y0, y), max(self.y1, y)
@@ -220,7 +224,7 @@ class Box:
 			self.y0, self.y1 = y, y
 			self.defined = True
 
-	def addBox(self, other:Box):
+	def add_box(self, other:Box):
 		if other.defined:
 			if self.defined:
 				# bounding box of the union of the two
@@ -234,10 +238,10 @@ class Box:
 		# other not defined: no change
 
 	def __add__(self, other:Box) -> Box:
-		return self.copy().addBox(other)
+		return self.copy().add_box(other)
 
 	def __iadd__(self, other:Box) -> Box:
-		self.addBox(other)
+		self.add_box(other)
 		return self
 
 	def __and__(self, other:Box) -> Box:

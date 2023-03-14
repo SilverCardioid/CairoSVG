@@ -47,32 +47,32 @@ class Path(_ShapeElement):
 	def _add(self, letter:str, coords:ty.List[float] = None):
 		self._data.append([letter, coords])
 		if letter == 'M':
-			self._startPoint = coords[-2:]
-		elif self._startPoint is None:
+			self._start_point = coords[-2:]
+		elif self._start_point is None:
 			raise ValueError('Path has not been started with \'M\' or \'m\'')
-		self._currentPoint = coords[-2:] if letter != 'Z' else self._startPoint
-		self._lastBezier = (letter, *coords[-4:-2]) if letter in 'QC' else None
+		self._current_point = coords[-2:] if letter != 'Z' else self._start_point
+		self._last_bezier = (letter, *coords[-4:-2]) if letter in 'QC' else None
 
-	def _addToAttr(self, string:str):
+	def _add_to_attr(self, string:str):
 		val = self._attribs.get('d', None) or ''
 		val += string
 		self['d'] = val
 
 	def _clear(self):
 		self._data = []
-		self._currentPoint = None
-		self._startPoint = None
-		self._lastBezier = None
+		self._current_point = None
+		self._start_point = None
+		self._last_bezier = None
 
 	def _rel2abs(self, x:float, y:float) -> ty.Tuple[float, float]:
-		return self._currentPoint[0] + x, self._currentPoint[1] + y
+		return self._current_point[0] + x, self._current_point[1] + y
 
 	# The public version of each method changes the 'd' attribute;
 	# the private version (with '_') doesn't
 	def M(self, x:float, y:float):
 		"""Moveto: start a new sub-path at (x, y)"""
 		self._M(x, y)
-		self._addToAttr(f'M{x},{y}')
+		self._add_to_attr(f'M{x},{y}')
 		return self
 	def _M(self, x:float, y:float):
 		self._add('M', [x, y])
@@ -80,17 +80,17 @@ class Path(_ShapeElement):
 	def m(self, x:float, y:float):
 		"""Relative moveto: start a new sub-path at (x, y)"""
 		self._m(x, y)
-		self._addToAttr(f'm{x},{y}')
+		self._add_to_attr(f'm{x},{y}')
 		return self
 	def _m(self, x:float, y:float):
-		if self._startPoint is not None:
+		if self._start_point is not None:
 			x, y = self._rel2abs(x, y)
 		self._M(x, y)
 
 	def L(self, x:float, y:float):
 		"""Lineto: draw a straight line to (x, y)"""
 		self._L(x, y)
-		self._addToAttr(f'L{x},{y}')
+		self._add_to_attr(f'L{x},{y}')
 		return self
 	def _L(self, x:float, y:float):
 		self._add('L', [x, y])
@@ -98,7 +98,7 @@ class Path(_ShapeElement):
 	def l(self, x:float, y:float):
 		"""Relative lineto: draw a straight line to (x, y)"""
 		self._l(x, y)
-		self._addToAttr(f'l{x},{y}')
+		self._add_to_attr(f'l{x},{y}')
 		return self
 	def _l(self, x:float, y:float):
 		self._L(*self._rel2abs(x, y))
@@ -106,15 +106,15 @@ class Path(_ShapeElement):
 	def H(self, x:float):
 		"""Horizontal lineto: draw a horizontal line to x"""
 		self._H(x)
-		self._addToAttr(f'H{x}')
+		self._add_to_attr(f'H{x}')
 		return self
 	def _H(self, x:float):
-		self._L(x, self._currentPoint[1])
+		self._L(x, self._current_point[1])
 
 	def h(self, x:float):
 		"""Relative horizontal lineto: draw a horizontal line to x"""
 		self._h(x)
-		self._addToAttr(f'h{x}')
+		self._add_to_attr(f'h{x}')
 		return self
 	def _h(self, x:float):
 		self._l(x, 0)
@@ -122,39 +122,43 @@ class Path(_ShapeElement):
 	def V(self, y:float):
 		"""Vertical lineto: draw a vertical line to y"""
 		self._V(y)
-		self._addToAttr(f'V{y}')
+		self._add_to_attr(f'V{y}')
 		return self
 	def _V(self, y:float):
-		self._L(self._currentPoint[0], y)
+		self._L(self._current_point[0], y)
 
 	def v(self, y:float):
 		"""Relative vertical lineto: draw a vertical line to y"""
 		self._v(y)
-		self._addToAttr(f'v{y}')
+		self._add_to_attr(f'v{y}')
 		return self
 	def _v(self, y:float):
 		self._l(0, y)
 
-	def A(self, rx:float, ry:float, rot:float, large:bool, sweep:bool, x:float, y:float):
+	def A(self, rx:float, ry:float, rot:float, large:bool, sweep:bool,
+	      x:float, y:float):
 		"""Elliptical arc"""
 		self._A(rx, ry, rot, large, sweep, x, y)
-		self._addToAttr(f'A{rx},{ry} {rot} {large},{sweep} {x},{y}')
+		self._add_to_attr(f'A{rx},{ry} {rot} {large},{sweep} {x},{y}')
 		return self
-	def _A(self, rx:float, ry:float, rot:float, large:bool, sweep:bool, x:float, y:float):
+	def _A(self, rx:float, ry:float, rot:float, large:bool, sweep:bool,
+	       x:float, y:float):
 		self._add('A', [rx, ry, rot, large, sweep, x, y])
 
-	def a(self, rx:float, ry:float, rot:float, large:bool, sweep:bool, x:float, y:float):
+	def a(self, rx:float, ry:float, rot:float, large:bool, sweep:bool,
+	      x:float, y:float):
 		"""Relative elliptical arc"""
 		self._a(rx, ry, rot, large, sweep, x, y)
-		self._addToAttr(f'a{rx},{ry} {rot} {large},{sweep} {x},{y}')
+		self._add_to_attr(f'a{rx},{ry} {rot} {large},{sweep} {x},{y}')
 		return self
-	def _a(self, rx:float, ry:float, rot:float, large:bool, sweep:bool, x:float, y:float):
+	def _a(self, rx:float, ry:float, rot:float, large:bool, sweep:bool,
+	       x:float, y:float):
 		self._A(rx, ry, rot, large, sweep, *self._rel2abs(x, y))
 
 	def C(self, x1:float, y1:float, x2:float, y2:float, x:float, y:float):
 		"""Curveto: cubic Bezier curve"""
 		self._C(x1, y1, x2, y2, x, y)
-		self._addToAttr(f'C{x1},{y1} {x2},{y2} {x},{y}')
+		self._add_to_attr(f'C{x1},{y1} {x2},{y2} {x},{y}')
 		return self
 	def _C(self, x1:float, y1:float, x2:float, y2:float, x:float, y:float):
 		self._add('C', [x1, y1, x2, y2, x, y])
@@ -162,7 +166,7 @@ class Path(_ShapeElement):
 	def c(self, x1:float, y1:float, x2:float, y2:float, x:float, y:float):
 		"""Relative curveto: cubic Bezier curve"""
 		self._c(x1, y1, x2, y2, x, y)
-		self._addToAttr(f'c{x1},{y1} {x2},{y2} {x},{y}')
+		self._add_to_attr(f'c{x1},{y1} {x2},{y2} {x},{y}')
 		return self
 	def _c(self, x1:float, y1:float, x2:float, y2:float, x:float, y:float):
 		self._C(*self._rel2abs(x1, y1), *self._rel2abs(x2, y2), *self._rel2abs(x, y))
@@ -170,7 +174,7 @@ class Path(_ShapeElement):
 	def Q(self, x1:float, y1:float, x:float, y:float):
 		"""Quadratic Bezier curveto"""
 		self._Q(x1, y1, x, y)
-		self._addToAttr(f'Q{x1},{y1} {x},{y}')
+		self._add_to_attr(f'Q{x1},{y1} {x},{y}')
 		return self
 	def _Q(self, x1:float, y1:float, x:float, y:float):
 		self._add('Q', [x1, y1, x, y])
@@ -178,7 +182,7 @@ class Path(_ShapeElement):
 	def q(self, x1:float, y1:float, x:float, y:float):
 		"""Relative quadratic Bezier curveto"""
 		self._q(x1, y1, x, y)
-		self._addToAttr(f'q{x1},{y1} {x},{y}')
+		self._add_to_attr(f'q{x1},{y1} {x},{y}')
 		return self
 	def _q(self, x1:float, y1:float, x:float, y:float):
 		self._Q(*self._rel2abs(x1, y1), *self._rel2abs(x, y))
@@ -186,19 +190,19 @@ class Path(_ShapeElement):
 	def S(self, x2:float, y2:float, x:float, y:float):
 		"""Smooth curveto: smooth cubic Bezier curve"""
 		self._S(x2, y2, x, y)
-		self._addToAttr(f'S{x2},{y2} {x},{y}')
+		self._add_to_attr(f'S{x2},{y2} {x},{y}')
 		return self
 	def _S(self, x2:float, y2:float, x:float, y:float):
-		x1, y1 = self._currentPoint
-		if self._lastBezier and self._lastBezier[0]=='C':
-			xp, yp = self._lastBezier[1:]
+		x1, y1 = self._current_point
+		if self._last_bezier and self._last_bezier[0]=='C':
+			xp, yp = self._last_bezier[1:]
 			x1, y1 = x1 - (xp - x1), y1 - (yp - y1)
 		self._C(x1, y1, x2, y2, x, y)
 
 	def s(self, x2:float, y2:float, x:float, y:float):
 		"""Relative smooth curveto: smooth cubic Bezier curve"""
 		self._s(x2, y2, x, y)
-		self._addToAttr(f's{x2},{y2} {x},{y}')
+		self._add_to_attr(f's{x2},{y2} {x},{y}')
 		return self
 	def _s(self, x2:float, y2:float, x:float, y:float):
 		self._S(*self._rel2abs(x2, y2), *self._rel2abs(x, y))
@@ -206,19 +210,19 @@ class Path(_ShapeElement):
 	def T(self, x:float, y:float):
 		"""Smooth quadratic Bezier curveto"""
 		self._T(x, y)
-		self._addToAttr(f'T{x},{y}')
+		self._add_to_attr(f'T{x},{y}')
 		return self
 	def _T(self, x:float, y:float):
-		x1, y1 = self._currentPoint
-		if self._lastBezier and self._lastBezier[0]=='Q':
-			xp, yp = self._lastBezier[1:]
+		x1, y1 = self._current_point
+		if self._last_bezier and self._last_bezier[0]=='Q':
+			xp, yp = self._last_bezier[1:]
 			x1, y1 = x1 - (xp - x1), y1 - (yp - y1)
 		self._Q(x1, y1, x, y)
 
 	def t(self, x:float, y:float):
 		"""Relative smooth quadratic Bezier curveto"""
 		self._t(x, y)
-		self._addToAttr(f't{x},{y}')
+		self._add_to_attr(f't{x},{y}')
 		return self
 	def _t(self, x:float, y:float):
 		self._T(*self._rel2abs(x, y))
@@ -226,13 +230,14 @@ class Path(_ShapeElement):
 	def Z(self):
 		"""Closepath: draw a straight line to the sub-path's initial point"""
 		self._Z()
-		self._addToAttr('z')
+		self._add_to_attr('z')
 		return self
 	def _Z(self):
 		self._add('Z')
 	z = Z
 
-	def polyline(self, points:ty.Sequence[ty.Tuple[float, float]], closed:bool = False):
+	def polyline(self, points:ty.Sequence[ty.Tuple[float, float]],
+	             closed:bool = False):
 		"""Add a series of straight lines from an array of (x,y) points."""
 		if len(points) > 0:
 			self.M(*points[0])
@@ -241,226 +246,240 @@ class Path(_ShapeElement):
 			if closed:
 				self.z()
 
-	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[helpers.coordinates.Viewport] = None):
-		with self._applyTransformations(surface):
-			startPoint = None
-			lastPoint = None
+	def draw(self, surface:ht.Surface, *, paint:bool = True,
+	         viewport:ty.Optional[ht.Viewport] = None):
+		with self._apply_transformations(surface):
+			start_point = None
+			last_point = None
 			for command in self._data:
 				letter, coords = command
 				if letter == 'M':
 					surface.context.move_to(*coords)
-					startPoint = coords[-2:]
+					start_point = coords[-2:]
 				elif letter == 'L':
 					surface.context.line_to(*coords)
 				elif letter == 'A':
-					self._drawArc(surface, *lastPoint, *coords)
+					self._draw_arc(surface, *last_point, *coords)
 				elif letter == 'C':
 					surface.context.curve_to(*coords)
 				elif letter == 'Q':
-					cubicCoords = helpers.geometry.quadratic_points(*lastPoint, *coords)
-					surface.context.curve_to(*cubicCoords)
+					cubic_coords = helpers.geometry.quadratic_points(*last_point, *coords)
+					surface.context.curve_to(*cubic_coords)
 				elif letter == 'Z':
 					surface.context.close_path()
 				else:
 					raise ValueError('Unknown letter: ' + letter)
-				lastPoint = coords[-2:] if letter != 'Z' else startPoint
+				last_point = coords[-2:] if letter != 'Z' else start_point
 
 			if paint:
 				self._paint(surface, viewport=viewport)
 
-	def _drawArc(self, surface:ht.Surface, x1:float, y1:float, rx:float, ry:float,
-	             rotation:float, large:bool, sweep:bool, x3:float, y3:float):
+	def _draw_arc(self, surface:ht.Surface, x1:float, y1:float,
+	              rx:float, ry:float, rotation:float,
+	              large:bool, sweep:bool, x3:float, y3:float):
 		surface.context.set_tolerance(0.00001)
 		# rx=0 or ry=0 means straight line
 		if not rx or not ry:
 			surface.context.line_to(x3, y3)
 			return
 
-		arc = helpers.geometry.Arc(rx, ry, rotation, large, sweep, x3 - x1, y3 - y1)
-		arcFun = (surface.context.arc if arc.sweep else surface.context.arc_negative)
+		arc = helpers.geometry.Arc(
+			rx, ry, rotation, large, sweep, x3 - x1, y3 - y1)
+		arc_fun = (surface.context.arc if arc.sweep else
+		           surface.context.arc_negative)
 
 		surface.context.save()
 		surface.context.translate(x1, y1)
 		surface.context.rotate(arc.rotation)
-		surface.context.scale(1, arc.radiiRatio)
-		arcFun(*arc.drawCenter, arc.rx, *arc.drawAngles)
+		surface.context.scale(1, arc.radii_ratio)
+		arc_fun(*arc.draw_center, arc.rx, *arc.draw_angles)
 		surface.context.restore()
 
 	def vertices(self, close:bool = True) -> ht.VertexList:
 		"""Get the vertices of the path as a list of (x,y) tuples.
-		If `close` is True, repeat the initial vertex of closed sub-paths at the end.
+		If `close` is True, repeat the initial vertex of closed sub-paths
+		at the end.
 		"""
 		v = []
-		lastM = None
+		last_m = None
 		for letter, coords in self._data:
 			if letter != 'Z':
 				# M, L, A, C, Q: add coordinate
 				v.append(tuple(coords[-2:]))
 				if letter == 'M':
-					lastM = tuple(coords[-2:])
+					last_m = tuple(coords[-2:])
 			elif close:
-				v.append(lastM)
+				v.append(last_m)
 		return v
 
-	def vertexAngles(self) -> ty.List[float]:
+	def vertex_angles(self) -> ty.List[float]:
 		"""Get the marker angles at every vertex.
 		Each angle is in radians, and is the average of the direction of the
 		two adjoining line segments at that vertex.
 		"""
-		segmentAngles = []
+		segment_angles = []
 		#index = 0
 		vertex = None
-		lastVertex = (0, 0) # in case of no M
-		lastM = (0, 0)
-		lastLetter = None
+		last_vertex = (0, 0) # in case of no M
+		last_m = (0, 0)
+		last_letter = None
 
 		for command in self._data:
 			letter, coords = command
 
 			if letter == 'M':
-				if segmentAngles and lastLetter != 'Z': # Mark last path unclosed
-					segmentAngles[-1].append(None)
+				if segment_angles and last_letter != 'Z': # Mark last path unclosed
+					segment_angles[-1].append(None)
 				vertex = coords[-2:]
-				lastM = vertex
-				segmentAngles.append([])
+				last_m = vertex
+				segment_angles.append([])
 
 			elif letter == 'L':
 				vertex = coords[-2:]
-				angle = helpers.geometry.point_angle(*lastVertex, *vertex)
-				segmentAngles[-1].append((angle, angle))
+				angle = helpers.geometry.point_angle(*last_vertex, *vertex)
+				segment_angles[-1].append((angle, angle))
 
 			elif letter == 'A':
 				vertex = coords[-2:]
 				rx, ry, rotation, large, sweep, xe, ye = coords
-				xe -= lastVertex[0]
-				ye -= lastVertex[1]
+				xe -= last_vertex[0]
+				ye -= last_vertex[1]
 				rotation = math.radians(rotation)
 				if not rx or not ry:
 					# rx=0 or ry=0 means straight line
-					angle = helpers.geometry.point_angle(*lastVertex, *vertex)
-					segmentAngles[-1].append((angle, angle))
+					angle = helpers.geometry.point_angle(*last_vertex, *vertex)
+					segment_angles[-1].append((angle, angle))
 				else:
 					arc = helpers.geometry.Arc(rx, ry, rotation, large, sweep, xe, ye)
-					angle1, angle2 = arc.drawAngles
+					angle1, angle2 = arc.draw_angles
 					tangent1 = angle1 + (math.pi/2 if arc.sweep else -math.pi/2)
 					tangent2 = angle2 + (math.pi/2 if arc.sweep else -math.pi/2)
-					if arc.radiiRatio != 1:
-						tangent1 = math.atan2(arc.radiiRatio*math.sin(tangent1), math.cos(tangent1))
-						tangent2 = math.atan2(arc.radiiRatio*math.sin(tangent2), math.cos(tangent2))
-					segmentAngles[-1].append((tangent1 + arc.rotation, tangent2 + arc.rotation))
+					if arc.radii_ratio != 1:
+						tangent1 = math.atan2(arc.radii_ratio*math.sin(tangent1),
+						                      math.cos(tangent1))
+						tangent2 = math.atan2(arc.radii_ratio*math.sin(tangent2),
+						                      math.cos(tangent2))
+					segment_angles[-1].append((tangent1 + arc.rotation,
+					                           tangent2 + arc.rotation))
 
 			elif letter == 'C':
 				vertex = coords[-2:]
-				segmentAngles[-1].append(helpers.bezier_angles(lastVertex, coords[0:2], coords[2:4], vertex))
+				segment_angles[-1].append(helpers.bezier_angles(
+					last_vertex, coords[0:2], coords[2:4], vertex))
 
 			elif letter == 'Q':
 				vertex = coords[-2:]
-				segmentAngles[-1].append(helpers.bezier_angles(lastVertex, coords[0:2], vertex))
+				segment_angles[-1].append(helpers.bezier_angles(
+					last_vertex, coords[0:2], vertex))
 
 			elif letter == 'Z':
-				vertex = lastM
-				angle = helpers.geometry.point_angle(*lastVertex, *vertex)
-				segmentAngles[-1].append((angle, angle))
+				vertex = last_m
+				angle = helpers.geometry.point_angle(*last_vertex, *vertex)
+				segment_angles[-1].append((angle, angle))
 
-			lastVertex = vertex
-			lastLetter = letter
+			last_vertex = vertex
+			last_letter = letter
 
-		if lastLetter != 'Z': # Mark last path unclosed
-			segmentAngles[-1].append(None)
+		if last_letter != 'Z': # Mark last path unclosed
+			segment_angles[-1].append(None)
 
 		# Calculate vertex angles from adjoining segments
-		vertexAngles = []
-		for subpath in segmentAngles:
-			angleOut, angleIn = None, None
+		vertex_angles = []
+		for subpath in segment_angles:
+			angle_out, angle_in = None, None
 
 			if subpath and subpath[-1] is not None:
 				# Closed subpath: assign final angle to average with initial angle &
 				# append copy of first angle at the end
-				angleIn = subpath[-1][1]
+				angle_in = subpath[-1][1]
 				subpath += [subpath[0]]
 
 			for angles in subpath:
 				if angles:
-					angleOut = angles[0]
-					if angleIn is None:
+					angle_out = angles[0]
+					if angle_in is None:
 						# Start of unclosed subpath
-						vertexAngles.append(angleOut)
+						vertex_angles.append(angle_out)
 					else:
 						# Two adjoining segments: bisect the angle difference
 						# by summing the corresponding unit vectors
-						vertexAngles.append(math.atan2(math.sin(angleOut) + math.sin(angleIn), math.cos(angleOut) + math.cos(angleIn)))
-					angleIn = angles[1]
+						vertex_angles.append(math.atan2(
+							math.sin(angle_out) + math.sin(angle_in),
+							math.cos(angle_out) + math.cos(angle_in)))
+					angle_in = angles[1]
 				else: # End of unclosed subpath
-					vertexAngles.append(angleIn)
-		return vertexAngles
+					vertex_angles.append(angle_in)
+		return vertex_angles
 
-	def boundingBox(self, *, withTransform:bool = True, _ex:ty.Optional[ht.VertexList] = None) -> ht.Box:
+	def bounding_box(self, *, with_transform:bool = True,
+	                 _ex:ty.Optional[ht.VertexList] = None) -> ht.Box:
 		box = helpers.geometry.Box()
-		lastVertex = (0, 0) # in case of no M
-		lastM = (0, 0)
+		last_vertex = (0, 0) # in case of no M
+		last_m = (0, 0)
 		for command in self._data:
 			letter, coords = command
-			x0, y0 = lastVertex
+			x0, y0 = last_vertex
 
 			if letter == 'Z':
-				lastVertex = lastM
+				last_vertex = last_m
 				continue
 
 			if letter == 'M':
-				lastM = coords
+				last_m = coords
 
 			if letter == 'C':
 				x1, y1, x2, y2, x3, y3 = coords
-				xExtrema = helpers.geometry.cubic_extrema(x0, x1, x2, x3)
-				yExtrema = helpers.geometry.cubic_extrema(y0, y1, y2, y3)
-				for t, x in xExtrema:
+				x_extrema = helpers.geometry.cubic_extrema(x0, x1, x2, x3)
+				y_extrema = helpers.geometry.cubic_extrema(y0, y1, y2, y3)
+				for t, x in x_extrema:
 					y = helpers.geometry.evaluate_cubic(t, y0, y1, y2, y3)
-					box.addPoint(x, y)
+					box.add_point(x, y)
 					if _ex is not None:
 						_ex.append((x, y))
-				for t, y in yExtrema:
+				for t, y in y_extrema:
 					x = helpers.geometry.evaluate_cubic(t, x0, x1, x2, x3)
-					box.addPoint(x, y)
+					box.add_point(x, y)
 					if _ex is not None:
 						_ex.append((x, y))
 
 			if letter == 'Q':
 				x1, y1, x2, y2 = coords
-				xExtrema = helpers.geometry.quadratic_extrema(x0, x1, x2)
-				yExtrema = helpers.geometry.quadratic_extrema(y0, y1, y2)
-				for t, x in xExtrema:
+				x_extrema = helpers.geometry.quadratic_extrema(x0, x1, x2)
+				y_extrema = helpers.geometry.quadratic_extrema(y0, y1, y2)
+				for t, x in x_extrema:
 					y = helpers.geometry.evaluate_quadratic(t, y0, y1, y2)
-					box.addPoint(x, y)
+					box.add_point(x, y)
 					if _ex is not None:
 						_ex.append((x, y))
-				for t, y in yExtrema:
+				for t, y in y_extrema:
 					x = helpers.geometry.evaluate_quadratic(t, x0, x1, x2)
-					box.addPoint(x, y)
+					box.add_point(x, y)
 					if _ex is not None:
 						_ex.append((x, y))
 
 			if letter == 'A':
 				rx, ry, rotation, large, sweep, x1, y1 = coords
 				if rx and ry:
-					arc = helpers.geometry.Arc(rx, ry, rotation, large, sweep, x1 - x0, y1 - y0)
+					arc = helpers.geometry.Arc(rx, ry, rotation, large, sweep,
+					                           x1 - x0, y1 - y0)
 					extrema = arc.extrema()
 					for angle, (x, y) in extrema:
 						x += x0; y += y0
-						box.addPoint(x, y)
+						box.add_point(x, y)
 						if _ex is not None:
 							_ex.append((x, y))
 
-			newX, newY = coords[-2:]
-			box.addPoint(newX, newY)
-			lastVertex = (newX, newY)
+			new_x, new_y = coords[-2:]
+			box.add_point(new_x, new_y)
+			last_vertex = (new_x, new_y)
 
-		if withTransform: box = self._transformBox(box)
+		if with_transform: box = self._transform_box(box)
 		return box
 
 	def d(self, d:str):
 		"""Append path data from a string."""
 		self._d(d)
-		self._addToAttr(d)
+		self._add_to_attr(d)
 		return self
 
 	def _d(self, d:str):

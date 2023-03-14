@@ -17,8 +17,8 @@ class ClipPath(_Element):
 	* clipPathUnits: set the coordinate system for the clipPath's contents.
 	    If 'userSpaceOnUse' (default), use absolute coordinates as defined
 	    by the nearest ancestor <svg> or other viewport.
-	    If 'objectBoundingBox', use relative coordinates as if in a 1 by 1 unit
-	    viewBox, which is mapped to the target element's bounding box.
+	    If 'objectBoundingBox', use relative coordinates as if in a 1 by 1
+	    unit viewBox, which is mapped to the target element's bounding box.
 	"""
 	tag = 'clipPath'
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Paint'] + _attrib['Font'] + _attrib['TextContent'] + _attrib['Text'] + _attrib['Opacity'] + _attrib['Graphics'] + _attrib['Mask'] + _attrib['GraphicalEvents'] + _attrib['Clip'] + ['transform', 'clipPathUnits']
@@ -30,36 +30,37 @@ class ClipPath(_Element):
 	def __init__(self, **attribs):
 		super().__init__(**attribs)
 
-	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True, 
+	         viewport:ty.Optional[ht.Viewport] = None):
 		# Draw nothing
 		return
 
 	def apply(self, surface:ht.Surface, target:_ElemType):
 		surface.context.save()
-		clipPathUnits = self['clipPathUnits'].strip()
-		if clipPathUnits == 'objectBoundingBox':
-			tx, ty, tw, th = target.boundingBox(withTransform=False).xywh
+		cp_units = self['clipPathUnits'].strip()
+		if cp_units == 'objectBoundingBox':
+			tx, ty, tw, th = target.bounding_box(with_transform=False).xywh
 			if tw > 0 and th > 0:
 				surface.context.translate(tx, ty)
 				surface.context.scale(tw, th)
-			clipVP = helpers.coordinates.Viewport(width=1, height=1)
+			clip_vp = helpers.coordinates.Viewport(width=1, height=1)
 		else:
-			if clipPathUnits != 'userSpaceOnUse':
-				print(f'warning: invalid attribute value: clipPathUnits="{clipPathUnits}"')
-			clipVP = target._getViewport()
+			if cp_units != 'userSpaceOnUse':
+				print(f'warning: invalid attribute value: clipPathUnits="{cp_units}"')
+			clip_vp = target._get_viewport()
 
 		for child in self._children:
-			child.draw(surface, paint=False, viewport=clipVP)
+			child.draw(surface, paint=False, viewport=clip_vp)
 		surface.context.restore()
 
 		# TODO: fill rules are not handled by cairo for clips
-		# fillRule = self.getAttribute('fill-rule', 'nonzero', cascade=True)
-		# assert fillRule in helpers.attribs.FILL_RULES
-		# surface.context.set_fill_rule(helpers.attribs.FILL_RULES[fillRule])
+		# fill_rule = self.get_attribute('fill-rule', 'nonzero', cascade=True)
+		# assert fill_rule in helpers.attribs.FILL_RULES
+		# surface.context.set_fill_rule(helpers.attribs.FILL_RULES[fill_rule])
 		surface.context.clip()
 
 	@contextmanager
-	def applyContext(self, surface:ht.Surface, target:_ElemType):
+	def apply_context(self, surface:ht.Surface, target:_ElemType):
 		surface.context.save()
 		try:
 			self.apply(surface, target)
@@ -67,13 +68,13 @@ class ClipPath(_Element):
 		finally:
 			surface.context.restore()
 
-	def _clipBox(self, box:ht.Box):
+	def _clip_box(self, box:ht.Box):
 		# Get the bounding box of the clipPath's contents
-		cpBox = ht.Box()
+		cp_box = ht.Box()
 		for child in self._children:
-			cpBox += child.boundingBox()
+			cp_box += child.bounding_box()
 		# Intersect it with the given box
-		return cpBox & box
+		return cp_box & box
 
 
 class Mask(_Element):
@@ -99,19 +100,20 @@ class Mask(_Element):
 	def __init__(self, **attribs):
 		super().__init__(**attribs)
 
-	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True,
+	         viewport:ty.Optional[ht.Viewport] = None):
 		# Draw nothing
 		return
 
 	def apply(self, surface:ht.Surface, target:_ElemType):
-		maskUnits = self['maskUnits'].strip()
-		maskContentUnits = self['maskContentUnits'].strip()
-		if maskUnits == 'userSpaceOnUse':
+		mask_units = self['maskUnits'].strip()
+		content_units = self['maskContentUnits'].strip()
+		if mask_units == 'userSpaceOnUse':
 			# The spec specifies the invoking element's viewport
 			# (https://drafts.fxtf.org/css-masking/#element-attrdef-mask-maskunits);
 			# MDN conflictingly specifies the mask's own viewport
 			# (https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/maskUnits)
-			vp = target._getViewport()
+			vp = target._get_viewport()
 			x      = _size(self['x']     , vp, 'x')
 			y      = _size(self['y']     , vp, 'y')
 			width  = _size(self['width'] , vp, 'x')
@@ -119,35 +121,36 @@ class Mask(_Element):
 		else:
 			# objectBoundingBox: fractions or percentages of target's size
 			# (as if in a "0 0 1 1" viewbox)
-			if maskUnits != 'objectBoundingBox':
-				print(f'warning: invalid attribute value: maskUnits="{maskUnits}"')
-			tx, ty, tw, th = target.boundingBox(withTransform=False).xywh
+			if mask_units != 'objectBoundingBox':
+				print(f'warning: invalid attribute value: maskUnits="{mask_units}"')
+			tx, ty, tw, th = target.bounding_box(with_transform=False).xywh
 			x      = tw * _size(self['x']     , reference=1) + tx
 			y      = th * _size(self['y']     , reference=1) + ty
 			width  = tw * _size(self['width'] , reference=1)
 			height = th * _size(self['height'], reference=1)
 
-		maskSurface = helpers.surface.createSurface('recording', x=x, y=y, width=width, height=height)
-		if maskContentUnits == 'objectBoundingBox':
-			tx, ty, tw, th = target.boundingBox(withTransform=False).xywh
+		mask_surface = helpers.surface.create_surface(
+			'recording', x=x, y=y, width=width, height=height)
+		if content_units == 'objectBoundingBox':
+			tx, ty, tw, th = target.bounding_box(with_transform=False).xywh
 			if tw > 0 and th > 0:
-				maskSurface.context.translate(tx, ty)
-				maskSurface.context.scale(tw, th)
-			maskVP = helpers.coordinates.Viewport(width=1, height=1)
+				mask_surface.context.translate(tx, ty)
+				mask_surface.context.scale(tw, th)
+			mask_vp = helpers.coordinates.Viewport(width=1, height=1)
 		else:
-			if maskContentUnits != 'userSpaceOnUse':
-				print(f'warning: invalid attribute value: maskContentUnits="{maskContentUnits}"')
-			maskVP = target._getViewport()
+			if content_units != 'userSpaceOnUse':
+				print(f'warning: invalid attribute value: maskContentUnits="{content_units}"')
+			mask_vp = target._get_viewport()
 
 		for child in self._children:
 			# todo: pass-through for viewport
-			child.draw(maskSurface, viewport=maskVP)
+			child.draw(mask_surface, viewport=mask_vp)
 
 		# uses alpha instead of luminance?
-		surface.context.mask_surface(maskSurface)
+		surface.context.mask_surface(mask_surface)
 
 	@contextmanager
-	def applyContext(self, surface:ht.Surface, target:_ElemType):
+	def apply_context(self, surface:ht.Surface, target:_ElemType):
 		surface.context.save()
 		try:
 			self.apply(surface, target)

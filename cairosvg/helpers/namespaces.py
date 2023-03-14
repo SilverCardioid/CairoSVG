@@ -8,26 +8,27 @@ NS_XML = 'http://www.w3.org/XML/1998/namespace'
 _RGX_ATTRIB = re.compile(r'^(?:\{([^\{\}]+)\}|([^\{\}:]+):)?(.*?)$')
 def _split(attrib):
 	m = _RGX_ATTRIB.match(attrib)
-	# nsName, nsPrefix, localName (first two are mutually exclusive)
+	# ns_name, ns_prefix, local_name (first two are mutually exclusive)
 	# (https://www.w3.org/TR/xml-names/ for terminology)
 	return m[1], m[2], m[3]
 
 # https://stackoverflow.com/questions/3318625/how-to-implement-an-efficient-bidirectional-hash-table
 class Namespaces(dict):
-	def __init__(self, nsMapping:ty.Mapping[str, str] = None, *, default:str = NS_SVG):
+	def __init__(self, ns_mapping:ty.Mapping[str, str] = None, *,
+	             default:str = NS_SVG):
 		super().__init__()
 		self.default = default
 		self._names = {}
-		if nsMapping:
-			for key in nsMapping:
-				self[key] = nsMapping[key]
+		if ns_mapping:
+			for key in ns_mapping:
+				self[key] = ns_mapping[key]
 
 	def __setitem__(self, key:str, value:str):
 		if key in self:
-			oldValue = self[key]
-			self._names[oldValue].remove(key) 
-			if not self._names[oldValue]: 
-				del self._names[oldValue]
+			old_value = self[key]
+			self._names[old_value].remove(key) 
+			if not self._names[old_value]: 
+				del self._names[old_value]
 		super().__setitem__(key, value)
 		self._names.setdefault(value, []).append(key)        
 
@@ -42,71 +43,72 @@ class Namespaces(dict):
 	def copy(self):
 		return Namespaces(self)
 
-	def fromPrefix(self, prefix:str) -> ty.Optional[str]:
+	def from_prefix(self, prefix:str) -> ty.Optional[str]:
 		""" Get the namespace name (a URI) bound to a namespace prefix """
 		return self.get(prefix, None)
 
-	def fromName(self, name:str) -> ty.List[str]:
+	def from_name(self, name:str) -> ty.List[str]:
 		""" Get the namespace prefixes bound to a namespace name """
 		return self._names.get(name, [])
 
-	def changePrefix(self, old:str, new:str):
+	def change_prefix(self, old:str, new:str):
 		self[new] = self[old]
 		del self[old]
 
-	def _getPrefix(self, name:str, *, defaultName:ty.Optional[str] = None, defPrefix:str = 'ns'):
+	def _get_prefix(self, name:str, *, default_name:ty.Optional[str] = None,
+	                default_prefix:str = 'ns'):
 		# Get the last-declared prefix for a name, or
 		# add one if the name is missing
-		if (defaultName or self.default) == name:
+		if (default_name or self.default) == name:
 			return ''
-		prefixes = self.fromName(name)
+		prefixes = self.from_name(name)
 		if len(prefixes) > 0:
 			return prefixes[-1]
 
-		defCount = 0
-		if defPrefix[-1].isnumeric():
+		def_count = 0
+		if default_prefix[-1].isnumeric():
 			# Add a separator if the prefix ends in a number
-			defPrefix += '_'
-		prefix = defPrefix + str(defCount)
+			default_prefix += '_'
+		prefix = default_prefix + str(def_count)
 		while prefix in self:
-			defCount += 1
-			prefix = defPrefix + str(defCount)
+			def_count += 1
+			prefix = default_prefix + str(def_count)
 		self[prefix] = name
 		return prefix
 
-	def expandName(self, attrib:str, *, defaultName:ty.Optional[str] = None):
-		""" Get a tuple (nsName, localName) from the qualified name "nsPrefix:localName" """
-		nsName, nsPrefix, localName = _split(attrib)
-		if nsName:
+	def expand_name(self, attrib:str, *, default_name:ty.Optional[str] = None):
+		""" Get a tuple (ns_name, local_name) from the qualified name "prefix:local_name" """
+		ns_name, ns_prefix, local_name = _split(attrib)
+		if ns_name:
 			# Already explanded name
-			return nsName, localName
-		if not nsPrefix:
+			return ns_name, local_name
+		if not ns_prefix:
 			# Local name only: default namespace
-			nsName = defaultName or self.default
-			return nsName, localName
+			ns_name = default_name or self.default
+			return ns_name, local_name
 
 		# Qualified name
-		nsName = self.fromPrefix(nsPrefix)
-		if nsName is None:
-			if nsPrefix in DEFAULTS:
+		ns_name = self.from_prefix(ns_prefix)
+		if ns_name is None:
+			if ns_prefix in DEFAULTS:
 				# Undeclared standard namespace (e.g. xlink); silently add
-				nsName = DEFAULTS[nsPrefix]
-				self[nsPrefix] = nsName
+				ns_name = DEFAULTS[ns_prefix]
+				self[ns_prefix] = ns_name
 			else:
 				print(f'warning: undeclared namespace "{ns}:" not expanded')
-				localName = nsPrefix + ':' + localName
-				nsPrefix = ''
-		return nsName, localName
+				local_name = ns_prefix + ':' + local_name
+				ns_prefix = ''
+		return ns_name, local_name
 
-	def qualifyName(self, attrib:str, *, defaultName:ty.Optional[str] = None):
-		""" Get a qualified name "nsPrefix:localName" from the expanded name "{nsName}localName" """
-		nsName, nsPrefix, localName = _split(attrib)
-		if nsPrefix:
+	def qualify_name(self, attrib:str, *, default_name:ty.Optional[str] = None):
+		""" Get a qualified name "prefix:local_name" from the expanded name "{ns_name}local_name" """
+		ns_name, ns_prefix, local_name = _split(attrib)
+		if ns_prefix:
 			# Already qualified name
 			return attrib
-		prefix = self._getPrefix(nsName or NS_SVG, defaultName=defaultName)
+		prefix = self._get_prefix(ns_name or NS_SVG, default_name=default_name)
 		if prefix: prefix += ':'
-		return prefix + localName
+		return prefix + local_name
 
 
 DEFAULTS = Namespaces({
@@ -116,18 +118,18 @@ DEFAULTS = Namespaces({
 })
 
 
-def getNamespaces(elem) -> ty.List[str]:
+def get_namespaces(elem) -> ty.List[str]:
 	# Find the namespaces actually used by elem's descendants
-	nsNames = set()
+	ns_names = set()
 	for e in elem.descendants():
 		if e.namespace:
-			nsNames.add(e.namespace)
+			ns_names.add(e.namespace)
 		for attrib in e._attribs.keys():
-			nsName, nsPrefix, localName = _split(attrib)
-			if nsName:
-				nsNames.add(nsName)
-			elif not nsPrefix:
-				# Attribs without {nsName} default to SVG
-				nsNames.add(NS_SVG)
+			ns_name, ns_prefix, local_name = _split(attrib)
+			if ns_name:
+				ns_names.add(ns_name)
+			elif not ns_prefix:
+				# Attribs without {ns_name} default to SVG
+				ns_names.add(NS_SVG)
 
-	return sorted(list(nsNames))
+	return sorted(list(ns_names))

@@ -31,18 +31,21 @@ class Viewport:
 		for attrib in self._attribs.keys():
 			if self._attribs[attrib] is None:
 				if self.parent:
-					self._attribs[attrib] = self.parent.getAttribute(
-						attrib, self._defaults[attrib], getDefault=True)
+					self._attribs[attrib] = self.parent._getattrib(attrib)
 				else:
 					self._attribs[attrib] = self._defaults[attrib]
 
 	@property
 	def width(self):
-		return size(self._attribs['width'], self.parent and self.parent._getViewport(), 'x', autoValue='100%')
+		return size(self._attribs['width'],
+		            self.parent and self.parent._get_viewport(),
+		            'x', auto_value='100%')
 
 	@property
 	def height(self):
-		return size(self._attribs['height'], self.parent and self.parent._getViewport(), 'y', autoValue='100%')
+		return size(self._attribs['height'],
+		            self.parent and self.parent._get_viewport(),
+		            'y', auto_value='100%')
 
 	@property
 	def viewBox(self):
@@ -59,21 +62,21 @@ class Viewport:
 		return None
 
 	@property
-	def viewBoxSize(self):
+	def inner_size(self):
 		vb = self.viewBox
 		if vb:
 			return vb[2:]
 		else:
 			return (self.width, self.height)
 
-	def getAbsoluteSize(self, defaultWidth:float = 1000,
-	                    defaultHeight:float = 1000) -> ty.Tuple[float, float]:
+	def get_absolute_size(self, default_width:float = 1000,
+	                      default_height:float = 1000) -> ty.Tuple[float, float]:
 		"""Get the viewport's absolute width and height.
 		If either is zero, 'auto' or a percentage and there is no
 		ancestor viewport with an absolute size, calculate them from the
 		viewBox's aspect ratio and the one dimension with an absolute size.
-		If both are, calculate them from the viewBox ratio and defaultWidth.
-		If there is no viewBox, return (defaultWidth, defaultHeight).
+		If both are, calculate them from the viewBox ratio and `default_width`.
+		If there is no viewBox, return `(default_width, default_height)`.
 		"""
 		width, height = self.width, self.height
 		if width > 0 and height > 0:
@@ -87,58 +90,59 @@ class Viewport:
 				return (width, hw_ratio*width)
 			if height > 0:
 				return (height/hw_ratio, height)
-			return (defaultWidth, hw_ratio*defaultWidth)
+			return (default_width, hw_ratio*default_width)
 
-		return (defaultWidth, defaultHeight)
+		return (default_width, default_height)
 
-	def getTransform(self):
+	def get_transform(self):
 		"""Return a Transform object based on the viewport's viewBox and preserveAspectRatio values."""
 		from . import transform
 		tr = transform.Transform()
 		vb = self.viewBox
 		if vb:
 			# Manage the ratio preservation
-			width, height = self.getAbsoluteSize()
-			vbWidth, vbHeight = vb[2:]
+			width, height = self.get_absolute_size()
+			vb_width, vb_height = vb[2:]
 
-			translateX = 0
-			translateY = 0
-			scaleX = width / vbWidth if vbWidth > 0 else 1
-			scaleY = height / vbHeight if vbHeight > 0 else 1
+			translate_x = 0
+			translate_y = 0
+			scale_x = width / vb_width if vb_width > 0 else 1
+			scale_y = height / vb_height if vb_height > 0 else 1
 
-			aspectRatio = self._attribs.get('preserveAspectRatio', 'xMidYMid').split()
-			align = aspectRatio[0]
+			aspect_ratio = self._attribs.get('preserveAspectRatio', 'xMidYMid').split()
+			align = aspect_ratio[0]
 			if align == 'none':
 				# Non-uniform scale
-				xPosition = 'min'
-				yPosition = 'min'
+				x_position = 'min'
+				y_position = 'min'
 			else:
 				# Uniform scale
-				meetOrSlice = aspectRatio[1] if len(aspectRatio) > 1 else None
-				if meetOrSlice == 'slice':
-					scaleValue = max(scaleX, scaleY)
+				meet_or_slice = aspect_ratio[1] if len(aspect_ratio) > 1 else None
+				if meet_or_slice == 'slice':
+					scale_value = max(scale_x, scale_y)
 				else:
-					scaleValue = min(scaleX, scaleY)
-				scaleX = scaleY = scaleValue
-				xPosition = align[1:4].lower()
-				yPosition = align[5:].lower()
-			tr._scale(scaleX, scaleY)
+					scale_value = min(scale_x, scale_y)
+				scale_x = scale_y = scale_value
+				x_position = align[1:4].lower()
+				y_position = align[5:].lower()
+			tr._scale(scale_x, scale_y)
 
-			translateX = 0
-			if xPosition == 'mid':
-				translateX = (width / scaleX - vbWidth) / 2
-			elif xPosition == 'max':
-				translateX = width / scaleX - vbWidth
-			translateY = 0
-			if yPosition == 'mid':
-				translateY += (height / scaleY - vbHeight) / 2
-			elif yPosition == 'max':
-				translateY += height / scaleY - vbHeight
-			tr._translate(translateX, translateY)
+			translate_x = 0
+			if x_position == 'mid':
+				translate_x = (width / scale_x - vb_width) / 2
+			elif x_position == 'max':
+				translate_x = width / scale_x - vb_width
+			translate_y = 0
+			if y_position == 'mid':
+				translate_y += (height / scale_y - vb_height) / 2
+			elif y_position == 'max':
+				translate_y += height / scale_y - vb_height
+			tr._translate(translate_x, translate_y)
 
 		return tr
 
-def size(string, viewport=None, reference='xy', *, units=True, autoValue=0, fontSize=None, dpi=96):
+def size(string, viewport=None, reference='xy', *,
+         units=True, auto_value=0, font_size=None, dpi=96):
 	"""Replace a ``string`` with units by a float value.
 
 	If ``reference`` is a float, it is used as reference for percentages. If it
@@ -160,36 +164,36 @@ def size(string, viewport=None, reference='xy', *, units=True, autoValue=0, font
 		else:
 			raise ValueError(f'invalid number: {string}')
 
-	if fontSize is None: # default 12pt
-		fontSize = 12 * UNITS['pt'] * dpi
+	if font_size is None: # default 12pt
+		font_size = 12 * UNITS['pt'] * dpi
 
 	string = attribs.normalize(string).split(' ', 1)[0]
 	if string == 'auto':
-		string = str(autoValue)
+		string = str(auto_value)
 
 	if string.endswith('%'):
 		if isinstance(reference, str):
 			# reference in ('x', 'y', 'xy'): use viewport size
 			if not viewport:
 				return 0
-			refWidth, refHeight = viewport.viewBoxSize
+			ref_width, ref_height = viewport.inner_size
 			if reference == 'x':
-				reference = refWidth
+				reference = ref_width
 			elif reference == 'y':
-				reference = refHeight
+				reference = ref_height
 			elif reference == 'xy':
-				reference = ((refWidth**2 + refHeight**2) / 2) ** .5
+				reference = ((ref_width**2 + ref_height**2) / 2) ** .5
 			else:
 				# invalid string value
 				reference = 0
 		return float(string[:-1]) * reference / 100
 
 	elif string.endswith('em'):
-		return fontSize * float(string[:-2])
+		return font_size * float(string[:-2])
 
 	elif string.endswith('ex'):
 		# Assume that 1em == 2ex
-		return fontSize * float(string[:-2]) / 2
+		return font_size * float(string[:-2]) / 2
 
 	for unit, coefficient in UNITS.items():
 		if string.endswith(unit):

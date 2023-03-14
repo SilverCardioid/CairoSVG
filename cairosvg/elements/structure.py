@@ -20,8 +20,9 @@ class G(_StructureElement):
 	def __init__(self, **attribs):
 		super().__init__(**attribs)
 
-	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
-		with self._applyTransformations(surface):
+	def draw(self, surface:ht.Surface, *, paint:bool = True,
+	         viewport:ty.Optional[ht.Viewport] = None):
+		with self._apply_transformations(surface):
 			for child in self._children:
 				child.draw(surface, paint=paint, viewport=viewport)
 
@@ -42,11 +43,12 @@ class Defs(_StructureElement):
 	def __init__(self, **attribs):
 		super().__init__(**attribs)
 
-	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True,
+	         viewport:ty.Optional[ht.Viewport] = None):
 		# Draw nothing
 		return
 
-	def boundingBox(self, *, withTransform:bool = True) -> ht.Box():
+	def bounding_box(self, *, with_transform:bool = True) -> ht.Box():
 		# No box
 		return ht.Box()
 
@@ -88,7 +90,7 @@ class Use(_Element):
 		'width': 0,
 		'height': 0,
 	}
-	_strAttrib = {
+	_attrib_to_str = {
 		_HREF: lambda val: ('#' + val if val and val[0] != '#'
 		                    else val) if isinstance(val, str) else \
 		                    '#' + val.id if isinstance(val, _Element) \
@@ -103,17 +105,17 @@ class Use(_Element):
 		# an element object is passed for href
 		target = self.target
 		if target and not target.id:
-			target._setAutoID()
+			target._set_auto_id()
 
 	def __setitem__(self, key:str, value:ty.Any):
 		super().__setitem__(key, value)
-		if self._parseAttribute(key) == _HREF:
+		if self._parse_attribute(key) == _HREF:
 			target = self.target
 			if target and not target.id:
-				target._setAutoID()
+				target._set_auto_id()
 
-	def _getOutgoingRefs(self) -> ty.List[ty.Tuple[_ElemType, str]]:
-		refs = super()._getOutgoingRefs()
+	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_ElemType, str]]:
+		refs = super()._get_outgoing_refs()
 		target = self.target
 		if target:
 			refs.append((target, _HREF))
@@ -135,8 +137,9 @@ class Use(_Element):
 		# unknown type
 		return None
 
-	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
-		vp = viewport or self._getViewport()
+	def draw(self, surface:ht.Surface, *, paint:bool = True,
+	         viewport:ty.Optional[ht.Viewport] = None):
+		vp = viewport or self._get_viewport()
 		target = self.target
 
 		if target is None:
@@ -148,17 +151,17 @@ class Use(_Element):
 		# Draw target element in the context of the <use>
 		x = _size(self._getattrib('x'), vp, 'x')
 		y = _size(self._getattrib('y'), vp, 'y')
-		targetParent = target._parent
+		target_parent = target._parent
 		try:
 			target._parent = self
 			self.transform._translate(x, y)
-			with self.transform.applyContext(surface):
+			with self.transform.apply_context(surface):
 				target.draw(surface, paint=paint, viewport=vp)
 			self.transform._translate(-x, -y)
 		finally:
-			target._parent = targetParent
+			target._parent = target_parent
 
-	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
+	def bounding_box(self, *, with_transform:bool = True) -> ht.Box:
 		target = self.target
 		if target is None:
 			# Broken references have a bounding box according to the use's attributes
@@ -168,14 +171,14 @@ class Use(_Element):
 			height = _size(self._getattrib('height'), vp, 'y')
 			box = ht.Box(x, y, width, height)
 		else:
-			box = target.boundingBox()
+			box = target.bounding_box()
 			if box.defined:
 				# Shift box according to x and y attribs
-				vp = self._getViewport()
+				vp = self._get_viewport()
 				x = _size(self._getattrib('x'), vp, 'x')
 				y = _size(self._getattrib('y'), vp, 'y')
 				box.x0 += x; box.y0 += y
 				box.x1 += x; box.y1 += y
 
-		if withTransform: box = self._transformBox(box)
+		if with_transform: box = self._transform_box(box)
 		return box

@@ -16,9 +16,10 @@ class _Element:
 	attribs = None
 	content = None
 	_defaults = {}
-	_strAttrib = {}
+	_attrib_to_str = {}
 
-	def __init__(self, *, parent:ty.Optional[_ElemType] = None, childIndex:ty.Optional[int] = None,
+	def __init__(self, *, parent:ty.Optional[_ElemType] = None,
+	             child_index:ty.Optional[int] = None,
 	             namespaces:ty.Optional[ty.Dict[str,str]] = None, **attribs):
 		# Tree structure
 		self._parent = parent
@@ -28,8 +29,8 @@ class _Element:
 			if (parent.__class__.content and (not self.tag or self.tag[0] != '{') and
 			    self.tag not in parent.__class__.content):
 				print(f'warning: <{parent.tag}> element doesn\'t take "{self.tag}" child element')
-			if childIndex is not None:
-				self.parent._children.insert(childIndex, self)
+			if child_index is not None:
+				self.parent._children.insert(child_index, self)
 			else:
 				self.parent._children.append(self)
 			self._root = parent._root
@@ -48,87 +49,90 @@ class _Element:
 		# Attributes
 		self._attribs = {}
 		for key in attribs:
-			attrib = self._parseAttribute(key)
+			attrib = self._parse_attribute(key)
 			if (self.__class__.attribs and (not attrib or attrib[0] != '{') and
 			    attrib not in self.__class__.attribs):
 				print(f'warning: <{self.tag}> element doesn\'t take "{attrib}" attribute')
 			self._attribs[attrib] = attribs[key]
 
 		if 'id' in attribs:
-			self._setID(attribs['id'])
+			self._set_id(attribs['id'])
 
 		self.transform = None
 		if self.__class__.attribs and 'transform' in self.__class__.attribs:
-			self._setTransform()
+			self._set_transform()
 
-	def _getOutgoingRefs(self) -> ty.List[ty.Tuple[_ElemType, str]]:
+	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_ElemType, str]]:
 		refs = []
-		clipPath = self._parseReference(self._attribs.get('clip-path', None))
-		if clipPath:
-			refs.append((clipPath, 'clip-path'))
-		mask = self._parseReference(self._attribs.get('mask', None))
+		clip_path = self._parse_reference(self._attribs.get('clip-path', None))
+		if clip_path:
+			refs.append((clip_path, 'clip-path'))
+		mask = self._parse_reference(self._attribs.get('mask', None))
 		if mask:
 			refs.append((mask, 'mask'))
 		return refs
 
-	def _getViewport(self) -> ty.Optional[ht.Viewport]:
+	def _get_viewport(self) -> ty.Optional[ht.Viewport]:
 		elem = self.parent
 		while elem and not hasattr(elem, 'viewport'):
 			elem = elem.parent
 		return elem and elem.viewport
 
-	def _setTransform(self):
+	def _set_transform(self):
 		self.transform = ht.Transform(self._attribs.get('transform', None),
 		                              parent=self)
 
-	def _setID(self, value):
+	def _set_id(self, value):
 		if value in self._root._ids:
 			print('warning: duplicate ID ignored: ' + value)
 		else:
 			self._root._ids[value] = self
 
-	def _getAutoID(self, prefix:ty.Optional[str] = None, idList:ty.Optional[ty.List[str]] = None) -> str:
+	def _get_auto_id(self, prefix:ty.Optional[str] = None,
+	                 id_list:ty.Optional[ty.List[str]] = None) -> str:
 		# Find the first free ID of the form prefix+number
 		prefix = prefix or self.tag
 		if prefix[-1].isnumeric():
 			# Add a separator if the prefix ends with a number
 			prefix += '_'
-		if idList is None:
-			idList = self._root._ids.keys()
+		if id_list is None:
+			id_list = self._root._ids.keys()
 
 		i = 1
 		eid = prefix + str(i)
-		while eid in idList:
+		while eid in id_list:
 			i += 1
 			eid = prefix + str(i)
 		return eid
 
-	def _setAutoID(self, prefix:ty.Optional[str] = None, idList:ty.Optional[ty.List[str]] = None):
-		eid = self._getAutoID(prefix, idList)
+	def _set_auto_id(self, prefix:ty.Optional[str] = None,
+	                 id_list:ty.Optional[ty.List[str]] = None):
+		eid = self._get_auto_id(prefix, id_list)
 		self._attribs['id'] = eid
-		self._setID(eid)
+		self._set_id(eid)
 
-	def _tagCode(self, *, close:bool = True, namespaceDeclaration:bool = True) -> str:
+	def _tag_code(self, *, close:bool = True,
+	              namespace_declaration:bool = True) -> str:
 		nss = self._root.namespaces
-		nsPrefix = nss._getPrefix(self.namespace)
-		if nsPrefix: nsPrefix += ':'
-		string = '<' + nsPrefix + self.tag
+		ns_prefix = nss._get_prefix(self.namespace)
+		if ns_prefix: ns_prefix += ':'
+		string = '<' + ns_prefix + self.tag
 
-		if namespaceDeclaration and self.isRoot():
-			nsNames = helpers.namespaces.getNamespaces(self)
-			ns = [(nss._getPrefix(name), name) for name in nsNames]
+		if namespace_declaration and self.is_root():
+			ns_names = helpers.namespaces.get_namespaces(self)
+			ns = [(nss._get_prefix(name), name) for name in ns_names]
 			ns.sort()
-			for nsPrefix, nsName in ns:
-				if nsPrefix == 'xml' and nsName == helpers.namespaces.NS_XML:
+			for ns_prefix, ns_name in ns:
+				if ns_prefix == 'xml' and ns_name == helpers.namespaces.NS_XML:
 					# xml: doesn't need to be declared
 					continue
-				key = 'xmlns:' + nsPrefix if nsPrefix else 'xmlns'
-				string += f' {key}="{nsName}"'
+				key = 'xmlns:' + ns_prefix if ns_prefix else 'xmlns'
+				string += f' {key}="{ns_name}"'
 
 		for attr in self._attribs:
 			val = self._attribs[attr]
-			if attr in self.__class__._strAttrib:
-				val = self.__class__._strAttrib[attr](val)
+			if attr in self.__class__._attrib_to_str:
+				val = self.__class__._attrib_to_str[attr](val)
 				if val is None:
 					# don't print
 					continue
@@ -137,21 +141,24 @@ class _Element:
 			elif isinstance(val, ht._Default):
 				# don't print
 				continue
-			attr = self._root.namespaces.qualifyName(attr, defaultName=self.namespace)
+			attr = self._root.namespaces.qualify_name(
+				attr, default_name=self.namespace)
 			string += f' {attr}="{val}"'
 
 		string += '/>' if close else '>'
 		return string
 
-	def _parseAttribute(self, attrib:str) -> str:
-		return helpers.attribs.parseAttribute(attrib, namespaces=self._root.namespaces,	
-		                                      defaultName=self.namespace)
+	def _parse_attribute(self, attrib:str) -> str:
+		return helpers.attribs.parse_attribute(
+			attrib, namespaces=self._root.namespaces,
+			default_name=self.namespace)
 
 	def _getattrib(self, attrib:str) -> ty.Any:
-		# with getDefault, no attrib parsing
+		# with get_default, no attrib parsing
 		return self._attribs.get(attrib, self._defaults[attrib])
 
-	def _parseReference(self, value:ty.Union[str,_ElemType,None]) -> ty.Optional[_ElemType]:
+	def _parse_reference(self, value:ty.Union[str,_ElemType,None]
+	                     ) -> ty.Optional[_ElemType]:
 		if value is None or value == '':
 			return None
 		elif isinstance(value, str):
@@ -169,28 +176,28 @@ class _Element:
 		return None
 
 	@contextmanager
-	def _applyTransformations(self, surface:ht.Surface):
+	def _apply_transformations(self, surface:ht.Surface):
 		transformed = self.transform and self.transform._transformed
-		clipPath = self._attribs.get('clip-path', None)
+		clip_path = self._attribs.get('clip-path', None)
 		mask = self._attribs.get('mask', None)
 
-		if transformed or clipPath or mask:
+		if transformed or clip_path or mask:
 			surface.context.save()
 			try:
 				if transformed:
 					self.transform.apply(surface)
 
-				if clipPath:
-					cpElem = self._parseReference(clipPath)
-					if cpElem and cpElem.tag == 'clipPath':
-						cpElem.apply(surface, self)
+				if clip_path:
+					cp_elem = self._parse_reference(clip_path)
+					if cp_elem and cp_elem.tag == 'clipPath':
+						cp_elem.apply(surface, self)
 					else:
-						print(f'warning: invalid clip-path reference: {clipPath}')
+						print(f'warning: invalid clip-path reference: {clip_path}')
 
 				if mask:
-					maskElem = self._parseReference(mask)
-					if maskElem and maskElem.tag == 'mask':
-						maskElem.apply(surface, self)
+					mask_elem = self._parse_reference(mask)
+					if mask_elem and mask_elem.tag == 'mask':
+						mask_elem.apply(surface, self)
 					else:
 						print(f'warning: invalid mask reference: {mask}')
 
@@ -201,29 +208,29 @@ class _Element:
 			yield self
 
 	def __getitem__(self, attrib:str) -> ty.Any:
-		return self._attribs[self._parseAttribute(attrib)]
+		return self._attribs[self._parse_attribute(attrib)]
 
 	def __setitem__(self, attrib:str, value:ty.Any):
-		attrib = self._parseAttribute(attrib)
+		attrib = self._parse_attribute(attrib)
 		if (self.__class__.attribs and (not attrib or attrib[0] != '{') and
 		    attrib not in self.__class__.attribs):
 			print(f'warning: <{self.tag}> element doesn\'t take "{attrib}" attribute')
 
-		prevValue = self._attribs.get(attrib, None)
+		old_value = self._attribs.get(attrib, None)
 		self._attribs[attrib] = value
 		if attrib == 'id':
 			try:
-				del self._root._ids[prevValue]
+				del self._root._ids[old_value]
 			except KeyError:
 				pass
-			self._setID(value)
+			self._set_id(value)
 		elif attrib == 'transform' and self.transform:
 			self.transform._reset()
 			self.transform._transform(value)
 		return attrib
 
 	def __delitem__(self, attrib:str):
-		attrib = self._parseAttribute(attrib)
+		attrib = self._parse_attribute(attrib)
 		value = self._attribs.get(attrib, None)
 		del self._attribs[attrib]
 
@@ -237,8 +244,8 @@ class _Element:
 		return attrib
 
 	def __repr__(self) -> str:
-		return self._tagCode(close=len(self._children) == 0,
-		                     namespaceDeclaration=False)
+		return self._tag_code(close=len(self._children) == 0,
+		                     namespace_declaration=False)
 
 	@property
 	def parent(self) -> ty.Optional[_ElemType]:
@@ -246,7 +253,7 @@ class _Element:
 	@parent.setter
 	def parent(self, elem:ty.Optional[_ElemType]):
 		if elem:
-			elem.addChild(self)
+			elem.add_child(self)
 		else:
 			self.detach()
 
@@ -256,7 +263,7 @@ class _Element:
 
 	@property
 	def depth(self) -> int:
-		return 0 if self.isRoot() else self.parent.depth + 1
+		return 0 if self.is_root() else self.parent.depth + 1
 
 	@property
 	def id(self) -> ty.Optional[str]:
@@ -272,50 +279,53 @@ class _Element:
 	def root(self) -> _ElemType:
 		return self._root.element
 
-	def isRoot(self) -> bool:
+	def is_root(self) -> bool:
 		"""Check whether this element is the root of an element tree."""
 		return self.root is self
 
-	def changeID(self, newID:ty.Optional[str] = None, updateRefs:bool = True, *, auto:bool = False):
+	def change_id(self, new_id:ty.Optional[str] = None,
+	              update_references:bool = True, *, auto:bool = False):
 		"""Change an element's ID attribute.
-		If `updateRefs` is True, change references to this element (e.g., <use>
-		elements) to point to the new ID.
-		* If `newID` is a non-empty string and `auto` is False, set the element's ID
-		    to `newID`, raising a `ValueError` if the ID already exists in the tree.
-		* If `newID` is a non-empty string and `auto` is True, set the element's ID
-		    to `newID`, appending a number if the ID already exists in the tree.
-		* If `newID` is None and `auto` is False, remove the ID. This will raise
-		    a `ValueError` if `updateRefs` is True and the element has references.
-		* If `newID` is None and `auto` is True, assign an automatic ID based on
-		    the element's tag name and a number.
+		If `update_references` is True, change references to this element
+		(e.g., <use> elements) to point to the new ID.
+		* If `new_id` is a non-empty string and `auto` is False, set the
+		    element's ID to `new_id`, raising a `ValueError` if the ID already
+		    exists in the tree.
+		* If `new_id` is a non-empty string and `auto` is True, set the
+		    element's ID to `new_id`, appending a number if the ID already
+		    exists in the tree.
+		* If `new_id` is None and `auto` is False, remove the ID. This will
+		    raise a `ValueError` if `update_references` is True and the element
+		    has references.
+		* If `new_id` is None and `auto` is True, assign an automatic ID based
+		    on the element's tag name and a number.
 		"""
-		curID = self.id
 		refs = []
-		if updateRefs:
-			refs = self.getReferences()
+		if update_references:
+			refs = self.get_references()
 
-		if newID:
-			if newID in self._root._ids:
+		if new_id:
+			if new_id in self._root._ids:
 				if auto:
-					# add number to newID
-					self._setAutoID(newID)
+					# add number to new_id
+					self._set_auto_id(new_id)
 				else:
-					raise ValueError(f'ID already exists in the tree: {newID}')
-			self.id = newID
+					raise ValueError(f'ID already exists in the tree: {new_id}')
+			self.id = new_id
 		else:
 			if auto:
-				self._setAutoID()
+				self._set_auto_id()
 			else:
-				# remove if not updateRefs or no references
+				# remove if not update_references or no references
 				if len(refs) > 0:
-					raise ValueError('Removing ID with updateRefs=True when the element has references')
+					raise ValueError('Removing ID with update_references=True when the element has references')
 				del self.id
 
-		for refElem, refAttrib in refs:
-			if refAttrib in refElem._strAttrib:
-				refElem[refAttrib] = refElem._strAttrib[refAttrib](self)
+		for ref_elem, ref_attrib in refs:
+			if ref_attrib in ref_elem._attrib_to_str:
+				ref_elem[ref_attrib] = ref_elem._attrib_to_str[ref_attrib](self)
 			else:
-				refElem[refAttrib] = self
+				ref_elem[ref_attrib] = self
 
 	def delete(self, recursive:bool = True):
 		"""Delete this element from the tree.
@@ -336,7 +346,7 @@ class _Element:
 		else:
 			while len(self._children) > 0:
 				self._children[-1].detach()
-			self._root._updateIDs()
+			self._root._update_ids()
 
 		self._parent = None
 		self._root = None
@@ -351,24 +361,24 @@ class _Element:
 			self._parent = None
 			parent._children.remove(self)
 			self._root = ht.Root(self)
-			self._root._updateIDs()
+			self._root._update_ids()
 			for eid in self._root._ids:
 				del parent._root._ids[eid]
 			for e in self.descendants(False):
 				e._root = self._root
 
-	def getAttribute(self, attrib:str, default:ty.Any = None, *,
-	                 cascade:bool = False, getDefault:bool = False) -> ty.Any:
+	def get_attribute(self, attrib:str, default:ty.Any = None, *,
+	                  cascade:bool = False, get_default:bool = False) -> ty.Any:
 		"""Retrieve an attribute value.
 		This method parses the attribute name, and returns the first value
 		it finds after checking, in the following order:
 		* The element's own attribute values;
 		* if `cascade` is True, the attribute values of its ancestors,
-		* if `getDefault` is True, the element-specific default attribute values;
+		* if `get_default` is True, the element-specific default attribute values;
 		* or the value of the `default` argument.
 		"""
-		attrib = self._parseAttribute(attrib)
-		if getDefault:
+		attrib = self._parse_attribute(attrib)
+		if get_default:
 			default = self._defaults.get(attrib, default)
 		if cascade:
 			node = self
@@ -380,16 +390,16 @@ class _Element:
 			return node._attribs[attrib]
 		else:
 			return self._attribs.get(attrib, default)
-	setAttribute = __setitem__
-	removeAttribute = __delitem__
+	set_attribute = __setitem__
+	remove_attribute = __delitem__
 
-	def hasAttribute(self, attrib:str) -> bool:
+	def has_attribute(self, attrib:str) -> bool:
 		"""Check whether an element has an attribute set.
 		This method parses the attribute name, and doesn't consider inheritance.
 		"""
-		return self._parseAttribute(attrib) in self._attribs
+		return self._parse_attribute(attrib) in self._attribs
 
-	def getReferences(self) -> ty.List[ty.Tuple[_ElemType, str]]:
+	def get_references(self) -> ty.List[ty.Tuple[_ElemType, str]]:
 		"""List the references to this element.
 		Return a list of elements in the tree that refer to this element
 		through attributes such as "xlink:href" or "clip-path". Each item
@@ -398,23 +408,23 @@ class _Element:
 		"""
 		refs = []
 		for e in self._root.element.descendants(True):
-			outRefs = e._getOutgoingRefs()
-			for refTarget, refAttrib in outRefs:
-				if refTarget is self:
-					refs.append((e, refAttrib))
+			out_refs = e._get_outgoing_refs()
+			for ref_target, ref_attrib in out_refs:
+				if ref_target is self:
+					refs.append((e, ref_attrib))
 		return refs
 
-	def addChild(self, tag:ty.Union[str,_ElemType], *attribs,
-	             childIndex:ty.Optional[int] = None, **kwattribs):
+	def add_child(self, tag:ty.Union[str,_ElemType], *attribs,
+	              child_index:ty.Optional[int] = None, **kwattribs):
 		"""Add a child element to this element.
 		* If `tag` is a string, it specifies the tag name for a new element.
 		    `attribs` and `kwattribs` are passed on to this element's
-		    constructor. For example: `e.addChild('circle', r=10)`.
+		    constructor. For example: `e.add_child('circle', r=10)`.
 		* If `tag` is another element, it will be detached from its current
 		    position in its tree and re-added as a child of this element. A
 		    `ValueError` is raised if this would create a cycle in the tree
-		    (e.g., `e.addChild(e.parent)`). `attribs` and `kwattribs` are ignored.
-		`childIndex` specifies the new element's position in the element's list of
+		    (e.g., `e.add_child(e.parent)`). `attribs` and `kwattribs` are ignored.
+		`child_index` specifies the new element's position in the element's list of
 		children. If `None`, the new element is appended to the end.
 		"""
 		if isinstance(tag, _Element):
@@ -425,93 +435,101 @@ class _Element:
 				print(f'warning: <{self.tag}> element doesn\'t take "{tag.tag}" child element')
 			if tag.parent:
 				tag.detach()
-			if childIndex is not None:
-				self._children.insert(childIndex, tag)
+			if child_index is not None:
+				self._children.insert(child_index, tag)
 			else:
 				self._children.append(tag)
 			tag._parent = self
 
-			idConflicts = tag._root._ids.keys() & self._root._ids.keys()
-			if idConflicts:
-				print('warning: duplicate ids changed: ' + ', '.join(idConflicts))
-				idList = tag._root._ids.keys() | self._root._ids.keys()
-				for eid in idConflicts:
+			id_conflicts = tag._root._ids.keys() & self._root._ids.keys()
+			if id_conflicts:
+				print('warning: duplicate ids changed: ' + ', '.join(id_conflicts))
+				id_list = tag._root._ids.keys() | self._root._ids.keys()
+				for eid in id_conflicts:
 					elem = tag._root._ids[eid]
-					newID = elem._getAutoID(eid, idList)
-					elem.changeID(newID)
+					new_id = elem._get_auto_id(eid, id_list)
+					elem.change_id(new_id)
 			self._root._ids.update(tag._root._ids)
 			for e in tag.descendants(True):
 				e._root = self._root
 
 		else:
 			from . import elements
-			nsName, nsPrefix, tag = helpers.namespaces._split(tag)
-			if nsPrefix:
-				nsName = self._root.namespaces.fromPrefix(nsPrefix)
-				if not nsName:
+			ns_name, ns_prefix, tag = helpers.namespaces._split(tag)
+			if ns_prefix:
+				ns_name = self._root.namespaces.from_prefix(ns_prefix)
+				if not ns_name:
 					# Undefined prefix; keep prefix in tag
-					print(f'undefined namespace prefix "{nsPrefix}:"')
-					tag = nsPrefix + ':' + tag
-			elif not nsName:
-				nsName = self._root.namespaces.default
+					print(f'undefined namespace prefix "{ns_prefix}:"')
+					tag = ns_prefix + ':' + tag
+			elif not ns_name:
+				ns_name = self._root.namespaces.default
 
-			if nsName == helpers.namespaces.NS_SVG and tag in elements:
-				return elements[tag](parent=self, childIndex=childIndex, *attribs, **kwattribs)
+			if ns_name == helpers.namespaces.NS_SVG and tag in elements:
+				return elements[tag](parent=self, child_index=child_index,
+				                     *attribs, **kwattribs)
 			else:
 				# Custom element
 				print(f'<{tag}> node not supported; can be saved but not drawn')
-				elem = CustomElement(tag, nsName, parent=parent, *attribs, **kwAttribs)
+				elem = CustomElement(tag, ns_name, parent=parent,
+				                     *attribs, **kwattribs)
 
-	def writeCode(self, file:ty.Optional[ty.TextIO] = None, *, indent:ty.Optional[str] = '',
-	              indentDepth:int = 0, newline:ty.Optional[str] = '\n',
-	              xmlDeclaration:bool = False, namespaceDeclaration:bool = True):
+	def write_code(self, file:ty.Optional[ty.TextIO] = None, *,
+	               indent:ty.Optional[str] = '', indent_depth:int = 0,
+	               newline:ty.Optional[str] = '\n', xml_declaration:bool = False,
+	               namespace_declaration:bool = True):
 		"""Write the SVG code for this element's subtree to `file`.
 		`file` is a file-like object with a `write` method. If None,
 		print to stdout (the screen).
-		If `xmlDeclaration` is True, include the declaration of the XML
+		If `xml_declaration` is True, include the declaration of the XML
 		version and encoding at the start.
-		If `namespaceDeclaration` is True and `self` is the root element,
+		If `namespace_declaration` is True and `self` is the root element,
 		include `xmlns:` attributes for namespaces used in the tree.
 		Pretty-print options:
 		* `indent`: whitespace string used for indentation
-		* `indentDepth`: starting indentation level
+		* `indent_depth`: starting indentation level
 		* `newline`: whitespace string used between tags
 		"""
 		indent = indent or ''
 		newline = newline or ''
-		indentation = indentDepth*indent
+		indentation = indent_depth*indent
 
 		if not file:
 			file = sys.stdout
 
-		if xmlDeclaration:
+		if xml_declaration:
 			decl = '<?xml version="1.0" encoding="UTF-8"?>'
 			file.write(f'{indentation}{decl}{newline}')
 
-		tagCode = self._tagCode(close=len(self.children)==0, namespaceDeclaration=namespaceDeclaration)
-		file.write(f'{indentation}{tagCode}{newline}')
+		tag_code = self._tag_code(close=len(self.children)==0,
+		                          namespace_declaration=namespace_declaration)
+		file.write(f'{indentation}{tag_code}{newline}')
 		if len(self._children) > 0:
 			for child in self._children:
-				child.writeCode(file, indent=indent, indentDepth=indentDepth+1, newline=newline)
-			tagClose = f'</{self.tag}>'
-			file.write(f'{indentation}{tagClose}{newline}')
+				child.write_code(file, indent=indent,
+				                 indent_depth=indent_depth + 1, newline=newline)
+			tag_close = f'</{self.tag}>'
+			file.write(f'{indentation}{tag_close}{newline}')
 
-	def descendants(self, includeSelf:bool = True) -> ty.Generator[_ElemType, None, None]:
+	def descendants(self, include_self:bool = True
+	                ) -> ty.Generator[_ElemType, None, None]:
 		"""A generator of the element's descendants.
-		Traverses the element's subtree (children, grandchildren etc.), and yields
-		elements depth-first. If `includeSelf` is True, start with the element itself.
+		Traverses the element's subtree (children, grandchildren etc.), and
+		yields elements depth-first. If `include_self` is True, start with the
+		element itself.
 		"""
-		if includeSelf:
+		if include_self:
 			yield self
 		for child in self._children:
 			yield from child.descendants(True)
 
-	def ancestors(self, includeSelf:bool = True) -> ty.Generator[_ElemType, None, None]:
+	def ancestors(self, include_self:bool = True
+	              ) -> ty.Generator[_ElemType, None, None]:
 		"""A generator of the element's ancestors.
 		Yields the element's parent, grandparent, etc., up to the root
-		element. If `includeSelf` is True, start with the element itself.
+		element. If `include_self` is True, start with the element itself.
 		"""
-		if includeSelf:
+		if include_self:
 			yield self
 		anc = self.parent
 		while anc:
@@ -519,12 +537,12 @@ class _Element:
 			anc = anc.parent
 
 	def find(self, function:ty.Callable[[_ElemType],bool], *,
-	         maxResults:ty.Optional[int] = None) -> ty.List[_ElemType]:
+	         max_results:ty.Optional[int] = None) -> ty.List[_ElemType]:
 		"""List descendant elements satisfying the given function.
 		`function` is a callable that receives an element object, and should
 		return a boolean. The function is evaluated on the element's descendants
 		(depth-first), and a list is returned of those for which it returns True.
-		If `maxResults` is a positive number, return at most that many results.
+		If `max_results` is a positive number, return at most that many results.
 
 		For example, to get all path elements among an element's descendants:
 		`e.find(lambda x: x.tag == 'path')`
@@ -533,11 +551,11 @@ class _Element:
 		for elem in self.descendants(True):
 			if function(elem):
 				results.append(elem)
-				if maxResults and len(results) >= maxResults:
+				if max_results and len(results) >= max_results:
 					break
 		return results
 
-	def findID(self, id:str) -> ty.Optional[_ElemType]:
+	def find_id(self, id:str) -> ty.Optional[_ElemType]:
 		"""Find a descendant element with a specific ID.
 		Returns None if no element was found, or if the element isn't a
 		descendant of this element.
@@ -547,7 +565,8 @@ class _Element:
 			return res
 		return None
 
-	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True,
+	         viewport:ty.Optional[ht.Viewport] = None):
 		"""Draw the element on a Cairo surface.
 		`surface` is a surface object from the cairocffi library: `ImageSurface`,
 		`PDFSurface`, `PSSurface`, `RecordingSurface` or `SVGSurface`.
@@ -559,29 +578,29 @@ class _Element:
 		# Default to drawing nothing
 		return
 
-	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
+	def bounding_box(self, *, with_transform:bool = True) -> ht.Box:
 		"""Calculate the element's bounding box.
 		Returns a `Box` element representing the minimum bounding rectangle.
-		If `withTransform` is True, apply the element's transform and clip-path
+		If `with_transform` is True, apply the element's transform and clip-path
 		attributes to the box.
 		"""
 		# Default to no box
 		return ht.Box()
 
-	def _transformBox(self, box:ht.Box) -> ht.Box:
+	def _transform_box(self, box:ht.Box) -> ht.Box:
 		# Apply the element's transformations to its bounding box
 		if box.defined:
 			#if self.transform and self.transform._transformed:
 			#	# transform
-			clipPath = self._attribs.get('clip-path', None)
-			if clipPath:
-				cpElem = self._parseReference(clipPath)
-				if cpElem and cpElem.tag == 'clipPath':
-					box = cpElem._clipBox(box)
+			clip_path = self._attribs.get('clip-path', None)
+			if clip_path:
+				cp_elem = self._parse_reference(clip_path)
+				if cp_elem and cp_elem.tag == 'clipPath':
+					box = cp_elem._clip_box(box)
 			#mask = self._attribs.get('mask', None)
 			#if mask:
-			#	maskElem = self._parseReference(mask)
-			#	if maskElem and maskElem.tag == 'mask':
+			#	mask_elem = self._parse_reference(mask)
+			#	if mask_elem and mask_elem.tag == 'mask':
 			#		# mask
 		return box
 
@@ -593,17 +612,18 @@ class _StructureElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + _attrib['GraphicalEvents']
 	content = _content['Description'] + _content['Animation'] + _content['Structure'] + _content['Shape'] + _content['Text'] + _content['Image'] + _content['View'] + _content['Conditional'] + _content['Hyperlink'] + _content['Script'] + _content['Style'] + _content['Marker'] + _content['Clip'] + _content['Mask'] + _content['Gradient'] + _content['Pattern'] + _content['Filter'] + _content['Cursor'] + _content['Font'] + _content['ColorProfile']
 
-	def draw(self, surface:ht.Surface, *, paint:bool = True, viewport:ty.Optional[ht.Viewport] = None):
+	def draw(self, surface:ht.Surface, *, paint:bool = True,
+	         viewport:ty.Optional[ht.Viewport] = None):
 		for child in self._children:
 			child.draw(surface, paint=paint, viewport=viewport)
 
-	def boundingBox(self, *, withTransform:bool = True) -> ht.Box:
+	def bounding_box(self, *, with_transform:bool = True) -> ht.Box:
 		# todo: account for transformations
 		# https://svgwg.org/svg2-draft/coords.html#bounding-box
 		box = ht.Box()
 		for child in self._children:
-			box += child.boundingBox()
-		if withTransform: box = self._transformBox(box)
+			box += child.bounding_box()
+		if with_transform: box = self._transform_box(box)
 		return box
 
 
@@ -626,56 +646,60 @@ class _ShapeElement(_Element):
 
 	def _paint(self, surface:ht.Surface, *,
 	           viewport:ty.Optional[ht.Viewport] = None):
-		vp = viewport or self._getViewport()
-		opacity = helpers.attribs.getFloat(
+		vp = viewport or self._get_viewport()
+		opacity = helpers.attribs.get_float(
 			self, 'opacity', range=[0, 1], cascade=True)
-		fillOpacity = helpers.attribs.getFloat(
+		fill_opacity = helpers.attribs.get_float(
 			self, 'fill-opacity', range=[0, 1], cascade=True)
-		strokeOpacity = helpers.attribs.getFloat(
+		stroke_opacity = helpers.attribs.get_float(
 			self, 'stroke-opacity', range=[0, 1], cascade=True)
 
-		fill = self.getAttribute(
+		fill = self.get_attribute(
 			'fill', self._defaults['fill'], cascade=True)
-		fill = helpers.colors.color(fill, fillOpacity*opacity)
-		fillRule = helpers.attribs.getEnum(
+		fill = helpers.colors.color(fill, fill_opacity*opacity)
+		fill_rule = helpers.attribs.get_enum(
 			self, 'fill-rule', helpers.attribs.FILL_RULES, cascade=True)
 
-		stroke = self.getAttribute(
+		stroke = self.get_attribute(
 			'stroke', self._defaults['stroke'], cascade=True)
-		stroke = helpers.colors.color(stroke, strokeOpacity*opacity)
-		strokeWidth = self.getAttribute(
+		stroke = helpers.colors.color(stroke, stroke_opacity*opacity)
+		stroke_width = self.get_attribute(
 			'stroke-width', self._defaults['stroke-width'], cascade=True)
-		strokeWidth = helpers.coordinates.size(strokeWidth, vp, 'xy')
-		strokeLinecap = helpers.attribs.getEnum(
+		stroke_width = helpers.coordinates.size(stroke_width, vp, 'xy')
+		stroke_linecap = helpers.attribs.get_enum(
 			self, 'stroke-linecap', helpers.attribs.LINE_CAPS, cascade=True)
-		strokeLinejoin = helpers.attribs.getEnum(
+		stroke_linejoin = helpers.attribs.get_enum(
 			self, 'stroke-linejoin', helpers.attribs.LINE_JOINS, cascade=True)
 
-		dashArray = self.getAttribute('stroke-dasharray', '', cascade=True)
-		dashArray = helpers.attribs.normalize(dashArray).split()
-		if dashArray:
+		stroke_dasharray = self.get_attribute(
+			'stroke-dasharray', '', cascade=True)
+		stroke_dasharray = helpers.attribs.normalize(stroke_dasharray).split()
+		if stroke_dasharray:
 			dashes = [helpers.coordinates.size(dash, vp, 'xy')
-			          for dash in dashArray]
+			          for dash in stroke_dasharray]
 			if sum(dashes):
-				offset = self.getAttribute('stroke-dashoffset', cascade=True)
-				offset = helpers.coordinates.size(offset, vp, 'xy')
-				surface.context.set_dash(dashes, offset)
+				stroke_dashoffset = self.get_attribute(
+					'stroke-dashoffset', cascade=True)
+				stroke_dashoffset = helpers.coordinates.size(
+					stroke_dashoffset, vp, 'xy')
+				surface.context.set_dash(dashes, stroke_dashoffset)
 
 		surface.context.set_source_rgba(*fill)
-		surface.context.set_fill_rule(fillRule)
+		surface.context.set_fill_rule(fill_rule)
 		surface.context.fill_preserve()
 
 		surface.context.set_source_rgba(*stroke)
-		surface.context.set_line_width(strokeWidth)
-		surface.context.set_line_cap(strokeLinecap)
-		surface.context.set_line_join(strokeLinejoin)
+		surface.context.set_line_width(stroke_width)
+		surface.context.set_line_cap(stroke_linecap)
+		surface.context.set_line_join(stroke_linejoin)
 		surface.context.stroke()
 
 
 class CustomElement(_Element):
 	"""A placeholder or custom element with any tag name."""
 
-	def __init__(self, tag:str, namespace:str = helpers.namespaces.NS_SVG, **attribs):
+	def __init__(self, tag:str, namespace:str = helpers.namespaces.NS_SVG,
+	             **attribs):
 		self.tag = tag
 		self.namespace = namespace
 		super().__init__(**attribs)

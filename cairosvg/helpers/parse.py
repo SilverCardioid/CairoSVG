@@ -5,65 +5,65 @@ from . import namespaces
 
 def parse(source):
 	events = ET.iterparse(source, events=["start", "end", "comment", "pi", "start-ns", "end-ns"])
-	elemStack = []
+	elem_stack = []
 
-	nextEv, nextElem = next(events, (None, None))
-	while nextEv:
-		newNS = {}
-		while nextEv == 'start-ns':
-			newNS[nextElem[0]] = nextElem[1]
-			nextEv, nextElem = next(events, (None, None))
-		if newNS:
-			assert nextEv == 'start'
+	next_ev, next_elem = next(events, (None, None))
+	while next_ev:
+		new_ns = {}
+		while next_ev == 'start-ns':
+			new_ns[next_elem[0]] = next_elem[1]
+			next_ev, next_elem = next(events, (None, None))
+		if new_ns:
+			assert next_ev == 'start'
 
-		if nextEv == 'start':
+		if next_ev == 'start':
 			# Create element
-			nsName, nsPrefix, tag = namespaces._split(nextElem.tag)
-			if nsPrefix:
+			ns_name, ns_prefix, tag = namespaces._split(next_elem.tag)
+			if ns_prefix:
 				# Undefined prefix; keep prefix in tag
-				print(f'undefined namespace prefix "{nsPrefix}:"')
-				tag = nsPrefix + ':' + tag
-			parent = elemStack[-1] if len(elemStack) > 0 else None
-			if nsName == namespaces.NS_SVG and tag in _creators:
-				elem = _creators[tag](parent, **nextElem.attrib)
+				print(f'undefined namespace prefix "{ns_prefix}:"')
+				tag = ns_prefix + ':' + tag
+			parent = elem_stack[-1] if len(elem_stack) > 0 else None
+			if ns_name == namespaces.NS_SVG and tag in _creators:
+				elem = _creators[tag](parent, **next_elem.attrib)
 			else:
 				# Custom element
-				print(f'<{nextElem.tag}> node not supported; can be saved but not drawn')
-				elem = _creators['custom'](parent, tag, nsName, **nextElem.attrib)
-			elemStack.append(elem)
+				print(f'<{next_elem.tag}> node not supported; can be saved but not drawn')
+				elem = _creators['custom'](parent, tag, ns_name, **next_elem.attrib)
+			elem_stack.append(elem)
 
-			if newNS:
+			if new_ns:
 				# Add declared namespaces
 				ns = elem._root.namespaces
-				if not elem.isRoot():
+				if not elem.is_root():
 					print('namespace declarations moved to root element')
-				for nsPrefix, nsName in newNS.items():
-					if nsPrefix in ns:
-						if ns[nsPrefix] != nsName:
+				for ns_prefix, ns_name in new_ns.items():
+					if ns_prefix in ns:
+						if ns[ns_prefix] != ns_name:
 							# Same prefix for different name
-							newPrefix = ns._getPrefix(nsName, defPrefix=nsPrefix)
-							print(f'duplicate prefix "{nsPrefix}:" changed to "{newPrefix}:"')
+							new_prefix = ns._get_prefix(ns_name, default_prefix=ns_prefix)
+							print(f'duplicate prefix "{ns_prefix}:" changed to "{new_prefix}:"')
 						# else, already included with same name
 						continue
 					# Add new prefix
-					ns[nsPrefix] = nsName
+					ns[ns_prefix] = ns_name
 			yield ('start', elem)
 
-		elif nextEv == 'end':
-			yield ('end', elemStack.pop())
+		elif next_ev == 'end':
+			yield ('end', elem_stack.pop())
 
-		# todo: comments (nextEv == 'comment'), text nodes (nextElem.text / nextElem.tail)
+		# todo: comments (next_ev == 'comment'), text nodes (next_elem.text / next_elem.tail)
 
-		nextEv, nextElem = next(events, (None, None))
+		next_ev, next_elem = next(events, (None, None))
 
 
 def read(source):
-	elemIt = parse(source)
+	elem_it = parse(source)
 	# First element = root
-	ev, root = next(elemIt, (None, None))
+	ev, root = next(elem_it, (None, None))
 	# Parse the rest of the tree
 	while ev:
-		ev, elem = next(elemIt, (None, None))
-		if ev == 'start' and elem.isRoot():
+		ev, elem = next(elem_it, (None, None))
+		if ev == 'start' and elem.is_root():
 			print(f'multiple root-level elements')
 	return root

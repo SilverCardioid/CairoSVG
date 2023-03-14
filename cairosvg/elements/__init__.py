@@ -64,7 +64,7 @@ for tag in _creators:
 		_creators[tag].__doc__ = f'Add a custom element as a child of this element.'
 	else:
 		# Copy docstring from respective class, replacing the first line
-		docLines = elements[tag].__doc__.split('\n', 1) if tag in elements else ['']
-		docLines[0] = f'Add a <{tag}> as a child of this element.'
-		_creators[tag].__doc__ = '\n'.join(docLines)
+		doc_lines = elements[tag].__doc__.split('\n', 1) if tag in elements else ['']
+		doc_lines[0] = f'Add a <{tag}> as a child of this element.'
+		_creators[tag].__doc__ = '\n'.join(doc_lines)
 del tag
