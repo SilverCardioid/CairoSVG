@@ -23,7 +23,7 @@ class G(_StructureElement):
 	def draw(self, surface:ht.Surface, *, paint:bool = True,
 	         viewport:ty.Optional[ht.Viewport] = None):
 		with self._apply_transformations(surface):
-			for child in self._children:
+			for child in self.child_elements():
 				child.draw(surface, paint=paint, viewport=viewport)
 
 

@@ -5,12 +5,13 @@ import re
 import sys
 import typing as ty
 
-from . import _creators
+from . import node, _creators
 from .. import helpers
 from ..helpers.modules import attrib as _attrib, content as _content
 from ..helpers import types as ht
 
-class _Element:
+class _Element(node._Node):
+	is_element = True
 	tag = ''
 	namespace = helpers.namespaces.NS_SVG
 	attribs = None
@@ -18,27 +19,14 @@ class _Element:
 	_defaults = {}
 	_attrib_to_str = {}
 
-	def __init__(self, *, parent:ty.Optional[_ElemType] = None,
+	def __init__(self, *, parent:ty.Optional[node._Node] = None,
 	             child_index:ty.Optional[int] = None,
 	             namespaces:ty.Optional[ty.Dict[str,str]] = None, **attribs):
 		# Tree structure
-		self._parent = parent
-		self._children = []
-		if parent is not None:
-			# child
-			if (parent.__class__.content and (not self.tag or self.tag[0] != '{') and
-			    self.tag not in parent.__class__.content):
-				print(f'warning: <{parent.tag}> element doesn\'t take "{self.tag}" child element')
-			if child_index is not None:
-				self.parent._children.insert(child_index, self)
-			else:
-				self.parent._children.append(self)
-			self._root = parent._root
-		else:
-			# root
-			self._root = ht.Root(self, namespaces=namespaces)
+		super().__init__(parent=parent, child_index=child_index,
+		                 namespaces=namespaces)
 
-		# Allowed children
+		# Methods for creating children
 		if self.__class__.content:
 			for tag in self.__class__.content:
 				try:
@@ -62,6 +50,13 @@ class _Element:
 		if self.__class__.attribs and 'transform' in self.__class__.attribs:
 			self._set_transform()
 
+	def _can_have_child(self, child:node._Node) -> bool:
+		if (child.is_element and self.__class__.content and
+		    (not child.tag or child.tag[0] != '{') and
+		    child.tag not in self.__class__.content):
+			print(f'warning: <{self.tag}> element doesn\'t take "{child.tag}" child element')
+		return True
+
 	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_ElemType, str]]:
 		refs = []
 		clip_path = self._parse_reference(self._attribs.get('clip-path', None))
@@ -82,28 +77,9 @@ class _Element:
 		self.transform = ht.Transform(self._attribs.get('transform', None),
 		                              parent=self)
 
-	def _set_id(self, value):
-		if value in self._root._ids:
-			print('warning: duplicate ID ignored: ' + value)
-		else:
-			self._root._ids[value] = self
-
 	def _get_auto_id(self, prefix:ty.Optional[str] = None,
 	                 id_list:ty.Optional[ty.List[str]] = None) -> str:
-		# Find the first free ID of the form prefix+number
-		prefix = prefix or self.tag
-		if prefix[-1].isnumeric():
-			# Add a separator if the prefix ends with a number
-			prefix += '_'
-		if id_list is None:
-			id_list = self._root._ids.keys()
-
-		i = 1
-		eid = prefix + str(i)
-		while eid in id_list:
-			i += 1
-			eid = prefix + str(i)
-		return eid
+		return super()._get_auto_id(prefix or self.tag, id_list)
 
 	def _set_auto_id(self, prefix:ty.Optional[str] = None,
 	                 id_list:ty.Optional[ty.List[str]] = None):
@@ -211,24 +187,6 @@ class _Element:
 		                 namespace_declaration=False)
 
 	@property
-	def parent(self) -> ty.Optional[_ElemType]:
-		return self._parent
-	@parent.setter
-	def parent(self, elem:ty.Optional[_ElemType]):
-		if elem:
-			elem.add_child(self)
-		else:
-			self.detach()
-
-	@property
-	def children(self) -> ty.Tuple[_ElemType, ...]:
-		return tuple(self._children)
-
-	@property
-	def depth(self) -> int:
-		return 0 if self.is_root() else self.parent.depth + 1
-
-	@property
 	def id(self) -> ty.Optional[str]:
 		return self._attribs.get('id', None)
 	@id.setter
@@ -237,14 +195,6 @@ class _Element:
 	@id.deleter
 	def id(self):
 		del self['id']
-
-	@property
-	def root(self) -> _ElemType:
-		return self._root.element
-
-	def is_root(self) -> bool:
-		"""Check whether this element is the root of an element tree."""
-		return self.root is self
 
 	def change_id(self, new_id:ty.Optional[str] = None,
 	              update_references:bool = True, *, auto:bool = False):
@@ -290,46 +240,6 @@ class _Element:
 			else:
 				ref_elem[ref_attrib] = self
 
-	def delete(self, recursive:bool = True):
-		"""Delete this element from the tree.
-		Remove the element from its parent and children, without creating a
-		new element tree. Further method calls on the element may fail.
-		If `recursive` is True, the method will be called recursively on the
-		element's descendants. Otherwise, its direct children will be detached
-		into their own element trees.
-		"""
-		if self.parent:
-			self.parent._children.remove(self)
-			if self.id:
-				del self._root._ids[self.id]
-
-		if recursive:
-			while len(self._children) > 0:
-				self._children[-1].delete(True)
-		else:
-			while len(self._children) > 0:
-				self._children[-1].detach()
-			self._root._update_ids()
-
-		self._parent = None
-		self._root = None
-
-	def detach(self):
-		"""Disconnect this element from the tree.
-		Remove the element from its parent, and make it the root of a new
-		element tree including its descendants.
-		"""
-		parent = self.parent
-		if parent:
-			self._parent = None
-			parent._children.remove(self)
-			self._root = ht.Root(self)
-			self._root._update_ids()
-			for eid in self._root._ids:
-				del parent._root._ids[eid]
-			for e in self.descendants(False):
-				e._root = self._root
-
 	def get_attribute(self, attrib:str, default:ty.Any = None, *,
 	                  cascade:bool = False, get_default:bool = False) -> ty.Any:
 		"""Retrieve an attribute value.
@@ -370,16 +280,16 @@ class _Element:
 		source element's attribute that contains the reference.
 		"""
 		refs = []
-		for e in self._root.element.descendants(True):
+		for e in self._root.element.descendants(True, elements_only=True):
 			out_refs = e._get_outgoing_refs()
 			for ref_target, ref_attrib in out_refs:
 				if ref_target is self:
 					refs.append((e, ref_attrib))
 		return refs
 
-	def add_child(self, tag:ty.Union[str,_ElemType], *attribs,
-	              child_index:ty.Optional[int] = None, **kwattribs):
-		"""Add a child element to this element.
+	def add_child(self, tag:ty.Union[str,node._Node], *attribs,
+	              child_index:ty.Optional[int] = None, **kwattribs) -> node._Node:
+		"""Add a child element to this element, and return it.
 		* If `tag` is a string, it specifies the tag name for a new element.
 		    `attribs` and `kwattribs` are passed on to this element's
 		    constructor. For example: `e.add_child('circle', r=10)`.
@@ -390,31 +300,9 @@ class _Element:
 		`child_index` specifies the new element's position in the element's list of
 		children. If `None`, the new element is appended to the end.
 		"""
-		if isinstance(tag, _Element):
-			if tag in self.ancestors(True):
-				raise ValueError('can\'t add an element\'s ancestor to itself')
-			if (self.__class__.content and (not tag.tag or tag.tag[0] != '{') and
-			    tag.tag not in self.__class__.content):
-				print(f'warning: <{self.tag}> element doesn\'t take "{tag.tag}" child element')
-			if tag.parent:
-				tag.detach()
-			if child_index is not None:
-				self._children.insert(child_index, tag)
-			else:
-				self._children.append(tag)
-			tag._parent = self
-
-			id_conflicts = tag._root._ids.keys() & self._root._ids.keys()
-			if id_conflicts:
-				print('warning: duplicate ids changed: ' + ', '.join(id_conflicts))
-				id_list = tag._root._ids.keys() | self._root._ids.keys()
-				for eid in id_conflicts:
-					elem = tag._root._ids[eid]
-					new_id = elem._get_auto_id(eid, id_list)
-					elem.change_id(new_id)
-			self._root._ids.update(tag._root._ids)
-			for e in tag.descendants(True):
-				e._root = self._root
+		if isinstance(tag, node._Node):
+			super().add_child(tag, child_index)
+			return tag
 
 		else:
 			from . import elements
@@ -434,8 +322,13 @@ class _Element:
 			else:
 				# Custom element
 				print(f'<{tag}> node not supported; can be saved but not drawn')
-				elem = CustomElement(tag, ns_name, parent=parent,
+				return CustomElement(tag, ns_name, parent=parent,
 				                     *attribs, **kwattribs)
+
+	def _qualify_tag_name(self) -> str:
+		ns_prefix = self._root.namespaces._get_prefix(self.namespace)
+		if ns_prefix: ns_prefix += ':'
+		return ns_prefix + self.tag
 
 	def code(self, *, close:bool = True,
 	         namespace_declaration:bool = True) -> str:
@@ -446,21 +339,19 @@ class _Element:
 		If `namespace_declaration` is True and `self` is the root element,
 		include `xmlns:` attributes for namespaces used in the tree.
 		"""
-		nss = self._root.namespaces
-		ns_prefix = nss._get_prefix(self.namespace)
-		if ns_prefix: ns_prefix += ':'
-		string = '<' + ns_prefix + self.tag
+		out = ['<' + self._qualify_tag_name()]
 
 		if namespace_declaration and self.is_root():
 			ns_names = helpers.namespaces.get_namespaces(self)
-			ns = [(nss._get_prefix(name), name) for name in ns_names]
+			ns = [(self._root.namespaces._get_prefix(name), name)
+			      for name in ns_names]
 			ns.sort()
 			for ns_prefix, ns_name in ns:
 				if ns_prefix == 'xml' and ns_name == helpers.namespaces.NS_XML:
 					# xml: doesn't need to be declared
 					continue
 				key = 'xmlns:' + ns_prefix if ns_prefix else 'xmlns'
-				string += f' {key}="{ns_name}"'
+				out.append(f' {key}="{ns_name}"')
 
 		for attr in self._attribs:
 			val = self._attribs[attr]
@@ -476,10 +367,10 @@ class _Element:
 				continue
 			attr = self._root.namespaces.qualify_name(
 				attr, default_name=self.namespace)
-			string += f' {attr}="{val}"'
+			out.append(f' {attr}="{val}"')
 
-		string += '/>' if close else '>'
-		return string
+		out.append('/>' if close else '>')
+		return ''.join(out)
 
 	def write_code(self, file:ty.Optional[ty.TextIO] = None, *,
 	               indent:ty.Optional[str] = '', indent_depth:int = 0,
@@ -512,50 +403,28 @@ class _Element:
 		                     namespace_declaration=namespace_declaration)
 		file.write(f'{indentation}{tag_code}{newline}')
 		if len(self._children) > 0:
+			# Write children & closing tag
 			for child in self._children:
 				child.write_code(file, indent=indent,
 				                 indent_depth=indent_depth + 1, newline=newline)
-			tag_close = f'</{self.tag}>'
-			file.write(f'{indentation}{tag_close}{newline}')
-
-	def descendants(self, include_self:bool = True
-	                ) -> ty.Generator[_ElemType, None, None]:
-		"""A generator of the element's descendants.
-		Traverses the element's subtree (children, grandchildren etc.), and
-		yields elements depth-first. If `include_self` is True, start with the
-		element itself.
-		"""
-		if include_self:
-			yield self
-		for child in self._children:
-			yield from child.descendants(True)
-
-	def ancestors(self, include_self:bool = True
-	              ) -> ty.Generator[_ElemType, None, None]:
-		"""A generator of the element's ancestors.
-		Yields the element's parent, grandparent, etc., up to the root
-		element. If `include_self` is True, start with the element itself.
-		"""
-		if include_self:
-			yield self
-		anc = self.parent
-		while anc:
-			yield anc
-			anc = anc.parent
+			qualified_tag = self._qualify_tag_name()
+			file.write(f'{indentation}</{qualified_tag}>{newline}')
 
 	def find(self, function:ty.Callable[[_ElemType],bool], *,
-	         max_results:ty.Optional[int] = None) -> ty.List[_ElemType]:
+	         elements_only:bool = True, max_results:ty.Optional[int] = None
+	         ) -> ty.List[_ElemType]:
 		"""List descendant elements satisfying the given function.
 		`function` is a callable that receives an element object, and should
 		return a boolean. The function is evaluated on the element's descendants
 		(depth-first), and a list is returned of those for which it returns True.
+		If `elements_only` is False, also evaluate text nodes and comments.
 		If `max_results` is a positive number, return at most that many results.
 
 		For example, to get all path elements among an element's descendants:
 		`e.find(lambda x: x.tag == 'path')`
 		"""
 		results = []
-		for elem in self.descendants(True):
+		for elem in self.descendants(True, elements_only=elements_only):
 			if function(elem):
 				results.append(elem)
 				if max_results and len(results) >= max_results:
@@ -621,14 +490,14 @@ class _StructureElement(_Element):
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True,
 	         viewport:ty.Optional[ht.Viewport] = None):
-		for child in self._children:
+		for child in self.child_elements():
 			child.draw(surface, paint=paint, viewport=viewport)
 
 	def bounding_box(self, *, with_transform:bool = True) -> ht.Box:
 		# todo: account for transformations
 		# https://svgwg.org/svg2-draft/coords.html#bounding-box
 		box = ht.Box()
-		for child in self._children:
+		for child in self.child_elements():
 			box += child.bounding_box()
 		if with_transform: box = self._transform_box(box)
 		return box

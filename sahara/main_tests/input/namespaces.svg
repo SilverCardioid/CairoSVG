@@ -4,5 +4,9 @@
 <foo:rect id="bar" width="180" height="600" x="80" fill="#000"/>
 <foo:use bar:href="#bar" x="260"/>
 <!-- foo -->
-<card:bar bar="baz"/>
+<card:bar bar="baz">
+abc
+<card:baz/>
+def
+</card:bar>
 </foo:svg>

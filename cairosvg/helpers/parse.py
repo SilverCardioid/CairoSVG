@@ -7,32 +7,45 @@ from . import namespaces
 def parse(source:ty.Union[str, ty.TextIO]
           ) -> ty.Generator[ty.Tuple[str, 'Element'], None, None]:
 	events = ET.iterparse(source, events=["start", "end", "comment", "pi", "start-ns", "end-ns"])
-	elem_stack = []
+	# Each item is the parent of the next;
+	# retrieve None for root's parent
+	elem_stack = [None] # csvg Element objects
+	xml_stack = [None]  # etree Element objects
 
-	next_ev, next_elem = next(events, (None, None))
+	next_ev, next_xml = next(events, (None, None))
 	while next_ev:
+		# Collect namespace declarations by the next element
 		new_ns = {}
 		while next_ev == 'start-ns':
-			new_ns[next_elem[0]] = next_elem[1]
-			next_ev, next_elem = next(events, (None, None))
+			new_ns[next_xml[0]] = next_xml[1]
+			next_ev, next_xml = next(events, (None, None))
 		if new_ns:
 			assert next_ev == 'start'
 
 		if next_ev == 'start':
+			# Preceding text in parent element
+			parent = elem_stack[-1]
+			xml_parent = xml_stack[-1]
+			if xml_parent:
+				text = xml_parent.text and xml_parent.text.strip()
+				if text:
+					text_node = parent.add_text_node(text)
+					yield ('text', text_node)
+
 			# Create element
-			ns_name, ns_prefix, tag = namespaces._split(next_elem.tag)
+			ns_name, ns_prefix, tag = namespaces._split(next_xml.tag)
 			if ns_prefix:
 				# Undefined prefix; keep prefix in tag
 				print(f'undefined namespace prefix "{ns_prefix}:"')
 				tag = ns_prefix + ':' + tag
-			parent = elem_stack[-1] if len(elem_stack) > 0 else None
 			if ns_name == namespaces.NS_SVG and tag in _creators:
-				elem = _creators[tag](parent, **next_elem.attrib)
+				elem = _creators[tag](parent, **next_xml.attrib)
 			else:
 				# Custom element
-				print(f'<{next_elem.tag}> node not supported; can be saved but not drawn')
-				elem = _creators['custom'](parent, tag, ns_name, **next_elem.attrib)
+				print(f'<{next_xml.tag}> node not supported; can be saved but not drawn')
+				elem = _creators['custom'](parent, tag, ns_name, **next_xml.attrib)
 			elem_stack.append(elem)
+			xml_stack.append(next_xml)
 
 			if new_ns:
 				# Add declared namespaces
@@ -52,11 +65,24 @@ def parse(source:ty.Union[str, ty.TextIO]
 			yield ('start', elem)
 
 		elif next_ev == 'end':
-			yield ('end', elem_stack.pop())
+			# Element closing tag
+			elem = elem_stack.pop()
+			xml_stack.pop()
+			yield ('end', elem)
 
-		# todo: comments (next_ev == 'comment'), text nodes (next_elem.text / next_elem.tail)
+			# Following text in parent element
+			tail = next_xml.tail and next_xml.tail.strip()
+			if tail:
+				text_node = elem_stack[-1].add_text_node(tail)
+				yield ('text', text_node)
 
-		next_ev, next_elem = next(events, (None, None))
+		elif next_ev == 'comment':
+			# <!-- comment -->
+			text = next_xml.text.strip() if next_xml.text else ''
+			comment = elem_stack[-1].add_comment(text)
+			yield ('comment', comment)
+
+		next_ev, next_xml = next(events, (None, None))
 
 
 def read(source:ty.Union[str, ty.TextIO]) -> 'Element':

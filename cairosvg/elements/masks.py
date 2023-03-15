@@ -49,7 +49,7 @@ class ClipPath(_Element):
 				print(f'warning: invalid attribute value: clipPathUnits="{cp_units}"')
 			clip_vp = target._get_viewport()
 
-		for child in self._children:
+		for child in self.child_elements():
 			child.draw(surface, paint=False, viewport=clip_vp)
 		surface.context.restore()
 
@@ -71,7 +71,7 @@ class ClipPath(_Element):
 	def _clip_box(self, box:ht.Box):
 		# Get the bounding box of the clipPath's contents
 		cp_box = ht.Box()
-		for child in self._children:
+		for child in self.child_elements():
 			cp_box += child.bounding_box()
 		# Intersect it with the given box
 		return cp_box & box
@@ -142,7 +142,7 @@ class Mask(_Element):
 				print(f'warning: invalid attribute value: maskContentUnits="{content_units}"')
 			mask_vp = target._get_viewport()
 
-		for child in self._children:
+		for child in self.child_elements():
 			# todo: pass-through for viewport
 			child.draw(mask_surface, viewport=mask_vp)
 

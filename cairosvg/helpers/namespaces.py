@@ -121,7 +121,7 @@ DEFAULTS = Namespaces({
 def get_namespaces(elem) -> ty.List[str]:
 	# Find the namespaces actually used by elem's descendants
 	ns_names = set()
-	for e in elem.descendants():
+	for e in elem.descendants(True, elements_only=True):
 		if e.namespace:
 			ns_names.add(e.namespace)
 		for attrib in e._attribs.keys():

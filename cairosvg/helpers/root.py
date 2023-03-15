@@ -11,7 +11,7 @@ class Root:
 
 	def _update_ids(self):
 		self._ids = {}
-		for e in self.element.descendants():
+		for e in self.element.descendants(True, elements_only=True):
 			eid = e.id
 			if eid:
 				self._ids[eid] = e

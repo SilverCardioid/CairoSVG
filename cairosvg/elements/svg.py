@@ -103,7 +103,7 @@ class SVG(_StructureElement):
 
 		surface.context.translate(x, y)
 		with vp_transform.apply_context(surface):
-			for child in self._children:
+			for child in self.child_elements():
 				child.draw(surface, paint=paint, viewport=viewport)
 		surface.context.translate(-x, -y)
 
