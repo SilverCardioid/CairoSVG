@@ -1,3 +1,4 @@
+import re
 import typing as ty
 from xml.etree import ElementTree as ET
 
@@ -42,7 +43,8 @@ def parse(source:ty.Union[str, ty.TextIO]
 				elem = _creators[tag](parent, **next_xml.attrib)
 			else:
 				# Custom element
-				print(f'<{next_xml.tag}> node not supported; can be saved but not drawn')
+				print_tag = tag if ns_name == namespaces.NS_SVG else next_xml.tag
+				print(f'<{print_tag}> node not supported; can be saved but not drawn')
 				elem = _creators['custom'](parent, tag, ns_name, **next_xml.attrib)
 			elem_stack.append(elem)
 			xml_stack.append(next_xml)
@@ -53,10 +55,20 @@ def parse(source:ty.Union[str, ty.TextIO]
 				if not elem.is_root():
 					print('namespace declarations moved to root element')
 				for ns_prefix, ns_name in new_ns.items():
+					if not ns_prefix:
+						# new default namespace; assign prefix if there isn't one
+						if ns_name in ns._names:
+							continue
+						else:
+							# try using the final part of the namespace name
+							tail = re.search('\w+$', ns_name)
+							ns_prefix = ns._get_prefix(
+								ns_name, default_prefix=tail and tail[0])
 					if ns_prefix in ns:
 						if ns[ns_prefix] != ns_name:
 							# Same prefix for different name
-							new_prefix = ns._get_prefix(ns_name, default_prefix=ns_prefix)
+							new_prefix = ns._get_prefix(
+								ns_name, default_prefix=ns_prefix)
 							print(f'duplicate prefix "{ns_prefix}:" changed to "{new_prefix}:"')
 						# else, already included with same name
 						continue
@@ -68,6 +80,14 @@ def parse(source:ty.Union[str, ty.TextIO]
 			# Element closing tag
 			elem = elem_stack.pop()
 			xml_stack.pop()
+
+			# Text content (if not already yielded before child element)
+			if len(elem._children) == 0:
+				text = next_xml.text and next_xml.text.strip()
+				if text:
+					text_node = elem.add_text_node(text)
+					yield ('text', text_node)
+
 			yield ('end', elem)
 
 			# Following text in parent element

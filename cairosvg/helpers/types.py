@@ -1,6 +1,6 @@
 import typing as ty
 
-from .coordinates import Viewport, Length
+from .coordinates import Viewport, Length, PointError
 from .geometry import Arc, Box
 from .namespaces import Namespaces
 from .root import Root

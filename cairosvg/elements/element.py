@@ -52,7 +52,8 @@ class _Element(node._Node):
 
 	def _can_have_child(self, child:node._Node) -> bool:
 		if (child.is_element and self.__class__.content and
-		    (not child.tag or child.tag[0] != '{') and
+		    #(not child.tag or child.tag[0] != '{') and
+		    child.namespace == helpers.namespaces.NS_SVG and
 		    child.tag not in self.__class__.content):
 			print(f'warning: <{self.tag}> element doesn\'t take "{child.tag}" child element')
 		return True

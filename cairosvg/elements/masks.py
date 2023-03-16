@@ -37,7 +37,7 @@ class ClipPath(_Element):
 
 	def apply(self, surface:ht.Surface, target:_ElemType):
 		surface.context.save()
-		cp_units = self['clipPathUnits'].strip()
+		cp_units = self._getattrib('clipPathUnits').strip()
 		if cp_units == 'objectBoundingBox':
 			tx, ty, tw, th = target.bounding_box(with_transform=False).xywh
 			if tw > 0 and th > 0:
@@ -106,28 +106,28 @@ class Mask(_Element):
 		return
 
 	def apply(self, surface:ht.Surface, target:_ElemType):
-		mask_units = self['maskUnits'].strip()
-		content_units = self['maskContentUnits'].strip()
+		mask_units = self._getattrib('maskUnits').strip()
+		content_units = self._getattrib('maskContentUnits').strip()
 		if mask_units == 'userSpaceOnUse':
 			# The spec specifies the invoking element's viewport
 			# (https://drafts.fxtf.org/css-masking/#element-attrdef-mask-maskunits);
 			# MDN conflictingly specifies the mask's own viewport
 			# (https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/maskUnits)
 			vp = target._get_viewport()
-			x      = _size(self['x']     , vp, 'x')
-			y      = _size(self['y']     , vp, 'y')
-			width  = _size(self['width'] , vp, 'x')
-			height = _size(self['height'], vp, 'y')
+			x      = _size(self._getattrib('x')     , vp, 'x')
+			y      = _size(self._getattrib('y')     , vp, 'y')
+			width  = _size(self._getattrib('width') , vp, 'x')
+			height = _size(self._getattrib('height'), vp, 'y')
 		else:
 			# objectBoundingBox: fractions or percentages of target's size
 			# (as if in a "0 0 1 1" viewbox)
 			if mask_units != 'objectBoundingBox':
 				print(f'warning: invalid attribute value: maskUnits="{mask_units}"')
 			tx, ty, tw, th = target.bounding_box(with_transform=False).xywh
-			x      = tw * _size(self['x']     , reference=1) + tx
-			y      = th * _size(self['y']     , reference=1) + ty
-			width  = tw * _size(self['width'] , reference=1)
-			height = th * _size(self['height'], reference=1)
+			x      = tw * _size(self._getattrib('x')     , reference=1) + tx
+			y      = th * _size(self._getattrib('y')     , reference=1) + ty
+			width  = tw * _size(self._getattrib('width') , reference=1)
+			height = th * _size(self._getattrib('height'), reference=1)
 
 		mask_surface = helpers.surface.create_surface(
 			'recording', x=x, y=y, width=width, height=height)

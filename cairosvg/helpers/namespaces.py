@@ -56,7 +56,7 @@ class Namespaces(dict):
 		del self[old]
 
 	def _get_prefix(self, name:str, *, default_name:ty.Optional[str] = None,
-	                default_prefix:str = 'ns'):
+	                default_prefix:ty.Optional[str] = 'ns'):
 		# Get the last-declared prefix for a name, or
 		# add one if the name is missing
 		if (default_name or self.default) == name:
@@ -66,6 +66,7 @@ class Namespaces(dict):
 			return prefixes[-1]
 
 		def_count = 0
+		default_prefix = default_prefix or 'ns'
 		if default_prefix[-1].isnumeric():
 			# Add a separator if the prefix ends in a number
 			default_prefix += '_'

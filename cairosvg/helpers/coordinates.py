@@ -7,6 +7,9 @@ from . import attribs
 
 Length = ty.Union[str, int, float]
 
+class PointError(Exception):
+    """Exception raised when parsing a point fails."""
+
 UNITS = {
     'mm': 1 / 25.4,
     'cm': 1 / 2.54,

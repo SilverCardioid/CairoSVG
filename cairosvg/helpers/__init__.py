@@ -15,10 +15,6 @@ PATH_LETTERS = 'achlmqstvzACHLMQSTVZ'
 RECT = re.compile(r'rect\( ?(.+?) ?\)')
 
 
-class PointError(Exception):
-    """Exception raised when parsing a point fails."""
-
-
 def paint(value):
     """Extract from value an uri and a color.
 

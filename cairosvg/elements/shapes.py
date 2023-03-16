@@ -224,7 +224,7 @@ class Polygon(_ShapeElement):
 				points[i] = (x, y)
 				if string:
 					# point has too many values
-					raise helpers.PointError
+					raise ht.PointError
 			if isinstance(point[0], str):
 				point[0] = _size(point[0], vp, 'x')
 			if isinstance(point[1], str):

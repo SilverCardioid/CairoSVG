@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:d="http://www.w3.org/2000/02/svg/testsuite/description/" xmlns:xhtml0="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="basic" id="svg-root" width="100%" height="100%" viewBox="0 0 480 360">
+  <!-- ====================================================================== -->
+  <!-- =  SVG 1.1 2nd Edition Test Case                                     = -->
+  <!-- ====================================================================== -->
+  <!-- =  Copyright 2009 World Wide Web Consortium, (Massachusetts          = -->
+  <!-- =  Institute of Technology, European Research Consortium for         = -->
+  <!-- =  Informatics and Mathematics (ERCIM), Keio University).            = -->
+  <!-- =  All Rights Reserved.                                              = -->
+  <!-- =  See http://www.w3.org/Consortium/Legal/.                          = -->
+  <!-- ====================================================================== -->
+  <d:SVGTestCase template-version="1.4" reviewer="DJ" author="SH" status="accepted" version="$Revision" testname="$RCSfile: text-text-08-b.svg,v $">
+    <d:testDescription xlink:href="http://www.w3.org/TR/SVG11/text.html#TextElement">
+      <xhtml0:p>
+        The three opacity properties (fill-opacity,
+        stroke-opacity, and opacity) of 'text' elements are
+        covered in this test.
+      </xhtml0:p>
+    </d:testDescription>
+    <d:operatorScript>
+      <xhtml0:p>
+        Run the test. No interaction required.
+      </xhtml0:p>
+    </d:operatorScript>
+    <d:passCriteria>
+      <xhtml0:p>
+        The test is passed if:
+      </xhtml0:p>
+      <xhtml0:ul>
+        <xhtml0:li>
+          The text "Normal Text" has a pink stroke with no opacity and a blue fill with no opacity.
+        </xhtml0:li>
+        <xhtml0:li>
+          The text "Fill Opacity" has a pink stroke with no opacity and a blue fill with 50% opacity.
+        </xhtml0:li>
+        <xhtml0:li>
+          The text "Stroke Opacity" has a pink stroke with 50% opacity and a blue fill with no opacity.
+        </xhtml0:li>
+        <xhtml0:li>
+          The text "Opacity" has a pink stroke and a blue fill both with 50% opacity.
+        </xhtml0:li>
+      </xhtml0:ul>
+    </d:passCriteria>
+  </d:SVGTestCase>
+  <title id="test-title">
+    $RCSfile: text-text-08-b.svg,v $
+  </title>
+  <defs>
+    <font-face font-family="SVGFreeSansASCII" unicode-range="U+0-7F">
+      <font-face-src>
+        <font-face-uri xlink:href="../resources/SVGFreeSans.svg#ascii"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <g id="test-body-content" font-family="SVGFreeSansASCII,sans-serif" font-size="18">
+    <text x="19" y="60" font-size="64" font-family="Verdana" fill="blue" stroke="fuchsia" stroke-width="2">
+      Normal Text
+    </text>
+    <text x="19" y="120" font-size="64" font-family="Verdana" fill="blue" stroke="fuchsia" stroke-width="2" fill-opacity="0.50">
+      Fill opacity
+    </text>
+    <text x="19" y="180" font-size="64" font-family="Verdana" fill="blue" stroke="fuchsia" stroke-width="2" stroke-opacity="0.50">
+      Stroke opacity
+    </text>
+    <text x="19" y="240" font-size="64" font-family="Verdana" fill="blue" stroke="fuchsia" stroke-width="2" opacity="0.50">
+      Opacity
+    </text>
+  </g>
+  <g font-family="SVGFreeSansASCII,sans-serif" font-size="32">
+    <text id="revision" x="10" y="340" stroke="none" fill="black">
+      $Revision: 1.6 $
+    </text>
+  </g>
+  <rect id="test-frame" x="1" y="1" width="478" height="358" fill="none" stroke="#000000"/>
+  <!-- comment out this watermark once the test is approved -->
+  <!-- <g id="draft-watermark">
+    <rect x="1" y="1" width="478" height="20" fill="red" stroke="black" stroke-width="1"/>
+    <text font-family="SVGFreeSansASCII,sans-serif" font-weight="bold" font-size="20" x="240"
+      text-anchor="middle" y="18" stroke-width="0.5" stroke="black" fill="white">DRAFT</text>
+  </g> -->
+</svg>
