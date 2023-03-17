@@ -1,6 +1,6 @@
 import typing as ty
 
-from .element import _Element, _StructureElement, _ElemType
+from .element import _Element, _StructureElement
 from .. import helpers
 from ..helpers.modules import attrib as _attrib, content as _content
 from ..helpers.coordinates import size as _size
@@ -97,7 +97,7 @@ class Use(_Element):
 		                    else ''
 	}
 
-	def __init__(self, href_:ty.Union[str,_ElemType,None] = None, /, **attribs):
+	def __init__(self, href_:ty.Union[str,_Element,None] = None, /, **attribs):
 		attribs = helpers.attribs.merge(attribs, **{_HREF:href_})
 		super().__init__(**attribs)
 
@@ -114,7 +114,7 @@ class Use(_Element):
 			if target and not target.id:
 				target._set_auto_id()
 
-	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_ElemType, str]]:
+	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_Element, str]]:
 		refs = super()._get_outgoing_refs()
 		target = self.target
 		if target:
@@ -122,7 +122,7 @@ class Use(_Element):
 		return refs
 
 	@property
-	def target(self) -> ty.Optional[_ElemType]:
+	def target(self) -> ty.Optional[_Element]:
 		href = self._attribs.get(_HREF, None)
 		if isinstance(href, str):
 			if href[0] == '#':

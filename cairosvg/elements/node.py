@@ -5,6 +5,9 @@ from .. import helpers
 from ..helpers import types as ht
 
 class _Node:
+	"""Base class for XML nodes.
+	Should not be instantiated directly.
+	"""
 	is_element = False
 
 	def __init__(self, *, parent:ty.Optional[_Node] = None,
@@ -14,6 +17,7 @@ class _Node:
 		self._children = []
 		if parent is not None:
 			# child
+			self._root = parent._root
 			if parent._can_have_child(self):
 				if child_index is not None:
 					parent._children.insert(child_index, self)
@@ -21,7 +25,6 @@ class _Node:
 					parent._children.append(self)
 			else:
 				raise ValueError(f"{parent._node_str()} node doesn't take {self._node_str()} child node")
-			self._root = parent._root
 		else:
 			# root
 			self._root = helpers.root.Root(self, namespaces=namespaces)

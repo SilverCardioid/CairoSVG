@@ -4,6 +4,7 @@ import traceback
 from csvg_import import cairosvg
 
 input_folder = 'input'
+catch = True
 
 for file in os.listdir(input_folder):
 	filename, ext = os.path.splitext(file)
@@ -18,17 +19,26 @@ for file in os.listdir(input_folder):
 	try:
 		svg = cairosvg.SVG.read(input_path)
 	except:
-		print('\nError reading file:')
-		traceback.print_exc()
+		if catch:
+			print('\nError reading file:')
+			traceback.print_exc()
+		else:
+			raise
 
 	try:
 		svg.export(output_png)
 	except:
-		print('\nError drawing PNG:')
-		traceback.print_exc()
+		if catch:
+			print('\nError drawing PNG:')
+			traceback.print_exc()
+		else:
+			raise
 
 	try:
 		svg.export(output_svg, indent='  ')
 	except:
-		print('\nError saving SVG:')
-		traceback.print_exc()
+		if catch:
+			print('\nError saving SVG:')
+			traceback.print_exc()
+		else:
+			raise

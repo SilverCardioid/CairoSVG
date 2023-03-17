@@ -6,8 +6,8 @@ from . import attribs
 # .transform dynamically imported to avoid mutual imports
 
 if ty.TYPE_CHECKING:
-	from ..elements.element import _ElemType
-	from .import transform
+	from ..elements.element import _Element
+	from .transform import Transform
 
 Length = ty.Union[str, int, float]
 
@@ -35,7 +35,7 @@ class Viewport:
 	             height:ty.Optional[Length] = None, *,
 	             viewBox:ty.Optional[str] = None,
 	             preserveAspectRatio:ty.Optional[str] = None,
-	             parent:ty.Optional['_ElemType'] = None):
+	             parent:ty.Optional['_Element'] = None):
 		self.parent = parent
 		defs = parent._defaults if parent else {}
 		self._attribs = {
@@ -108,7 +108,7 @@ class Viewport:
 
 		return (default_width, default_height)
 
-	def get_transform(self) -> 'transform.Transform':
+	def get_transform(self) -> 'Transform':
 		"""Return a Transform object based on the viewport's viewBox and preserveAspectRatio values."""
 		from . import transform
 		tr = transform.Transform()

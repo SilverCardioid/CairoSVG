@@ -10,6 +10,9 @@ from ..helpers.modules import attrib as _attrib, content as _content
 from ..helpers import types as ht
 
 class _Element(node._Node):
+	"""Base class for elements.
+	Should not be instantiated directly.
+	"""
 	is_element = True
 	tag = ''
 	namespace = helpers.namespaces.NS_SVG
@@ -57,7 +60,7 @@ class _Element(node._Node):
 			print(f'warning: {self._node_str()} element doesn\'t take {child._node_str()} child node')
 		return True
 
-	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_ElemType, str]]:
+	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_Element, str]]:
 		refs = []
 		clip_path = self._parse_reference(self._attribs.get('clip-path', None))
 		if clip_path:
@@ -96,8 +99,8 @@ class _Element(node._Node):
 		# with get_default, no attrib parsing
 		return self._attribs.get(attrib, self._defaults[attrib])
 
-	def _parse_reference(self, value:ty.Union[str,_ElemType,None]
-	                     ) -> ty.Optional[_ElemType]:
+	def _parse_reference(self, value:ty.Union[str,_Element,None]
+	                     ) -> ty.Optional[_Element]:
 		if value is None or value == '':
 			return None
 		elif isinstance(value, str):
@@ -187,7 +190,7 @@ class _Element(node._Node):
 		                 namespace_declaration=False)
 
 	def _node_str(self) -> str:
-		return '<' + self._qualify_tag_name + '>'
+		return '<' + self._qualify_tag_name() + '>'
 
 	@property
 	def id(self) -> ty.Optional[str]:
@@ -275,7 +278,7 @@ class _Element(node._Node):
 		"""
 		return self._parse_attribute(attrib) in self._attribs
 
-	def get_references(self) -> ty.List[ty.Tuple[_ElemType, str]]:
+	def get_references(self) -> ty.List[ty.Tuple[_Element, str]]:
 		"""List the references to this element.
 		Return a list of elements in the tree that refer to this element
 		through attributes such as "xlink:href" or "clip-path". Each item
@@ -413,9 +416,9 @@ class _Element(node._Node):
 			qualified_tag = self._qualify_tag_name()
 			file.write(f'{indentation}</{qualified_tag}>{newline}')
 
-	def find(self, function:ty.Callable[[_ElemType],bool], *,
+	def find(self, function:ty.Callable[[node._Node],bool], *,
 	         elements_only:bool = True, max_results:ty.Optional[int] = None
-	         ) -> ty.List[_ElemType]:
+	         ) -> ty.List[node._Node]:
 		"""List descendant elements satisfying the given function.
 		`function` is a callable that receives an element object, and should
 		return a boolean. The function is evaluated on the element's descendants
@@ -434,7 +437,7 @@ class _Element(node._Node):
 					break
 		return results
 
-	def find_id(self, id:str) -> ty.Optional[_ElemType]:
+	def find_id(self, id:str) -> ty.Optional[_Element]:
 		"""Find a descendant element with a specific ID.
 		Returns None if no element was found, or if the element isn't a
 		descendant of this element.
@@ -482,9 +485,6 @@ class _Element(node._Node):
 			#	if mask_elem and mask_elem.tag == 'mask':
 			#		# mask
 		return box
-
-# Version for type hints
-_ElemType = ty.TypeVar('Element', bound=_Element)
 
 
 class _StructureElement(_Element):
