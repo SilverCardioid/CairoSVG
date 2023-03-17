@@ -20,7 +20,7 @@ class _Node:
 				else:
 					parent._children.append(self)
 			else:
-				raise ValueError(f"{parent} node doesn't take {self} child node")
+				raise ValueError(f"{parent._node_str()} node doesn't take {self._node_str()} child node")
 			self._root = parent._root
 		else:
 			# root
@@ -28,6 +28,9 @@ class _Node:
 
 	def _can_have_child(self, child:_Node):
 		return True
+
+	def _node_str(self) -> str:
+		return '[' + self.__class__.__name__ + ']'
 
 	@property
 	def id(self) -> ty.Optional[str]:
@@ -67,7 +70,7 @@ class _Node:
 
 	def _set_id(self, value:str):
 		if value in self._root._ids:
-			print('warning: duplicate ID ignored: ' + value)
+			print(f'warning: duplicate ID ignored: {value}')
 		else:
 			self._root._ids[value] = self
 
@@ -143,7 +146,7 @@ class _Node:
 		if node in self.ancestors(True):
 			raise ValueError('can\'t add a node\'s ancestor to itself')
 		if not self._can_have_child(node):
-			raise ValueError(f"{parent} node doesn't take {self} child node")
+			raise ValueError(f"{self._node_str()} node doesn't take {node._node_str()} child node")
 
 		different_tree = True
 		if node.parent:
@@ -165,7 +168,8 @@ class _Node:
 			assert node.is_root()
 			id_conflicts = node._root._ids.keys() & self._root._ids.keys()
 			if id_conflicts:
-				print('warning: duplicate ids changed: ' + ', '.join(id_conflicts))
+				conflicts_str = ', '.join(id_conflicts)
+				print(f'warning: duplicate ids changed: {conflicts_str}')
 				id_list = node._root._ids.keys() | self._root._ids.keys()
 				for eid in id_conflicts:
 					elem = node._root._ids[eid]

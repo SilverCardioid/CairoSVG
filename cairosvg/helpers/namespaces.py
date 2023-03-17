@@ -96,7 +96,7 @@ class Namespaces(dict):
 				ns_name = DEFAULTS[ns_prefix]
 				self[ns_prefix] = ns_name
 			else:
-				print(f'warning: undeclared namespace "{ns}:" not expanded')
+				print(f'warning: undeclared namespace "{ns_prefix}:" not expanded')
 				local_name = ns_prefix + ':' + local_name
 				ns_prefix = ''
 		return ns_name, local_name

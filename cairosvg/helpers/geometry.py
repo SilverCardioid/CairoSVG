@@ -31,7 +31,7 @@ def quadratic_points(x1:float, y1:float, x2:float, y2:float, x3:float, y3:float
 	return xq1, yq1, xq2, yq2, x3, y3
 
 
-def bezier_angles(*pointsLfloat) -> ty.Tuple[float, float]:
+def bezier_angles(*points:float) -> ty.Tuple[float, float]:
 	"""Return the tangent angles of a Bezier curve of any degree."""
 	if len(points) < 2:
 		# zero-length segment

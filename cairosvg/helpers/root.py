@@ -1,7 +1,12 @@
+import typing as ty
+
 from . import namespaces as ns
 
+if ty.TYPE_CHECKING:
+	from ..elements.element import _ElemType
+
 class Root:
-	def __init__(self, element:'Element', namespaces=None):
+	def __init__(self, element:'_ElemType', namespaces=None):
 		self.element = element
 		self._ids = {}
 		if namespaces is not None:

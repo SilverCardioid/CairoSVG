@@ -61,7 +61,7 @@ class SVG(_StructureElement):
 		return attrib
 	def __delitem__(self, attrib:str):
 		#attrib = self._parse_attribute(attrib)
-		attrib = super().__delitem__(attrib, value)
+		attrib = super().__delitem__(attrib)
 		if attrib in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
 			self.viewport._attribs[attrib] = self._defaults[attrib]
 		return attrib

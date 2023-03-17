@@ -5,18 +5,22 @@ import typing as ty
 from . import attribs
 # .transform dynamically imported to avoid mutual imports
 
+if ty.TYPE_CHECKING:
+	from ..elements.element import _ElemType
+	from .import transform
+
 Length = ty.Union[str, int, float]
 
 class PointError(Exception):
-    """Exception raised when parsing a point fails."""
+	"""Exception raised when parsing a point fails."""
 
 UNITS = {
-    'mm': 1 / 25.4,
-    'cm': 1 / 2.54,
-    'in': 1,
-    'pt': 1 / 72.,
-    'pc': 1 / 6.,
-    'px': None,
+	'mm': 1 / 25.4,
+	'cm': 1 / 2.54,
+	'in': 1,
+	'pt': 1 / 72.,
+	'pc': 1 / 6.,
+	'px': None,
 }
 
 class Viewport:
@@ -31,7 +35,7 @@ class Viewport:
 	             height:ty.Optional[Length] = None, *,
 	             viewBox:ty.Optional[str] = None,
 	             preserveAspectRatio:ty.Optional[str] = None,
-	             parent:ty.Optional['Element'] = None):
+	             parent:ty.Optional['_ElemType'] = None):
 		self.parent = parent
 		defs = parent._defaults if parent else {}
 		self._attribs = {
@@ -104,7 +108,7 @@ class Viewport:
 
 		return (default_width, default_height)
 
-	def get_transform(self) -> transform.Transform:
+	def get_transform(self) -> 'transform.Transform':
 		"""Return a Transform object based on the viewport's viewBox and preserveAspectRatio values."""
 		from . import transform
 		tr = transform.Transform()
@@ -229,19 +233,19 @@ def point(string:str, viewport:ty.Optional[Viewport] = None, *,
 
 
 def node_format(node, viewport=None, reference=True):
-    """Return ``(width, height, viewbox)`` of ``node``.
+	"""Return ``(width, height, viewbox)`` of ``node``.
 
-    If ``reference`` is ``True``, we can rely on surface size to resolve
-    percentages.
+	If ``reference`` is ``True``, we can rely on surface size to resolve
+	percentages.
 
-    """
-    reference_size = 'xy' if reference else (0, 0)
-    width = size(node.get('width', '100%'), viewport, reference_size[0])
-    height = size(node.get('height', '100%'), viewport, reference_size[1])
-    viewbox = node.get('viewBox')
-    if viewbox:
-        viewbox = re.sub('[ \n\r\t,]+', ' ', viewbox)
-        viewbox = tuple(float(position) for position in viewbox.split())
-        width = width or viewbox[2]
-        height = height or viewbox[3]
-    return width, height, viewbox
+	"""
+	reference_size = 'xy' if reference else (0, 0)
+	width = size(node.get('width', '100%'), viewport, reference_size[0])
+	height = size(node.get('height', '100%'), viewport, reference_size[1])
+	viewbox = node.get('viewBox')
+	if viewbox:
+		viewbox = re.sub('[ \n\r\t,]+', ' ', viewbox)
+		viewbox = tuple(float(position) for position in viewbox.split())
+		width = width or viewbox[2]
+		height = height or viewbox[3]
+	return width, height, viewbox

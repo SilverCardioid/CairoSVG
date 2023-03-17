@@ -6,8 +6,11 @@ import typing as ty
 
 from ..helpers import attribs, coordinates
 
+if ty.TYPE_CHECKING:
+	from ..elements.element import _ElemType
+
 class Transform:
-	def __init__(self, string:str = None, *, parent:ty.Optional['Element'] = None):
+	def __init__(self, string:str = None, *, parent:ty.Optional['_ElemType'] = None):
 		self.parent = parent
 		self._reset()
 		if string is not None:

@@ -5,6 +5,9 @@ import cairocffi as cairo
 
 from . import namespaces as ns
 
+if ty.TYPE_CHECKING:
+	from ..elements.element import _ElemType
+
 FILL_RULES = {
 	'nonzero': cairo.FILL_RULE_WINDING,
 	'evenodd': cairo.FILL_RULE_EVEN_ODD
@@ -65,7 +68,7 @@ def parse_attribute(key:str, *, namespaces:ty.Optional[ns.Namespaces] = None,
 		key = re.sub('(?<!^)(?=[A-Z])', '-', key).lower()
 	return f'{{{ns_name}}}{key}' if ns_name else key
 
-def get_float(elem:'Element', attrib:str, default:ty.Optional[float] = None, *,
+def get_float(elem:'_ElemType', attrib:str, default:ty.Optional[float] = None, *,
               range:ty.List[ty.Optional[float]] = [None, None],
               cascade:bool=False) -> ty.Optional[float]:
 	"""Get an attribute value and parse it as a float.
@@ -82,7 +85,7 @@ def get_float(elem:'Element', attrib:str, default:ty.Optional[float] = None, *,
 		print(f'warning: invalid value "{val}" for {attrib}')
 		return default
 
-def get_enum(elem:'Element', attrib:str, values:ty.Mapping[str, ty.Any],
+def get_enum(elem:'_ElemType', attrib:str, values:ty.Mapping[str, ty.Any],
             default:ty.Optional[str] = None, *, cascade:bool = True) -> ty.Any:
 	"""Get an attribute value and check if is in a dict of allowed values.
 	Return the corresponding value from the dict."""

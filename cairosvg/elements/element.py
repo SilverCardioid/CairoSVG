@@ -1,6 +1,5 @@
 from __future__ import annotations
 from contextlib import contextmanager
-import math
 import re
 import sys
 import typing as ty
@@ -40,7 +39,7 @@ class _Element(node._Node):
 			attrib = self._parse_attribute(key)
 			if (self.__class__.attribs and (not attrib or attrib[0] != '{') and
 			    attrib not in self.__class__.attribs):
-				print(f'warning: <{self.tag}> element doesn\'t take "{attrib}" attribute')
+				print(f'warning: {self._node_str()} element doesn\'t take "{attrib}" attribute')
 			self._attribs[attrib] = attribs[key]
 
 		if 'id' in attribs:
@@ -55,7 +54,7 @@ class _Element(node._Node):
 		    #(not child.tag or child.tag[0] != '{') and
 		    child.namespace == helpers.namespaces.NS_SVG and
 		    child.tag not in self.__class__.content):
-			print(f'warning: <{self.tag}> element doesn\'t take "{child.tag}" child element')
+			print(f'warning: {self._node_str()} element doesn\'t take {child._node_str()} child node')
 		return True
 
 	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_ElemType, str]]:
@@ -154,7 +153,7 @@ class _Element(node._Node):
 		attrib = self._parse_attribute(attrib)
 		if (self.__class__.attribs and (not attrib or attrib[0] != '{') and
 		    attrib not in self.__class__.attribs):
-			print(f'warning: <{self.tag}> element doesn\'t take "{attrib}" attribute')
+			print(f'warning: {self._node_str()} element doesn\'t take "{attrib}" attribute')
 
 		old_value = self._attribs.get(attrib, None)
 		self._attribs[attrib] = value
@@ -186,6 +185,9 @@ class _Element(node._Node):
 	def __repr__(self) -> str:
 		return self.code(close=len(self._children) == 0,
 		                 namespace_declaration=False)
+
+	def _node_str(self) -> str:
+		return '<' + self._qualify_tag_name + '>'
 
 	@property
 	def id(self) -> ty.Optional[str]:
@@ -322,8 +324,8 @@ class _Element(node._Node):
 				                     *attribs, **kwattribs)
 			else:
 				# Custom element
-				print(f'<{tag}> node not supported; can be saved but not drawn')
-				return CustomElement(tag, ns_name, parent=parent,
+				print(f'<{tag}> element not supported; can be saved but not drawn')
+				return CustomElement(tag, ns_name, parent=self,
 				                     *attribs, **kwattribs)
 
 	def _qualify_tag_name(self) -> str:
