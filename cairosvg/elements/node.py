@@ -182,11 +182,11 @@ class _Node:
 			for e in node.descendants(True, elements_only=False):
 				e._root = self._root
 
-	def add_text_node(self, text:str, *, child_index:ty.Optional[int] = None):
+	def add_text_node(self, text:str, *, child_index:ty.Optional[int] = None) -> TextNode:
 		"""Add a text node as a child of this node."""
 		return TextNode(text, parent=self, child_index=child_index)
 
-	def add_comment(self, text:str, *, child_index:ty.Optional[int] = None):
+	def add_comment(self, text:str, *, child_index:ty.Optional[int] = None) -> Comment:
 		"""Add an XML comment as a child of this node."""
 		return Comment(text, parent=self, child_index=child_index)
 

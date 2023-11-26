@@ -6,10 +6,10 @@ from ..elements import _creators
 from . import namespaces
 
 if ty.TYPE_CHECKING:
-	from ..elements.element import _Element
+	from ..elements.node import _Node
 
 def parse(source:ty.Union[str, ty.TextIO]
-          ) -> ty.Generator[ty.Tuple[str, '_Element'], None, None]:
+          ) -> ty.Generator[ty.Tuple[str, '_Node'], None, None]:
 	events = ET.iterparse(source, events=["start", "end", "comment", "pi", "start-ns", "end-ns"])
 	# Each item is the parent of the next;
 	# retrieve None for root's parent
@@ -108,7 +108,7 @@ def parse(source:ty.Union[str, ty.TextIO]
 		next_ev, next_xml = next(events, (None, None))
 
 
-def read(source:ty.Union[str, ty.TextIO]) -> '_Element':
+def read(source:ty.Union[str, ty.TextIO]) -> '_Node':
 	elem_it = parse(source)
 	# First element = root
 	ev, root = next(elem_it, (None, None))

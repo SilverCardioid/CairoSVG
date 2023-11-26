@@ -295,7 +295,7 @@ class Rect(_ShapeElement):
 
 	Main attributes:
 	* width, height: the rectangle's size.
-	* x, y: the coordinates of rectangle's top left vertex.
+	* x, y: the coordinates of the rectangle's top left vertex.
 	* rx, ry: elliptical arc radii for corner rounding. If only one of the
 	    two is set, use circular arcs with the given radius. If neither is
 	    set, draw a normal rectangle without rounded corners.

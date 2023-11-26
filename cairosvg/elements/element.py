@@ -213,11 +213,11 @@ class _Element(node._Node):
 		* If `new_id` is a non-empty string and `auto` is True, set the
 		    element's ID to `new_id`, appending a number if the ID already
 		    exists in the tree.
-		* If `new_id` is None and `auto` is False, remove the ID. This will
-		    raise a `ValueError` if `update_references` is True and the element
-		    has references.
-		* If `new_id` is None and `auto` is True, assign an automatic ID based
-		    on the element's tag name and a number.
+		* If `new_id` is None or empty and `auto` is False, remove the ID. This
+		    will raise a `ValueError` if `update_references` is True and the
+		    element has references.
+		* If `new_id` is None or empty and `auto` is True, assign an automatic
+		    ID based on the element's tag name and a number.
 		"""
 		refs = []
 		if update_references:
