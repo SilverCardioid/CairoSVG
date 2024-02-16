@@ -77,8 +77,8 @@ class _Element(node._Node):
 		return elem and elem.viewport
 
 	def _set_transform(self):
-		self.transform = ht.Transform(self._attribs.get('transform', None),
-		                              parent=self)
+		self.transform = ht.Transform(self._attribs.get('transform', None))
+		self.transform._parent = self
 
 	def _get_auto_id(self, prefix:ty.Optional[str] = None,
 	                 id_list:ty.Optional[ty.List[str]] = None) -> str:

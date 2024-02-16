@@ -101,11 +101,12 @@ class SVG(_StructureElement):
 			x = _size(self.get_attribute('x', 0), vp, 'x')
 			y = _size(self.get_attribute('y', 0), vp, 'y')
 
+		surface.context.save()
 		surface.context.translate(x, y)
-		with vp_transform.apply_context(surface):
-			for child in self.child_elements():
-				child.draw(surface, paint=paint, viewport=viewport)
-		surface.context.translate(-x, -y)
+		vp_transform.apply(surface)
+		for child in self.child_elements():
+			child.draw(surface, paint=paint, viewport=viewport)
+		surface.context.restore()
 
 	def export(self, filename:str, *, surface:ty.Optional[ht.Surface] = None,
 	           use_cairo:bool = False, **svg_options):
