@@ -68,6 +68,10 @@ class SVG(_StructureElement):
 
 	@property
 	def width(self) -> float:
+		"""Get, set or delete the <svg>'s viewport width.
+		Getting returns the parsed absolute value of the `width` attribute.
+		Setting or deleting is equivalent to setting or deleting the attribute.
+		"""
 		return self.viewport.width
 	@width.setter
 	def width(self, value:ht.Length):
@@ -78,6 +82,10 @@ class SVG(_StructureElement):
 
 	@property
 	def height(self) -> float:
+		"""Get, set or delete the <svg>'s viewport height.
+		Getting returns the parsed absolute value of the `height` attribute.
+		Setting or deleting is equivalent to setting or deleting the attribute.
+		"""
 		return self.viewport.height
 	@height.setter
 	def height(self, value:ht.Length):
@@ -88,6 +96,7 @@ class SVG(_StructureElement):
 
 	@property
 	def namespaces(self) -> ht.Namespaces:
+		"""Get the namespaces of the root <svg> as a `Namespaces` object."""
 		return self._root.namespaces
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True,

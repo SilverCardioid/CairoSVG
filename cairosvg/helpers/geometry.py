@@ -268,6 +268,12 @@ class Box:
 				self.defined = True
 		# other not defined: no change
 
+	def vertices(self) -> ty.List[ty.Tuple[float, float]]:
+		if self.defined:
+			return [(self.x0, self.y0), (self.x1, self.y0), (self.x1, self.y1), (self.x0, self.y1)]
+		else:
+			return []
+
 	def __add__(self, other:Box) -> Box:
 		return self.copy().add_box(other)
 

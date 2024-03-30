@@ -194,6 +194,10 @@ class _Element(node._Node):
 
 	@property
 	def id(self) -> ty.Optional[str]:
+		"""Get, set or delete the element's ID attribute.
+		Getting the ID returns None if the element doesn't have an ID set.
+		Use `change_id()` for more options, including updating references.
+		"""
 		return self._attribs.get('id', None)
 	@id.setter
 	def id(self, value:str):
@@ -221,7 +225,9 @@ class _Element(node._Node):
 		"""
 		refs = []
 		if update_references:
-			refs = self.get_references()
+			# Skip refs with the actual element as the attribute value
+			refs = [(el,attr) for el,attr in self.get_references()
+			        if isinstance(el[attr], str)]
 
 		if new_id:
 			if new_id in self._root._ids:
@@ -252,7 +258,7 @@ class _Element(node._Node):
 		This method parses the attribute name, and returns the first value
 		it finds after checking, in the following order:
 		* The element's own attribute values;
-		* if `cascade` is True, the attribute values of its ancestors,
+		* if `cascade` is True, the attribute values of its ancestors;
 		* if `get_default` is True, the element-specific default attribute values;
 		* or the value of the `default` argument.
 		"""
@@ -462,7 +468,7 @@ class _Element(node._Node):
 
 	def bounding_box(self, *, with_transform:bool = True) -> ht.Box:
 		"""Calculate the element's bounding box.
-		Returns a `Box` element representing the minimum bounding rectangle.
+		Returns a `Box` object representing the minimum bounding rectangle.
 		If `with_transform` is True, apply the element's transform and clip-path
 		attributes to the box.
 		"""
@@ -472,8 +478,6 @@ class _Element(node._Node):
 	def _transform_box(self, box:ht.Box) -> ht.Box:
 		# Apply the element's transformations to its bounding box
 		if box.defined:
-			#if self.transform and self.transform._transformed:
-			#	# transform
 			clip_path = self._attribs.get('clip-path', None)
 			if clip_path:
 				cp_elem = self._parse_reference(clip_path)
@@ -484,6 +488,8 @@ class _Element(node._Node):
 			#	mask_elem = self._parse_reference(mask)
 			#	if mask_elem and mask_elem.tag == 'mask':
 			#		# mask
+			if self.transform and self.transform._transformed:
+				box = self.transform._transform_box(box)
 		return box
 
 

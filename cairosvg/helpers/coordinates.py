@@ -51,18 +51,23 @@ class Viewport:
 
 	@property
 	def width(self) -> float:
+		"""Get the viewport's absolute width."""
 		return size(self._attribs['width'],
 		            self.parent and self.parent._get_viewport(),
 		            'x', auto_value='100%')
 
 	@property
 	def height(self) -> float:
+		"""Get the viewport's absolute height."""
 		return size(self._attribs['height'],
 		            self.parent and self.parent._get_viewport(),
 		            'y', auto_value='100%')
 
 	@property
 	def viewBox(self) -> ty.Optional[ty.Tuple[float, float, float, float]]:
+		"""Get the parsed values of the viewport's viewBox.
+		Returns None if there is no viewBox or it is an invalid type.
+		"""
 		vb = self._attribs['viewBox']
 		if vb in (None, 'none'):
 			return None
@@ -77,6 +82,10 @@ class Viewport:
 
 	@property
 	def inner_size(self) -> ty.Tuple[float, float]:
+		"""Get the viewport's size before transformation.
+		Return the size of the viewBox if there is one, or the viewport's outer
+		width and height otherwise.
+		"""
 		vb = self.viewBox
 		if vb:
 			return vb[2:]

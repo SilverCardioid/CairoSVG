@@ -123,6 +123,9 @@ class Use(_Element):
 
 	@property
 	def target(self) -> ty.Optional[_Element]:
+		"""Get the target element of the <use>'s href attribute.
+		Returns None if no (valid) target is found.
+		"""
 		href = self._attribs.get(_HREF, None)
 		if isinstance(href, str):
 			if href[0] == '#':

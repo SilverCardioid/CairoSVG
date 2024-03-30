@@ -37,6 +37,10 @@ class _Node:
 
 	@property
 	def id(self) -> ty.Optional[str]:
+		"""Get, set or delete the node's ID.
+		Only defined on element nodes. For other node types, getting returns
+		None and setting or deleting raises an error.
+		"""
 		return None
 	@id.setter
 	def id(self, value:str):
@@ -47,6 +51,11 @@ class _Node:
 
 	@property
 	def parent(self) -> ty.Optional[_Node]:
+		"""Get or set the node's parent node.
+		Setting the parent is equivalent to `add_child()` with the operands
+		reversed.
+		Setting the parent to None is equivalent to `detach()`.
+		"""
 		return self._parent
 	@parent.setter
 	def parent(self, elem:ty.Optional[_Node]):
@@ -57,14 +66,17 @@ class _Node:
 
 	@property
 	def children(self) -> ty.Tuple[_Node, ...]:
+		"""Get the node's child nodes as a tuple."""
 		return tuple(self._children)
 
 	@property
 	def depth(self) -> int:
+		"""Get the node's tree depth."""
 		return 0 if self.is_root() else self.parent.depth + 1
 
 	@property
 	def root(self) -> _Node:
+		"""Get the root element of the node's tree."""
 		return self._root.element
 
 	def is_root(self) -> bool:
