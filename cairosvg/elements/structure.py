@@ -91,6 +91,7 @@ class Use(_Element):
 		'height': 0,
 	}
 	_attrib_to_str = {
+		**_Element._attrib_to_str,
 		_HREF: lambda val: ('#' + val if val and val[0] != '#'
 		                    else val) if isinstance(val, str) else \
 		                    '#' + val.id if isinstance(val, _Element) \
@@ -100,19 +101,6 @@ class Use(_Element):
 	def __init__(self, href_:ty.Union[str,_Element,None] = None, /, **attribs):
 		attribs = helpers.attribs.merge(attribs, **{_HREF:href_})
 		super().__init__(**attribs)
-
-		# Make sure the target has an id, in case
-		# an element object is passed for href
-		target = self.target
-		if target and not target.id:
-			target._set_auto_id()
-
-	def __setitem__(self, key:str, value:ty.Any):
-		super().__setitem__(key, value)
-		if self._parse_attribute(key) == _HREF:
-			target = self.target
-			if target and not target.id:
-				target._set_auto_id()
 
 	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_Element, str]]:
 		refs = super()._get_outgoing_refs()

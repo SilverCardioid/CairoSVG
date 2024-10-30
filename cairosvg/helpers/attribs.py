@@ -23,6 +23,10 @@ LINE_JOINS = {
 	'bevel': cairo.LINE_JOIN_BEVEL
 }
 
+camelcase_attribs = set(['allowReorder','attributeName','attributeType','autoReverse','baseFrequency','baseProfile','calcMode','clipPathUnits','contentScriptType','contentStyleType','diffuseConstant','edgeMode','externalResourcesRequired','filterRes','filterUnits','glyphRef','gradientTransform','gradientUnits','kernelMatrix','kernelUnitLength','keyPoints','keySplines','keyTimes','lengthAdjust','limitingConeAngle','markerHeight','markerUnits','markerWidth','maskContentUnits','maskUnits','numOctaves','pathLength','patternContentUnits','patternTransform','patternUnits','pointsAtX','pointsAtY','pointsAtZ','preserveAlpha','preserveAspectRatio','primitiveUnits','refX','refY','referrerPolicy','repeatCount','repeatDur','requiredExtensions','requiredFeatures','specularConstant','specularExponent','spreadMethod','startOffset','stdDeviation','stitchTiles','surfaceScale','systemLanguage','tableValues','targetX','targetY','textLength','viewBox','viewTarget','xChannelSelector','yChannelSelector','zoomAndPan'])
+namespaced_attribs = {'base':ns.NS_XML, 'lang':ns.NS_XML, 'space':ns.NS_XML, 'type':ns.NS_XLINK, 'href':ns.NS_XLINK, 'role':ns.NS_XLINK, 'arcrole':ns.NS_XLINK, 'title':ns.NS_XLINK, 'show':ns.NS_XLINK, 'actuate':ns.NS_XLINK}
+url_attribs = set(['clip-path', 'mask'])
+
 def normalize(string:str) -> str:
 	"""Normalize a string corresponding to an array of various values."""
 	string = string.replace('E', 'e')
@@ -43,8 +47,6 @@ def merge(kwargs:dict, **posargs) -> dict:
 	attribs.update(kwargs)
 	return attribs
 
-camelcase_attribs = set(['allowReorder','attributeName','attributeType','autoReverse','baseFrequency','baseProfile','calcMode','clipPathUnits','contentScriptType','contentStyleType','diffuseConstant','edgeMode','externalResourcesRequired','filterRes','filterUnits','glyphRef','gradientTransform','gradientUnits','kernelMatrix','kernelUnitLength','keyPoints','keySplines','keyTimes','lengthAdjust','limitingConeAngle','markerHeight','markerUnits','markerWidth','maskContentUnits','maskUnits','numOctaves','pathLength','patternContentUnits','patternTransform','patternUnits','pointsAtX','pointsAtY','pointsAtZ','preserveAlpha','preserveAspectRatio','primitiveUnits','refX','refY','referrerPolicy','repeatCount','repeatDur','requiredExtensions','requiredFeatures','specularConstant','specularExponent','spreadMethod','startOffset','stdDeviation','stitchTiles','surfaceScale','systemLanguage','tableValues','targetX','targetY','textLength','viewBox','viewTarget','xChannelSelector','yChannelSelector','zoomAndPan'])
-namespaced_attribs = {'base':ns.NS_XML, 'lang':ns.NS_XML, 'space':ns.NS_XML, 'type':ns.NS_XLINK, 'href':ns.NS_XLINK, 'role':ns.NS_XLINK, 'arcrole':ns.NS_XLINK, 'title':ns.NS_XLINK, 'show':ns.NS_XLINK, 'actuate':ns.NS_XLINK}
 def parse_attribute(key:str, *, namespaces:ty.Optional[ns.Namespaces] = None,
                     default_name:ty.Optional[str] = None) -> str:
 	"""Parse an attribute name.
@@ -74,7 +76,7 @@ def get_float(elem:'_Element', attrib:str, default:ty.Optional[float] = None, *,
 	"""Get an attribute value and parse it as a float.
 	Check if it's in the allowed range if one is given."""
 	if default is None:
-		default = elem._defaults.get(attrib, None)
+		default = elem.__class__._defaults.get(attrib, None)
 	val = elem.get_attribute(attrib, default, cascade=cascade)
 	try:
 		val = float(val)
@@ -90,7 +92,7 @@ def get_enum(elem:'_Element', attrib:str, values:ty.Mapping[str, ty.Any],
 	"""Get an attribute value and check if is in a dict of allowed values.
 	Return the corresponding value from the dict."""
 	if default is None:
-		default = elem._defaults[attrib]
+		default = elem.__class__._defaults[attrib]
 	val = elem.get_attribute(attrib, default, cascade=cascade)
 	try:
 		return values[val]

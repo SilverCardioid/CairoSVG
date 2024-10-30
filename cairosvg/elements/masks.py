@@ -23,6 +23,7 @@ class ClipPath(_Element):
 	tag = 'clipPath'
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Paint'] + _attrib['Font'] + _attrib['TextContent'] + _attrib['Text'] + _attrib['Opacity'] + _attrib['Graphics'] + _attrib['Mask'] + _attrib['GraphicalEvents'] + _attrib['Clip'] + ['transform', 'clipPathUnits']
 	content = _content['Description'] + _content['Animation'] + _content['Shape'] + _content['Text'] + ['use']
+	_open_tag = True
 	_defaults = {**_Element._defaults,
 		'clipPathUnits': 'userSpaceOnUse'
 	}
@@ -88,6 +89,7 @@ class Mask(_Element):
 	tag = 'mask'
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + ['maskUnits', 'maskContentUnits', 'x', 'y', 'width', 'height']
 	content = _content['Description'] + _content['Animation'] + _content['Structure'] + _content['Shape'] + _content['Text'] + _content['Image'] + _content['Script'] + _content['Style'] + _content['Marker'] + _content['Clip'] + _content['Mask'] + _content['Gradient'] + _content['Pattern'] + _content['Filter'] + _content['Cursor'] + _content['Font'] + _content['ColorProfile']
+	_open_tag = True
 	_defaults = {**_Element._defaults,
 		'x': '-10%',
 		'y': '-10%',

@@ -7,7 +7,7 @@ import numpy as np
 from . import _creators
 from .element import _StructureElement
 from .. import helpers
-from ..helpers import coordinates
+from ..helpers import coordinates, options as opt
 from ..helpers.modules import attrib as _attrib
 from ..helpers.coordinates import size as _size
 from ..helpers import types as ht
@@ -63,7 +63,7 @@ class SVG(_StructureElement):
 		#attrib = self._parse_attribute(attrib)
 		attrib = super().__delitem__(attrib)
 		if attrib in ('width', 'height', 'viewBox', 'preserveAspectRatio'):
-			self.viewport._attribs[attrib] = self._defaults[attrib]
+			self.viewport._attribs[attrib] = self.__class__._defaults[attrib]
 		return attrib
 
 	@property
@@ -118,7 +118,7 @@ class SVG(_StructureElement):
 		surface.context.restore()
 
 	def export(self, filename:str, *, surface:ty.Optional[ht.Surface] = None,
-	           use_cairo:bool = False, **svg_options):
+	           use_cairo:bool = False, svg_options:ty.Optional[opt.SVGOutputOptions] = None):
 		"""Export the document to `filename`.
 		If `filename` has a '.svg' extension (case-insensitive) and `use_cairo` is
 		False, directly write the SVG code to that file using the `save()` method.
@@ -168,7 +168,7 @@ class SVG(_StructureElement):
 				finally:
 					surface.finish()
 			else:
-				self.save(filename, **svg_options)
+				self.save(filename, svg_options)
 
 		else:
 			# Other format: try saving image with cv2
@@ -181,16 +181,13 @@ class SVG(_StructureElement):
 			except cv2.error:
 				raise ValueError(f'Failed to write image with extension: {ext}')
 
-	def save(self, filename:str, *, indent:ty.Optional[str] = '',
-	         newline:ty.Optional[str] = '\n', xml_declaration:bool = True):
+	def save(self, filename:str, options:ty.Optional[opt.SVGOutputOptions] = None):
 		"""Save the document as a .svg file.
 		Open the given filename, and call `write_code()` to write the SVG code
-		to it. The keyword parameters are passed on to that method.
+		to it. The `options` are passed on to that method.
 		"""
 		with open(filename, 'w', encoding='utf-8') as file:
-			self.write_code(file, indent=indent, newline=newline,
-			                xml_declaration=xml_declaration,
-			                namespace_declaration=True)
+			self.write_code(file, options=options)
 
 	def pixels(self, *, surface:ty.Optional[ht.Surface] = None,
 	           alpha:bool = False, bgr:bool = False) -> np.ndarray:

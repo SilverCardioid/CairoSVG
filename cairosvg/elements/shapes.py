@@ -312,6 +312,7 @@ class Rect(_ShapeElement):
 		'ry': None
 	}
 	_attrib_to_str = {
+		**_ShapeElement._attrib_to_str,
 		# omit if None
 		'rx': lambda val: val,
 		'ry': lambda val: val

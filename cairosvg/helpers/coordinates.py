@@ -37,7 +37,7 @@ class Viewport:
 	             preserveAspectRatio:ty.Optional[str] = None,
 	             parent:ty.Optional['_Element'] = None):
 		self.parent = parent
-		defs = parent._defaults if parent else {}
+		defs = parent.__class__._defaults if parent else {}
 		self._attribs = {
 			'width': width, 'height': height, 'viewBox': viewBox,
 			'preserveAspectRatio': preserveAspectRatio
@@ -47,7 +47,7 @@ class Viewport:
 				if self.parent:
 					self._attribs[attrib] = self.parent._getattrib(attrib)
 				else:
-					self._attribs[attrib] = self._defaults[attrib]
+					self._attribs[attrib] = self.__class__._defaults[attrib]
 
 	@property
 	def width(self) -> float:

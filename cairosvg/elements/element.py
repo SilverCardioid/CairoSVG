@@ -7,7 +7,7 @@ import typing as ty
 from . import node, _creators
 from .. import helpers
 from ..helpers.modules import attrib as _attrib, content as _content
-from ..helpers import types as ht
+from ..helpers import attribs as att, options as opt, types as ht
 
 class _Element(node._Node):
 	"""Base class for elements.
@@ -18,8 +18,18 @@ class _Element(node._Node):
 	namespace = helpers.namespaces.NS_SVG
 	attribs = None
 	content = None
+	_open_tag = False
 	_defaults = {}
-	_attrib_to_str = {}
+	_attrib_to_str = {
+		'clip-path': lambda val: (f'url({val})' if val and val[0] == '#'
+		                          else val) if isinstance(val, str) else \
+		                          f'url(#{val.id})' if isinstance(val, _Element) \
+		                          else 'none',
+		'mask': lambda val: (f'url({val})' if val and val[0] == '#'
+		                     else val) if isinstance(val, str) else \
+		                     f'url(#{val.id})' if isinstance(val, _Element) \
+		                     else 'none'
+	}
 
 	def __init__(self, *, parent:ty.Optional[node._Node] = None,
 	             child_index:ty.Optional[int] = None,
@@ -53,7 +63,7 @@ class _Element(node._Node):
 			self._set_transform()
 
 	def _can_have_child(self, child:node._Node) -> bool:
-		if (child.is_element and self.__class__.content and
+		if (child.__class__.is_element and self.__class__.content and
 		    #(not child.tag or child.tag[0] != '{') and
 		    child.namespace == helpers.namespaces.NS_SVG and
 		    child.tag not in self.__class__.content):
@@ -62,12 +72,10 @@ class _Element(node._Node):
 
 	def _get_outgoing_refs(self) -> ty.List[ty.Tuple[_Element, str]]:
 		refs = []
-		clip_path = self._parse_reference(self._attribs.get('clip-path', None))
-		if clip_path:
-			refs.append((clip_path, 'clip-path'))
-		mask = self._parse_reference(self._attribs.get('mask', None))
-		if mask:
-			refs.append((mask, 'mask'))
+		for attrib in att.url_attribs:
+			ref = self._parse_reference(self._attribs.get(attrib, None))
+			if ref:
+				refs.append((ref, attrib))
 		return refs
 
 	def _get_viewport(self) -> ty.Optional[ht.Viewport]:
@@ -85,10 +93,11 @@ class _Element(node._Node):
 		return super()._get_auto_id(prefix or self.tag, id_list)
 
 	def _set_auto_id(self, prefix:ty.Optional[str] = None,
-	                 id_list:ty.Optional[ty.List[str]] = None):
+	                 id_list:ty.Optional[ty.List[str]] = None) -> str:
 		eid = self._get_auto_id(prefix, id_list)
 		self._attribs['id'] = eid
 		self._set_id(eid)
+		return eid
 
 	def _parse_attribute(self, attrib:str) -> str:
 		return helpers.attribs.parse_attribute(
@@ -97,7 +106,7 @@ class _Element(node._Node):
 
 	def _getattrib(self, attrib:str) -> ty.Any:
 		# with get_default, no attrib parsing
-		return self._attribs.get(attrib, self._defaults[attrib])
+		return self._attribs.get(attrib, self.__class__._defaults[attrib])
 
 	def _parse_reference(self, value:ty.Union[str,_Element,None]
 	                     ) -> ty.Optional[_Element]:
@@ -165,10 +174,13 @@ class _Element(node._Node):
 				del self._root._ids[old_value]
 			except KeyError:
 				pass
-			self._set_id(value)
+			if value:
+				self._set_id(value)
+
 		elif attrib == 'transform' and self.transform:
 			self.transform._reset()
 			self.transform._transform(value)
+
 		return attrib
 
 	def __delitem__(self, attrib:str):
@@ -187,7 +199,7 @@ class _Element(node._Node):
 
 	def __repr__(self) -> str:
 		return self.code(close=len(self._children) == 0,
-		                 namespace_declaration=False)
+		                 options=opt._repr_format)
 
 	def _node_str(self) -> str:
 		return '<' + self._qualify_tag_name() + '>'
@@ -247,8 +259,8 @@ class _Element(node._Node):
 				del self.id
 
 		for ref_elem, ref_attrib in refs:
-			if ref_attrib in ref_elem._attrib_to_str:
-				ref_elem[ref_attrib] = ref_elem._attrib_to_str[ref_attrib](self)
+			if ref_attrib in ref_elem.__class__._attrib_to_str:
+				ref_elem[ref_attrib] = ref_elem.__class__._attrib_to_str[ref_attrib](self)
 			else:
 				ref_elem[ref_attrib] = self
 
@@ -264,7 +276,7 @@ class _Element(node._Node):
 		"""
 		attrib = self._parse_attribute(attrib)
 		if get_default:
-			default = self._defaults.get(attrib, default)
+			default = self.__class__._defaults.get(attrib, default)
 		if cascade:
 			node = self
 			while attrib not in node._attribs or node._attribs[attrib] == 'inherit':
@@ -343,17 +355,17 @@ class _Element(node._Node):
 		return ns_prefix + self.tag
 
 	def code(self, *, close:bool = True,
-	         namespace_declaration:bool = True) -> str:
+	         options:ty.Optional[opt.SVGOutputOptions] = None) -> str:
 		"""Generate the SVG code for this element.
 		Return an XML tag for this element with its attributes.
 		If `close` is True, make a self-closing tag (e.g. <path/>);
 		else, make an open tag (<path>).
-		If `namespace_declaration` is True and `self` is the root element,
-		include `xmlns:` attributes for namespaces used in the tree.
+		`options` is an optional `SVGOutputOptions` object.
 		"""
+		options = options or opt.SVGOutputOptions()
 		out = ['<' + self._qualify_tag_name()]
 
-		if namespace_declaration and self.is_root():
+		if options.namespace_declaration and self.is_root():
 			ns_names = helpers.namespaces.get_namespaces(self)
 			ns = [(self._root.namespaces._get_prefix(name), name)
 			      for name in ns_names]
@@ -374,9 +386,9 @@ class _Element(node._Node):
 					continue
 			elif val is None:
 				val = 'none'
-			elif isinstance(val, ht._Default):
-				# don't print
-				continue
+			elif isinstance(val, int) or isinstance(val, float):
+				val = str(round(val, options.precision)).removesuffix('.0')
+
 			attr = self._root.namespaces.qualify_name(
 				attr, default_name=self.namespace)
 			out.append(f' {attr}="{val}"')
@@ -384,43 +396,43 @@ class _Element(node._Node):
 		out.append('/>' if close else '>')
 		return ''.join(out)
 
-	def write_code(self, file:ty.Optional[ty.TextIO] = None, *,
-	               indent:ty.Optional[str] = '', indent_depth:int = 0,
-	               newline:ty.Optional[str] = '\n', xml_declaration:bool = False,
-	               namespace_declaration:bool = True):
+	def write_code(self, file:ty.Optional[ty.TextIO] = None,
+	               options:ty.Optional[opt.SVGOutputOptions] = None):
 		"""Write the SVG code for this element's subtree to `file`.
 		`file` is a file-like object with a `write` method. If None,
 		print to stdout (the screen).
-		If `xml_declaration` is True, include the declaration of the XML
-		version and encoding at the start.
-		If `namespace_declaration` is True and `self` is the root element,
-		include `xmlns:` attributes for namespaces used in the tree.
-		Pretty-print options:
-		* `indent`: whitespace string used for indentation
-		* `indent_depth`: starting indentation level
-		* `newline`: whitespace string used between tags
+		`options` is an optional `SVGOutputOptions` object.
 		"""
-		indent = indent or ''
-		newline = newline or ''
-		indentation = indent_depth*indent
-
-		if not file:
-			file = sys.stdout
-
-		if xml_declaration:
+		file = file or sys.stdout
+		options = options or opt.SVGOutputOptions()
+		if options.xml_declaration:
 			decl = '<?xml version="1.0" encoding="UTF-8"?>'
-			file.write(f'{indentation}{decl}{newline}')
+			file.write(f'{decl}{options.newline}')
 
-		tag_code = self.code(close=len(self.children)==0,
-		                     namespace_declaration=namespace_declaration)
-		file.write(f'{indentation}{tag_code}{newline}')
-		if len(self._children) > 0:
+		# Create IDs for referenced elements without them
+		for e in self._root.element.descendants(True, elements_only=True):
+			out_refs = e._get_outgoing_refs()
+			for ref_target, ref_attrib in out_refs:
+				if not ref_target.id and ref_target in self.descendants():
+					ref_target._set_auto_id()
+
+		self._write_code(file, options, indent_depth=0)
+
+	def _write_code(self, file:ty.TextIO, options:opt.SVGOutputOptions, *,
+	                indent_depth:int = 0):
+		indentation = indent_depth * options.indent
+
+		is_closed = len(self._children) == 0 and not self.__class__._open_tag
+		tag_code = self.code(close=is_closed, options=options)
+		file.write(f'{indentation}{tag_code}')
+		if is_closed or len(self._children) > 0:
+			file.write(options.newline)
+		if not is_closed:
 			# Write children & closing tag
 			for child in self._children:
-				child.write_code(file, indent=indent,
-				                 indent_depth=indent_depth + 1, newline=newline)
+				child._write_code(file, options, indent_depth=indent_depth + 1)
 			qualified_tag = self._qualify_tag_name()
-			file.write(f'{indentation}</{qualified_tag}>{newline}')
+			file.write(f'{indentation}</{qualified_tag}>{options.newline}')
 
 	def find(self, function:ty.Callable[[node._Node],bool], *,
 	         elements_only:bool = True, max_results:ty.Optional[int] = None
@@ -496,6 +508,7 @@ class _Element(node._Node):
 class _StructureElement(_Element):
 	attribs = _attrib['Core'] + _attrib['Conditional'] + _attrib['Style'] + _attrib['External'] + _attrib['Presentation'] + _attrib['GraphicalEvents']
 	content = _content['Description'] + _content['Animation'] + _content['Structure'] + _content['Shape'] + _content['Text'] + _content['Image'] + _content['View'] + _content['Conditional'] + _content['Hyperlink'] + _content['Script'] + _content['Style'] + _content['Marker'] + _content['Clip'] + _content['Mask'] + _content['Gradient'] + _content['Pattern'] + _content['Filter'] + _content['Cursor'] + _content['Font'] + _content['ColorProfile']
+	_open_tag = True
 
 	def draw(self, surface:ht.Surface, *, paint:bool = True,
 	         viewport:ty.Optional[ht.Viewport] = None):
@@ -503,7 +516,6 @@ class _StructureElement(_Element):
 			child.draw(surface, paint=paint, viewport=viewport)
 
 	def bounding_box(self, *, with_transform:bool = True) -> ht.Box:
-		# todo: account for transformations
 		# https://svgwg.org/svg2-draft/coords.html#bounding-box
 		box = ht.Box()
 		for child in self.child_elements():
@@ -540,16 +552,16 @@ class _ShapeElement(_Element):
 			self, 'stroke-opacity', range=[0, 1], cascade=True)
 
 		fill = self.get_attribute(
-			'fill', self._defaults['fill'], cascade=True)
+			'fill', self.__class__._defaults['fill'], cascade=True)
 		fill = helpers.colors.color(fill, fill_opacity*opacity)
 		fill_rule = helpers.attribs.get_enum(
 			self, 'fill-rule', helpers.attribs.FILL_RULES, cascade=True)
 
 		stroke = self.get_attribute(
-			'stroke', self._defaults['stroke'], cascade=True)
+			'stroke', self.__class__._defaults['stroke'], cascade=True)
 		stroke = helpers.colors.color(stroke, stroke_opacity*opacity)
 		stroke_width = self.get_attribute(
-			'stroke-width', self._defaults['stroke-width'], cascade=True)
+			'stroke-width', self.__class__._defaults['stroke-width'], cascade=True)
 		stroke_width = helpers.coordinates.size(stroke_width, vp, 'xy')
 		stroke_linecap = helpers.attribs.get_enum(
 			self, 'stroke-linecap', helpers.attribs.LINE_CAPS, cascade=True)

@@ -110,7 +110,7 @@ class _Node:
 
 	def child_elements(self) -> ty.List[_Node]:
 		"""Get a list of element child nodes."""
-		return [e for e in self._children if e.is_element]
+		return [e for e in self._children if e.__class__.is_element]
 
 	def delete(self, recursive:bool = True):
 		"""Delete this node from the tree.
@@ -211,7 +211,7 @@ class _Node:
 		node itself. By default, only consider element nodes; if `elements_only`
 		is False, include text nodes and comments.
 		"""
-		if include_self and (not elements_only or self.is_element):
+		if include_self and (not elements_only or self.__class__.is_element):
 			yield self
 		for child in self._children:
 			yield from child.descendants(True, elements_only=elements_only)
@@ -225,25 +225,23 @@ class _Node:
 		consider element nodes; if `elements_only` is False, include text nodes
 		and comments.
 		"""
-		if include_self and (not elements_only or self.is_element):
+		if include_self and (not elements_only or self.__class__.is_element):
 			yield self
 		anc = self.parent
 		while anc:
-			if not elements_only or anc.is_element:
+			if not elements_only or anc.__class__.is_element:
 				yield anc
 				anc = anc.parent
 
 	def code(self, **kwargs):
 		raise NotImplementedError()
 
-	def write_code(self, file:ty.Optional[ty.TextIO] = None,
-	               indent:ty.Optional[str] = '', indent_depth:int = 0,
-	               newline:ty.Optional[str] = '\n', **kwargs):
-		indent = indent or ''
-		newline = newline or ''
-		indentation = indent_depth*indent
-		tag = self.code(**kwargs)
-		file.write(f'{indentation}{tag}{newline}')
+	def _write_code(self, file:ty.TextIO,
+	                options:opt.SVGOutputOptions, *,
+	                indent_depth:int = 0):
+		indentation = indent_depth * options.indent
+		tag = self.code(options=options)
+		file.write(f'{indentation}{tag}{options.newline}')
 
 	def draw(self, surface:ht.Surface, **kwargs):
 		raise NotImplementedError()
@@ -261,7 +259,7 @@ class TextNode(_Node):
 	def _can_have_child(self, child:_Node):
 		return False
 
-	def code(self):
+	def code(self, **kwargs):
 		return self.text
 
 
@@ -277,5 +275,5 @@ class Comment(_Node):
 	def _can_have_child(self, child:_Node):
 		return False
 
-	def code(self):
+	def code(self, **kwargs):
 		return '<!-- ' + self.text + ' -->'
