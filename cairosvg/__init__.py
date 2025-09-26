@@ -1,4 +1,4 @@
 from . import elements
-from .helpers import surface
+from .helpers import options, surface
 
 SVG = elements.SVG

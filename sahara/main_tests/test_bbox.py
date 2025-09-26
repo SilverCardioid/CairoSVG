@@ -26,5 +26,6 @@ for e in gShapes.descendants():
 		if e.tag == 'g':
 			rect['stroke'] = '#fc9'
 
-svg.export('output/test_bbox.svg')
-svg.export('output/test_bbox.png')
+opt = cairosvg.options.SVGOutputOptions(precision=6)
+svg.export('output/test_bbox.svg', svg_options=opt)
+svg.export('output/test_bbox.png', svg_options=opt)

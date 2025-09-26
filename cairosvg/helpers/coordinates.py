@@ -165,7 +165,8 @@ class Viewport:
 		return tr
 
 def size(string:Length, viewport:ty.Optional[Viewport] = None,
-         reference:str = 'xy', *, units:bool = True, auto_value:Length = 0,
+         reference:ty.Union[str, float] = 'xy', *,
+         units:bool = True, auto_value:Length = 0,
          font_size:ty.Optional[float] = None, dpi:float = 96) -> float:
 	"""Replace a ``string`` with units by a float value.
 

@@ -384,10 +384,14 @@ class _Element(node._Node):
 				if val is None:
 					# don't print
 					continue
-			elif val is None:
+
+			if val is None:
 				val = 'none'
-			elif isinstance(val, int) or isinstance(val, float):
-				val = str(round(val, options.precision)).removesuffix('.0')
+			elif options.precision is not None:
+				if isinstance(val, str):
+					val = options._roundString(val)
+				elif isinstance(val, int) or isinstance(val, float):
+					val = options._roundNumber(val)
 
 			attr = self._root.namespaces.qualify_name(
 				attr, default_name=self.namespace)

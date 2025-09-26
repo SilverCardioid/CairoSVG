@@ -220,7 +220,7 @@ class Transform:
 		"""Translate by an x and y offset."""
 		self._translate(tx, ty)
 		self._add_to_attr(f'translate({tx},{ty})' if ty != 0 else
-		                f'translate({tx})')
+		                  f'translate({tx})')
 		return self
 	def _translate(self, tx:float, ty:float = 0):
 		self._mat.translate(tx, ty)
@@ -232,7 +232,7 @@ class Transform:
 		"""
 		self._scale(sx, sy)
 		self._add_to_attr(f'scale({sx},{sy})' if sy is not None else
-		                f'scale({sx})')
+		                  f'scale({sx})')
 		return self
 	def _scale(self, sx:float, sy:ty.Optional[float] = None):
 		self._mat.scale(sx, sy)
@@ -242,7 +242,7 @@ class Transform:
 		"""Rotate around a point by an angle in degrees."""
 		self._rotate(angle)
 		self._add_to_attr(f'rotate({angle},{cx},{cy})' if cx != 0 or cy != 0 else
-		                f'rotate({angle})')
+		                  f'rotate({angle})')
 		return self
 	def _rotate(self, angle:float, cx:float = 0, cy:float = 0):
 		self._mat.translate(cx, cy)

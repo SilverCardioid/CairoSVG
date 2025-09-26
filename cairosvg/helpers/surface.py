@@ -26,6 +26,13 @@ def create_surface(surface_type:str, width:int, height:int,
 	surface.context = cairo.Context(surface)
 	return surface
 
+def copy(surface:Surface, new_type:str) -> Surface:
+	new_surface = create_surface(new_type, surface.width, surface.height)
+	new_context = cairo.Context(new_surface)
+	new_context.set_source_surface(surface, 0, 0)
+	new_context.paint()
+	return new_surface
+
 def clear_surface(surface:Surface):
 	surface.context.set_operator(cairo.OPERATOR_CLEAR)
 	surface.context.paint()
@@ -43,10 +50,13 @@ def pixels(surface:Surface, alpha:bool = False, bgr:bool = False
 	else:
 		return im[:,:,:3]
 
-def show(image:np.ndarray, window_name:str = 'svg', *, wait:int = 0):
+def show(image:ty.Union[np.ndarray, cairo.Surface], window_name:str = 'svg', *, wait:int = 0):
 	if isinstance(image, cairo.Surface):
 		# Convert surface contents to image
+		if not hasattr(image, 'get_data'):
+			image = copy(image, 'image')
 		image = pixels(image, bgr=True)
+
 	cv2.imshow(window_name, image)
 	close = False
 	wait_time = wait if wait > 0 else 100 # ms
